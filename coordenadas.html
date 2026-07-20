@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Coordenadas del tablero (lado 4)</title>
+<style>
+  body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; font-family: Arial, sans-serif; padding: 16px; }
+  h1 { color: #eee; font-size: 20px; margin: 0 0 4px; }
+  p { color: #aaa; font-size: 13px; margin: 0 0 12px; }
+  svg { display: block; }
+  .cell { stroke: #2b2b2b; stroke-width: 1; }
+  .light { fill: #f0d9b5; }
+  .dark { fill: #b58863; }
+  .lbl { font-size: 13px; text-anchor: middle; dominant-baseline: central; }
+  .lbl.on-light { fill: #5b4632; }
+  .lbl.on-dark { fill: #f7ecd9; }
+</style>
+</head>
+<body>
+<h1>Tablero de lado 4 — coordenadas (a, b, c) de cada casilla</h1>
+<p>a + b + c = 2 en los triángulos ▲ · a + b + c = 1 en los ▽ · b crece hacia arriba, a hacia la derecha</p>
+<div id="wrap"></div>
+<script>
+const N = 4, EDGE = 110, ROW_H = EDGE * Math.sqrt(3) / 2;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const cells = [];
+for (let a = 1 - N; a <= N; a++)
+  for (let b = 1 - N; b <= N; b++)
+    for (const sum of [1, 2]) {
+      const c = sum - a - b;
+      if (c < 1 - N || c > N) continue;
+      const up = sum === 2;
+      const corners = up ? [[a-1,b-1],[a-1,b],[a,b-1]] : [[a,b],[a,b-1],[a-1,b]];
+      const pts = corners.map(([al,be]) => [EDGE*(al+be/2), -ROW_H*be]);
+      cells.push({a, b, c, up, pts,
+        cx: (pts[0][0]+pts[1][0]+pts[2][0])/3,
+        cy: (pts[0][1]+pts[1][1]+pts[2][1])/3});
+    }
+let minX=1e9, minY=1e9, maxX=-1e9, maxY=-1e9;
+for (const c of cells) for (const [x,y] of c.pts) {
+  minX=Math.min(minX,x); maxX=Math.max(maxX,x);
+  minY=Math.min(minY,y); maxY=Math.max(maxY,y);
+}
+const m = 8;
+const svg = document.createElementNS(SVG_NS,'svg');
+svg.setAttribute('viewBox', `${minX-m} ${minY-m} ${maxX-minX+2*m} ${maxY-minY+2*m}`);
+svg.setAttribute('width', maxX-minX+2*m);
+for (const cell of cells) {
+  const poly = document.createElementNS(SVG_NS,'polygon');
+  poly.setAttribute('points', cell.pts.map(p=>p.join(',')).join(' '));
+  poly.setAttribute('class', 'cell ' + (cell.up ? 'light' : 'dark'));
+  svg.appendChild(poly);
+  const t = document.createElementNS(SVG_NS,'text');
+  t.setAttribute('x', cell.cx);
+  // en los ▲ el hueco ancho está abajo; en los ▽, arriba
+  t.setAttribute('y', cell.cy + (cell.up ? 6 : -6));
+  t.setAttribute('class', 'lbl ' + (cell.up ? 'on-light' : 'on-dark'));
+  t.textContent = `${cell.a},${cell.b},${cell.c}`;
+  svg.appendChild(t);
+}
+document.getElementById('wrap').appendChild(svg);
+</script>
+</body>
+</html>

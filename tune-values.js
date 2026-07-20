@@ -1,0 +1,381 @@
+// tune-values.js — Ajusta los valores de las piezas (PIECE_VALUE en ai.js)
+// aprendiendo de partidas de autojuego, con el método tipo Texel: en vez de
+// hacer competir "individuos" (algoritmo genético, muy lento porque cada
+// partida entera solo da un bit de señal), se genera un corpus de posiciones
+// con el resultado final de su partida y se ajustan los pesos por descenso
+// de gradiente sobre ese corpus ya guardado — sin jugar nada más.
+//
+// Herramienta de desarrollo, se ejecuta a mano: `node tune-values.js`.
+// No toca ai.js; solo imprime los valores sugeridos.
+
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+// --- argumentos de línea de comandos (todos opcionales) ---
+// --level=N     : usa el nivel N real de AI_LEVELS (con quiescence, tabla de
+//                 transposición, etc., tal cual juega hoy) para el autojuego,
+//                 en vez del SELF_PLAY_CFG de abajo. Pensado para comparar si
+//                 los valores ajustados salen parecidos autojugando con
+//                 distintos niveles reales (ver README de la sesión / plan).
+// --minutes=M   : en vez de jugar N_GAMES partidas fijas, juega tantas como
+//                 quepan en M minutos. Imprescindible para niveles lentos
+//                 (5+), donde no se puede predecir de antemano cuántas
+//                 partidas caben en un tiempo razonable.
+// --fifty=N     : medias jugadas antes de tablas por la regla de los 50
+//                 movimientos durante el autojuego (ver FIFTY_MOVE_LIMIT en
+//                 rules.js). Por defecto 30 (15 jugadas completas): mucho
+//                 más corto que el reglamentario 100, para no perder tiempo
+//                 en partidas ya estancadas — solo afecta a este script, el
+//                 juego real sigue arrancando en 100.
+function argValue(name, def) {
+  const arg = process.argv.find(a => a.startsWith('--' + name + '='));
+  return arg ? arg.slice(name.length + 3) : def;
+}
+const CLI_LEVEL = argValue('level', null);
+const CLI_MINUTES = argValue('minutes', null);
+const FIFTY_LIMIT_TRAINING = Number(argValue('fifty', 30));
+
+// --- parámetros del experimento ---
+const N_GAMES = 1500;        // nº de partidas si no se da --minutes (~20 min en total)
+// Config de autojuego por defecto (sin --level): profundidad 2 (ve la
+// respuesta del rival) + orden de jugadas para que la poda alfa-beta sea
+// efectiva y no se dispare el coste. El ajuste de MATERIAL es robusto
+// incluso con un motor ciego a 1 jugada (nivel 2, "codicioso"): una pieza
+// capturada cuenta igual la vea venir o no quien la pierde. Pero el ajuste
+// POSICIONAL (centralidad, avance de peones) no lo es: un motor a 1 jugada
+// avanza y centraliza piezas sin comprobar si el rival se las puede comer a
+// continuación, así que en su autojuego "estar avanzado/centralizado"
+// tiende a significar "a punto de perderse la pieza" — el corpus sale con
+// el signo cambiado (se comprobó: con profundidad 1 los seis pesos de
+// centralidad y el de avance de peón salían negativos y muy estables, no
+// era ruido de muestra pequeña). Con profundidad 2 el motor al menos ve si
+// la casilla de destino queda a tiro, lo que basta para que el signo tenga
+// sentido.
+const SELF_PLAY_CFG = { depth: 2, order: true };
+// valor de hoy del peso de movilidad (evaluate() en ai.js), punto de
+// partida para MOBILITY_WEIGHT_TUNED
+const MOBILITY_DEFAULT = 2;
+// factor de normalización de la característica de movilidad, ver
+// mobilityDiff() dentro de driverSrc
+const MOBILITY_SCALE = 10;
+const MAX_PLIES = 160;        // corte de seguridad: por encima, la partida se descarta
+// guarda una posición de cada SAMPLE_STRIDE medias jugadas: posiciones
+// consecutivas casi no varían, así que muestrear muy seguido solo añade
+// puntos muy correlados entre sí (y hace el ajuste más inestable) sin
+// aportar información nueva
+const SAMPLE_STRIDE = 8;
+const K = 1 / 400;            // escala inicial de la sigmoide, ver fitValues()
+const LEARNING_RATE = 5;
+const ITERATIONS = 800;
+// Cuánto se tira el ajuste hacia los valores actuales de PIECE_VALUE en vez
+// de hacia lo que diga el corpus. Sin esto, los 6 valores quedan muy
+// correlados entre sí dentro de una misma partida (p. ej. torre y dama
+// suelen cambiar de manos en las mismas fases) y el ajuste sin restricciones
+// da valores inestables, con signos que no tienen sentido (piezas con valor
+// negativo). Más bajo = se fía más de los datos (arriesga inestabilidad,
+// sobre todo con N_GAMES pequeño); más alto = se queda más cerca de hoy.
+const REGULARIZATION = 0.02;
+
+const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];  // el rey no se ajusta (vale 0)
+
+// --- cargar geometry.js + rules.js + ai.js en un único ámbito compartido ---
+// Estos tres ficheros son scripts clásicos (const/let de nivel superior, sin
+// module.exports) pensados para compartir el ámbito global vía <script> en
+// el navegador. Un solo eval() sobre el código concatenado hace visibles sus
+// declaraciones al código añadido a continuación, sin tocar los ficheros.
+const dir = __dirname;
+const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+  .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
+  .join('\n');
+
+// Diferencia de material (blancas − negras) por tipo de pieza, en el orden
+// de PIECES. Es la misma cuenta que evaluate() en ai.js, separada por tipo.
+function materialDiff(board) {
+  const diff = PIECES.map(() => 0);
+  for (const [, p] of board) {
+    const idx = PIECES.indexOf(p.type);
+    if (idx === -1) continue;   // el rey no se cuenta
+    diff[idx] += p.color === 'w' ? 1 : -1;
+  }
+  return diff;
+}
+
+// Vector de características de cada posición sampleada: 6 de material + 6
+// de centralidad (una por tipo de pieza, mismo orden que PIECES) + 1 de
+// avance de peones + 1 de movilidad total. positionalDiff()/mobilityDiff()
+// se definen dentro de driverSrc (más abajo) porque necesitan
+// centrality()/pawnAdvance()/pseudoMoves()/CELL_MAP, que solo existen
+// dentro del eval de gameSrc; aquí solo se documenta el orden del vector.
+const FEATURE_NAMES = [...PIECES, ...PIECES.map(p => p + '(centralidad)'),
+  'peones(avance)', 'movilidad'];
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+// Descenso de gradiente por lotes sobre la regresión logística
+// sigmoid(Σ valor_i · diff_i) ≈ resultado (K ya viene absorbida en la escala
+// inicial de `initialWeights`, ver más abajo). Como el eval es lineal en los
+// pesos, el gradiente tiene forma cerrada y no hace falta jugar nada más:
+// todo el ajuste corre sobre el corpus ya guardado.
+//
+// El peón (índice 0, ver PIECES) se deja fijo como ancla: solo se ajustan
+// los otros 5 valores relativos a él. Sin un ancla, la normalización final
+// (pegar el peón a 100) amplifica cualquier ruido en su propio valor
+// ajustado, y con un corpus de este tamaño resulta muy inestable.
+function fitValues(dataset, initialWeights) {
+  const w = initialWeights.slice();
+
+  for (let it = 0; it < ITERATIONS; it++) {
+    const grad = w.map(() => 0);
+    for (const { diff, label } of dataset) {
+      let evalScore = 0;
+      for (let i = 0; i < w.length; i++) evalScore += w[i] * diff[i];
+      const pred = sigmoid(evalScore);
+      const coef = (pred - label) * pred * (1 - pred);
+      for (let i = 0; i < w.length; i++) grad[i] += coef * diff[i];
+    }
+    for (let i = 1; i < w.length; i++) {   // i=0 (peón) se queda fijo
+      const reg = 2 * REGULARIZATION * (w[i] - initialWeights[i]);
+      w[i] -= LEARNING_RATE * (grad[i] / dataset.length + reg);
+    }
+  }
+  return w;
+}
+
+function report(w) {
+  // normaliza para que el peón siga valiendo 100, como hoy (ya está fijo en
+  // su valor inicial escalado por K, así que esto solo deshace esa escala).
+  // Las 14 componentes de w comparten la misma escala interna (todas entran
+  // en el mismo Σ w_i·diff_i de la sigmoide), así que un único factor sirve
+  // para reescalar material, posición y movilidad por igual.
+  const pawnIdx = PIECES.indexOf('P');
+  const scale = 100 / w[pawnIdx];
+  const scaled = w.map(v => v * scale);
+  const material = scaled.slice(0, PIECES.length);
+  const centralityW = scaled.slice(PIECES.length, 2 * PIECES.length);
+  const advanceW = scaled[2 * PIECES.length];
+  const mobilityW = scaled[2 * PIECES.length + 1];
+
+  // igual que material/posición, pero deshaciendo también MOBILITY_SCALE
+  // para que este número ya sea comparable al 2 de hoy
+  const displayValues = scaled.slice();
+  displayValues[displayValues.length - 1] /= MOBILITY_SCALE;
+  console.log('Valores ajustados (en bruto):');
+  FEATURE_NAMES.forEach((name, i) => console.log(`  ${name}: ${displayValues[i].toFixed(2)}`));
+
+  console.log('\nRedondeados, listos para pegar en PIECE_VALUE_TUNED (ai.js) y' +
+    ' probar en el nivel 8 (experimental) sin tocar PIECE_VALUE:');
+  const rounded = {};
+  PIECES.forEach((p, i) => { rounded[p] = Math.round(material[i]); });
+  const line = `const PIECE_VALUE_TUNED = { P: ${rounded.P}, N: ${rounded.N}, B: ${rounded.B}, ` +
+    `E: ${rounded.E}, R: ${rounded.R}, Q: ${rounded.Q}, K: 0 };`;
+  console.log('  ' + line);
+
+  console.log('\nRedondeados, listos para pegar en PIECE_POSITION_TUNED (ai.js),' +
+    ' junto al nivel 8:');
+  const roundedAdvance = Math.round(advanceW);
+  const posLines = PIECES.map((p, i) => {
+    const parts = [`centrality: ${Math.round(centralityW[i])}`];
+    if (p === 'P') parts.push(`advance: ${roundedAdvance}`);
+    return `  ${p}: { ${parts.join(', ')} },`;
+  });
+  console.log('const PIECE_POSITION_TUNED = {\n' + posLines.join('\n') + '\n};');
+
+  // mobilityW está en unidades de la característica normalizada (dividida
+  // por MOBILITY_SCALE en mobilityDiff); deshacer esa división para obtener
+  // el peso real por jugada disponible, comparable al 2 de hoy
+  const mobilityReal = mobilityW / MOBILITY_SCALE;
+  console.log('\nRedondeado, listo para pegar en MOBILITY_WEIGHT_TUNED (ai.js),' +
+    ` junto al nivel 8 (valor de hoy para los demás niveles: ${MOBILITY_DEFAULT}):`);
+  console.log(`const MOBILITY_WEIGHT_TUNED = ${mobilityReal.toFixed(2)};`);
+}
+
+// El bucle de autojuego (`run`) va dentro del mismo eval que gameSrc: así ve
+// sus declaraciones (newGame, game, chooseAiMove, movesForSide, makeMove,
+// gameEnded, PIECE_VALUE...) sin necesidad de exportarlas. `run`, a su vez,
+// sí puede llamar libremente a las funciones normales de este módulo
+// (materialDiff, fitValues, report y las constantes de arriba): el código
+// evaluado siempre puede leer el ámbito desde el que se invocó, aunque no
+// pueda filtrar sus propias declaraciones hacia fuera.
+const driverSrc = `
+// Diferencia de centralidad por tipo de pieza + diferencia de avance de
+// peones (blancas − negras), en ese orden. Va dentro del eval porque usa
+// centrality()/pawnAdvance()/CELL_MAP, definidas en ai.js/geometry.js.
+function positionalDiff(board) {
+  const cent = PIECES.map(() => 0);
+  let advance = 0;
+  for (const [key, p] of board) {
+    const idx = PIECES.indexOf(p.type);
+    if (idx === -1) continue;
+    const sign = p.color === 'w' ? 1 : -1;
+    const cell = CELL_MAP.get(key);
+    cent[idx] += sign * centrality(cell);
+    if (p.type === 'P') advance += sign * pawnAdvance(cell, p.color);
+  }
+  return [...cent, advance];
+}
+
+// Diferencia de movilidad total (blancas − negras): la misma cuenta que
+// evaluate() hace pieza a pieza, aquí sin ponderar (el peso lo pone
+// fitValues). Va dentro del eval porque usa pseudoMoves()/CELL_MAP.
+// Se divide por MOBILITY_SCALE: la diferencia de movilidad ronda decenas
+// (muchas más jugadas posibles que piezas de diferencia hay normalmente),
+// mientras que el material ronda unidades — con la misma escala que el
+// material, la MISMA REGULARIZATION tira de este peso mucho más flojo en
+// proporción (el gradiente y el término de regularización no "compiten" en
+// pie de igualdad si las características tienen escalas muy distintas), y
+// el peso salía disparado e inestable entre corridas (550, luego -243,
+// luego 130). report() deshace esta escala al final.
+function mobilityDiff(board) {
+  let m = 0;
+  for (const [key, p] of board) {
+    const n = pseudoMoves(board, CELL_MAP.get(key), p, null).length;
+    m += p.color === 'w' ? n : -n;
+  }
+  return m / MOBILITY_SCALE;
+}
+
+// Elige la jugada de entrenamiento con variedad pero sin jugadas absurdas.
+// Sustituye a EPSILON (jugada uniforme al azar en cualquier momento de la
+// partida), que metía posiciones caóticas: disparaban quiesce() en niveles
+// 4+ y cambiaban el signo de las features posicionales (una pieza "avanzada"
+// justo antes de un blunder correlaciona con perder).
+//
+// Para cada candidata se estima su probabilidad de victoria p = sigmoid(K·score)
+// (mismo sigmoid/K que el ajuste Texel). Se aplica el umbral en ESPACIO DE
+// PROBABILIDAD, no de puntuación bruta: un 95% aplicado a un score negativo se
+// rompe (0.95·(-300) = -285 es MEJOR que -300, excluiría a la propia mejor
+// jugada). Entre las que superan TOP_MOVE_THRESHOLD·pBest, se muestrea
+// proporcional a p.
+//
+// 0.95 (no 0.85): la prueba corta mostró que en aperturas equilibradas casi
+// todas las jugadas puntúan parecido (sigmoid ≈ 0.5), así que el umbral apenas
+// discrimina ahí y la variedad se mantiene igual (aperturas ~100% distintas)
+// aunque se suba. Donde sí importa es en mediojuego/final: con 0.85 el juego
+// era tan flojo que un 24% de las partidas vagaba hasta el corte de 160 plies
+// sin concluir (descartadas); con 0.95 baja al ~5%, forzando remates decisivos
+// sin perder diversidad.
+const TOP_MOVE_THRESHOLD = 0.95;
+
+function pickTrainingMove(level, st = searchState()) {
+  const scored = rootMoveScores(level, st);
+  if (scored.length === 0) return null;
+
+  const probs = scored.map(s => sigmoid(K * s.score));
+  const pBest = Math.max(...probs);
+  const cutoff = TOP_MOVE_THRESHOLD * pBest;
+  const eligible = [];
+  for (let i = 0; i < scored.length; i++) {
+    if (probs[i] >= cutoff) eligible.push({ move: scored[i].move, p: probs[i] });
+  }
+
+  const total = eligible.reduce((sum, e) => sum + e.p, 0);
+  let r = Math.random() * total;
+  for (const e of eligible) {
+    r -= e.p;
+    if (r <= 0) return e.move;
+  }
+  return eligible[eligible.length - 1].move;   // por si el redondeo deja r > 0
+}
+
+function run() {
+  // durante el entrenamiento, tablas por la regla de los 50 movimientos
+  // mucho antes que en una partida real (ver FIFTY_LIMIT_TRAINING arriba)
+  FIFTY_MOVE_LIMIT = FIFTY_LIMIT_TRAINING;
+
+  // autojuego: con --level=N, el nivel N real de AI_LEVELS (tal cual juega
+  // hoy, con quiescence/TT/etc.); si no, el SELF_PLAY_CFG de este script
+  const selfPlayLevel = CLI_LEVEL ? Number(CLI_LEVEL) : 'tuning';
+  if (!CLI_LEVEL) AI_LEVELS.tuning = SELF_PLAY_CFG;
+
+  // sin --minutes, juega N_GAMES partidas fijas; con --minutes, tantas como
+  // quepan en ese tiempo (necesario para niveles lentos, donde no se puede
+  // predecir de antemano cuántas partidas caben)
+  const budgetMs = CLI_MINUTES ? Number(CLI_MINUTES) * 60000 : null;
+  const t0 = Date.now();
+
+  // { diff: [material×6, centralidad×6, avance×1, movilidad×1] desde el
+  // punto de vista de blancas, label }
+  const dataset = [];
+  let g = 0;             // partidas usadas (terminan de verdad)
+  let attempted = 0;     // partidas jugadas (incluidas las descartadas)
+  const discarded = { fifty: 0, maxplies: 0 };
+  while (true) {
+    if (budgetMs ? (Date.now() - t0 >= budgetMs) : (g >= N_GAMES)) break;
+    newGame();
+    const featuresThisGame = [];
+    let plies = 0;
+    let aborted = false;
+
+    while (!gameEnded() && plies < MAX_PLIES) {
+      // una partida puede acercarse a MAX_PLIES aunque se haya acortado la
+      // regla de los 50; comprobar el presupuesto solo entre partidas no
+      // basta — una sola puede agotarlo entera. Se mira en cada jugada y, si
+      // se acaba el tiempo a medias, esa partida se descarta entera (no se
+      // conoce su resultado).
+      if (budgetMs && Date.now() - t0 >= budgetMs) { aborted = true; break; }
+      const mv = pickTrainingMove(selfPlayLevel);
+      if (!mv) break;   // sin jugadas (gameEnded ya lo cubre, por si acaso)
+      makeMove(mv.from, mv.to);
+      plies++;
+
+      if (plies % SAMPLE_STRIDE === 0) {
+        featuresThisGame.push([...materialDiff(game.board), ...positionalDiff(game.board),
+          mobilityDiff(game.board)]);
+      }
+    }
+    if (aborted) break;   // presupuesto agotado a media partida: se descarta
+
+    attempted++;
+
+    // solo cuentan las partidas que terminan de verdad: mate, ahogado o
+    // repetición. 'fifty' es artificial (regla acortada a --fifty durante el
+    // entrenamiento) y un corte por MAX_PLIES deja el estado en
+    // 'playing'/'check' — ninguno es un final genuino ni tiene resultado
+    // fiable, así que no se añaden al corpus.
+    if (game.status !== 'checkmate' && game.status !== 'stalemate' &&
+        game.status !== 'repetition') {
+      if (game.status === 'fifty') discarded.fifty++; else discarded.maxplies++;
+      continue;
+    }
+
+    // resultado desde el punto de vista de las blancas
+    let label = 0.5;
+    if (game.status === 'checkmate') label = game.winner === 'w' ? 1 : 0;
+    // stalemate / repetition se quedan en 0.5 (tablas)
+
+    for (const diff of featuresThisGame) dataset.push({ diff, label });
+    g++;
+
+    if (g % 50 === 0) {
+      const mins = ((Date.now() - t0) / 60000).toFixed(1);
+      process.stderr.write('  ' + g + (budgetMs ? '' : '/' + N_GAMES) +
+        ' partidas · ' + dataset.length + ' posiciones · ' +
+        discarded.fifty + '+' + discarded.maxplies + ' descartadas · ' + mins + ' min\\n');
+    }
+  }
+
+  const mins = ((Date.now() - t0) / 60000).toFixed(1);
+  console.log('--- nivel de autojuego: ' + selfPlayLevel +
+    (CLI_LEVEL ? ' (real, AI_LEVELS[' + selfPlayLevel + '])' : ' (' + JSON.stringify(SELF_PLAY_CFG) + ')') +
+    ' · fifty=' + FIFTY_MOVE_LIMIT + ' ---');
+  console.log('Corpus generado: ' + dataset.length + ' posiciones de ' + g +
+    ' partidas concluyentes (de ' + attempted + ' jugadas; descartadas ' +
+    discarded.fifty + ' por 50-mov y ' + discarded.maxplies + ' por MAX_PLIES) en ' + mins + ' min.\\n');
+  // arranque en los valores actuales de PIECE_VALUE/MOBILITY_DEFAULT (aquí sí
+  // son visibles, porque el eval que los declaró es el mismo que ejecuta
+  // run()), escalados por K para que sigmoid(Σ valor_i·diff_i) parta ya en
+  // un rango razonable (si no, con valores en cientos la sigmoide arranca
+  // saturada en 0 o 1 y el gradiente es información nula). Los pesos
+  // posicionales (centralidad y avance) no tienen un valor de hoy del que
+  // partir: arrancan en 0, así que la regularización los deja en 0 salvo
+  // que el corpus sí respalde un valor distinto.
+  const initial = [...PIECES.map(p => PIECE_VALUE[p] * K), ...PIECES.map(() => 0), 0,
+    MOBILITY_DEFAULT * MOBILITY_SCALE * K];
+  const values = fitValues(dataset, initial);
+  report(values);
+}
+run();
+`;
+
+eval(gameSrc + '\n' + driverSrc);

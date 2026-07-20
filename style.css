@@ -1,0 +1,335 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+.layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#board-col {
+    width: min(88vmin, 780px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#board-wrap svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* --- barra de botones --- */
+
+#toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: #242424;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+
+#toolbar button {
+    background: #3a3a3a;
+    color: #eee;
+    border: none;
+    border-radius: 8px;
+    width: 42px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+#toolbar button svg {
+    width: 18px;
+    height: 18px;
+    fill: #eee;
+}
+
+#toolbar button:hover:not(:disabled) {
+    background: #4d4d4d;
+}
+
+#toolbar button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.toolbar-sep {
+    width: 1px;
+    height: 24px;
+    background: #4a4a4a;
+    margin: 0 6px;
+}
+
+#btn-pause.active {
+    background: #4a7edb;
+}
+
+#btn-pause.active:hover:not(:disabled) {
+    background: #5b8ce4;
+}
+
+/* --- casillas --- */
+
+.cell {
+    stroke: #2b2b2b;
+    stroke-width: 1;
+    cursor: pointer;
+}
+
+.cell.light { fill: #f0d9b5; }
+.cell.dark  { fill: #b58863; }
+
+.cell.last-move { fill: #cdd26a; }
+.cell.selected  { fill: #baca44; }
+.cell.legal     { fill: #8fb7dd; }
+.cell.capture   { fill: #e0836a; }
+.cell.in-check  { fill: #d84b3a; }
+
+.cell:hover { fill-opacity: 0.85; }
+
+/* --- piezas --- */
+
+.piece {
+    font-size: 24px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    user-select: none;
+}
+
+.piece-w {
+    fill: #fdfdfd;
+    stroke: #333;
+    stroke-width: 0.9;
+    paint-order: stroke;
+}
+
+.piece-b {
+    fill: #1c1c1c;
+    stroke: #ddd;
+    stroke-width: 0.9;
+    paint-order: stroke;
+}
+
+/* el elefante es un emoji: se distinguen los bandos con filtros */
+.piece-E {
+    font-size: 20px;
+    stroke: none;
+}
+
+.piece-E.piece-w { filter: grayscale(1) brightness(1.7); }
+.piece-E.piece-b { filter: grayscale(1) brightness(0.4); }
+
+/* --- panel lateral --- */
+
+#panel {
+    background: #242424;
+    border-radius: 10px;
+    padding: 18px;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+#turn {
+    font-size: 1.15rem;
+    font-weight: bold;
+}
+
+#status {
+    color: #f0b13b;
+    min-height: 1.2em;
+    font-weight: bold;
+}
+
+#move-counter {
+    color: #bbb;
+    font-size: 0.85rem;
+}
+
+.captured h2 {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: #aaa;
+    margin-bottom: 4px;
+}
+
+.cap-list {
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 1.35rem;
+    min-height: 1.7em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* capturadas por las blancas = piezas negras, sobre fondo claro */
+#cap-w { background: #e8e0d0; color: #222; }
+/* capturadas por las negras = piezas blancas, sobre fondo oscuro */
+#cap-b { background: #4a4a4a; color: #f5f5f5; }
+
+.cap-piece {
+    border-radius: 4px;
+    padding: 0 3px;
+    transition: background-color 0.2s;
+}
+
+/* ficha recién capturada: se mantiene resaltada hasta que quien la capturó
+   mueva de nuevo */
+.cap-piece.recent {
+    background: #d84b3a;
+    color: #fff;
+}
+
+/* selector de modalidad y niveles del ordenador */
+#mode-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #bbb;
+}
+
+#mode-box select,
+#save-box select {
+    background: #1c1c1c;
+    color: #eee;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 0.9rem;
+    width: 100%;
+    margin-top: 2px;
+}
+
+.level-row.hidden { display: none; }
+
+#new-game {
+    background: #4a7edb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+#new-game:hover { background: #5b8ce4; }
+
+/* guardado y carga de partidas */
+#save-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #bbb;
+}
+
+.save-row {
+    display: flex;
+    gap: 6px;
+}
+
+.save-row button {
+    flex: 1;
+    background: #333;
+    color: #eee;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    padding: 6px 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.save-row button:hover:not(:disabled) { background: #444; }
+
+.save-row button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.btn-star {
+    flex: 0 0 auto;
+    width: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-star svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: #eee;
+    stroke-width: 1.5;
+}
+
+.btn-star.active svg {
+    fill: #f4c542;
+    stroke: #f4c542;
+}
+
+#help summary {
+    cursor: pointer;
+    color: #bbb;
+}
+
+#help ul {
+    list-style: disc;
+    padding-left: 18px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #bbb;
+}
+
+/* miniaturas de movimientos dentro de las reglas */
+.mini-board {
+    display: block;
+    width: 190px;
+    max-width: 100%;
+    margin: 8px auto 4px;
+}
+
+.mini-board .cell {
+    cursor: default;
+    pointer-events: none;
+    stroke-width: 0.7;
+}
+
+/* en miniatura los glifos se agrandan para que se distingan */
+.mini-board .piece { font-size: 34px; }
+.mini-board .piece-E { font-size: 30px; }

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajedrez Triangular</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Ajedrez Triangular</h1>
+    <div class="layout">
+        <div id="board-col">
+            <div id="board-wrap"></div>
+            <div id="toolbar">
+                <button id="btn-start" title="Ir al inicio de la partida">
+                    <svg viewBox="0 0 24 24"><path d="M5 4h2.5v16H5zM20 4L9.5 12 20 20z"/></svg>
+                </button>
+                <button id="btn-undo" title="Deshacer jugada">
+                    <svg viewBox="0 0 24 24"><path d="M18 4L6.5 12 18 20z"/></svg>
+                </button>
+                <button id="btn-redo" title="Rehacer jugada">
+                    <svg viewBox="0 0 24 24"><path d="M6 4l11.5 8L6 20z"/></svg>
+                </button>
+                <button id="btn-end" title="Ir al final de la partida">
+                    <svg viewBox="0 0 24 24"><path d="M4 4l10.5 8L4 20zM16.5 4H19v16h-2.5z"/></svg>
+                </button>
+                <span class="toolbar-sep"></span>
+                <button id="btn-play-back" title="Reproducir hacia atrás">
+                    <svg viewBox="0 0 24 24"><path d="M11 5L2 12l9 7zM21 5l-9 7 9 7z"/></svg>
+                </button>
+                <button id="btn-pause" title="Pausar partida">
+                    <svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                </button>
+                <button id="btn-stop" title="Detener reproducción">
+                    <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                </button>
+                <button id="btn-play-fwd" title="Reproducir hacia delante">
+                    <svg viewBox="0 0 24 24"><path d="M3 5l9 7-9 7zM13 5l9 7-9 7z"/></svg>
+                </button>
+                <span class="toolbar-sep"></span>
+                <button id="btn-flip" title="Voltear el tablero">
+                    <svg viewBox="0 0 24 24"><path d="M7 7h8V4l5 4.5L15 13v-3H7a2 2 0 0 0-2 2v2H3v-2a4 4 0 0 1 4-4zm10 10H9v3l-5-4.5L9 11v3h8a2 2 0 0 0 2-2v-2h2v2a4 4 0 0 1-4 4z"/></svg>
+                </button>
+            </div>
+        </div>
+        <aside id="panel">
+            <div id="turn"></div>
+            <div id="status"></div>
+            <div id="move-counter"></div>
+            <div class="captured">
+                <h2>Capturadas por las blancas</h2>
+                <div id="cap-w" class="cap-list"></div>
+            </div>
+            <div class="captured">
+                <h2>Capturadas por las negras</h2>
+                <div id="cap-b" class="cap-list"></div>
+            </div>
+            <div id="mode-box">
+                <label for="mode">Modalidad</label>
+                <select id="mode">
+                    <option value="hh" selected>Humano vs humano</option>
+                    <option value="hc">Humano (blancas) vs ordenador</option>
+                    <option value="ch">Ordenador vs humano (negras)</option>
+                    <option value="cc">Ordenador vs ordenador</option>
+                </select>
+                <label class="level-row hidden" id="row-level-w">Nivel blancas
+                    <select id="level-w">
+                        <option value="1">1 · Principiante</option>
+                        <option value="2" selected>2 · Fácil</option>
+                        <option value="3">3 · Medio</option>
+                        <option value="4">4 · Difícil</option>
+                        <option value="5">5 · Muy difícil</option>
+                        <option value="6">6 · Experto</option>
+                        <option value="7">7 · Maestro (lento)</option>
+                        <option value="8">8 · Experimental (valores ajustados)</option>
+                    </select>
+                </label>
+                <label class="level-row hidden" id="row-level-b">Nivel negras
+                    <select id="level-b">
+                        <option value="1">1 · Principiante</option>
+                        <option value="2" selected>2 · Fácil</option>
+                        <option value="3">3 · Medio</option>
+                        <option value="4">4 · Difícil</option>
+                        <option value="5">5 · Muy difícil</option>
+                        <option value="6">6 · Experto</option>
+                        <option value="7">7 · Maestro (lento)</option>
+                        <option value="8">8 · Experimental (valores ajustados)</option>
+                    </select>
+                </label>
+            </div>
+            <button id="new-game">Nueva partida</button>
+            <div id="save-box">
+                <label for="save-select">Partidas guardadas</label>
+                <select id="save-select">
+                    <option value="">— ninguna —</option>
+                </select>
+                <div class="save-row">
+                    <button id="btn-save" title="Guardar la partida con un nombre">Guardar</button>
+                    <button id="btn-load" title="Cargar la partida seleccionada">Cargar</button>
+                    <button id="btn-favorite" class="btn-star" title="Marcar/desmarcar como favorita">
+                        <svg viewBox="0 0 24 24"><path d="M12 2.5l2.97 6.02 6.64.97-4.8 4.68 1.13 6.6L12 17.77l-5.94 3.12 1.13-6.6-4.8-4.68 6.64-.97z"/></svg>
+                    </button>
+                    <button id="btn-delete" title="Borrar la partida seleccionada">Borrar</button>
+                </div>
+                <div class="save-row">
+                    <button id="btn-export" title="Descargar la partida como archivo .json">Exportar .json</button>
+                    <button id="btn-import" title="Cargar una partida desde un archivo .json">Importar .json</button>
+                </div>
+                <input type="file" id="file-import" accept=".json,application/json" hidden>
+            </div>
+            <details id="help">
+                <summary>Reglas</summary>
+                <ul>
+                    <li data-piece="R"><b>Torre ♜</b>: se desliza por los tres carriles de casillas que pasan por ella, cruzando aristas.</li>
+                    <li data-piece="B"><b>Alfil ♝</b>: se desliza en las 6 direcciones diagonales, de vértice a vértice, siempre por triángulos de su misma orientación.</li>
+                    <li data-piece="Q"><b>Dama ♛</b>: combina torre y elefante.</li>
+                    <li data-piece="N"><b>Caballo ♞</b>: salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas.</li>
+                    <li data-piece="E"><b>Elefante 🐘</b>: se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas.</li>
+                    <li data-piece="K"><b>Rey ♚</b>: un paso a cualquier casilla que toque la suya (por arista o por vértice).</li>
+                    <li data-piece="P"><b>Peón ♟</b>: avanza sin capturar a la casilla que tiene justo enfrente (azul) y captura en las dos casillas frontales diagonales (rojo). Puede avanzar dos veces en su primer movimiento y corona como dama al llegar a la última fila.</li>
+                    <li><b>Captura al paso</b>: si un peón avanza dos casillas en su primer movimiento, un peón rival que ataque la casilla intermedia puede capturarlo justo en la jugada siguiente, ocupando esa casilla.</li>
+                    <li>Jaque, jaque mate y ahogado funcionan como en el ajedrez clásico.</li>
+                    <li><b>Tablas</b>: además del ahogado, la partida acaba en tablas si la misma posición aparece por tercera vez o tras 50 jugadas de cada bando sin capturas ni movimientos de peón.</li>
+                </ul>
+            </details>
+        </aside>
+    </div>
+    <script src="geometry.js"></script>
+    <script src="rules.js"></script>
+    <script src="saveload.js"></script>
+    <script src="ai.js"></script>
+    <script src="ai-async.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
