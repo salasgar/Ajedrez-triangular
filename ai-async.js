@@ -13,14 +13,15 @@
 const AI_WORKER_FNS = [
   // rules.js
   positionKey, slideMoves, pseudoMoves, attacks, findKing, isAttacked, rival,
-  legalMoves,
+  legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
   drawScore, movesForSide, applyMoveSim, centrality, pawnAdvance, evaluate,
-  orderMoves, quiesce, negamax, chooseAiMove,
+  capturedBy, orderMoves, quiesce, negamax, chooseAiMove,
 ];
 const AI_WORKER_CONSTS = {
   N, PIECE_VALUE, MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,
-  BOARD_MAX_DIST, FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE,
+  BOARD_MAX_DIST, FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE, CASTLING,
+  MOVED_MATTERS,
 };
 
 let aiWorker = null;        // worker vivo (se crea bajo demanda)
@@ -34,11 +35,18 @@ function aiWorkerSource() {
     // el grafo de casillas no es JSON (tiene referencias cruzadas): llega
     // clonado en el mensaje inicial
     'let CELL_MAP = null;',
+    // rowCells() recorre el array de casillas de geometry.js; se reconstruye
+    // del mapa clonado en vez de mandarlo aparte (son los mismos objetos)
+    'let CELLS = null;',
     ...Object.entries(AI_WORKER_CONSTS)
       .map(([name, v]) => `const ${name} = ${JSON.stringify(v)};`),
     ...AI_WORKER_FNS.map(f => f.toString()),
     'onmessage = (e) => {',
-    '  if (e.data.cells) { CELL_MAP = e.data.cells; return; }',
+    '  if (e.data.cells) {',
+    '    CELL_MAP = e.data.cells;',
+    '    CELLS = [...CELL_MAP.values()];',
+    '    return;',
+    '  }',
     '  postMessage(chooseAiMove(e.data.level, e.data.state));',
     '};',
   ].join('\n');
