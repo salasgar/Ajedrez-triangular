@@ -27,6 +27,86 @@ function rowCells(b) {
   return CELLS.filter(c => c.b === b).sort((p, q) => p.cx - q.cx);
 }
 
+// Fila del borde de cada color, de izquierda a derecha: las 9 casillas de
+// BACK_LAYOUT, con el rey en el índice 3 y las torres en el 0 y el 8.
+function backRow(color) {
+  return rowCells(color === 'w' ? 1 - N : N);
+}
+
+// --- enroque ---
+// Índices dentro de la fila del borde. El rey se aleja del centro tres
+// casillas por el lado largo; por el corto solo caben dos, porque la tercera
+// es la de su propia torre. La torre salta al otro lado del rey.
+// Nótese que por el lado corto el rey acaba en una casilla a la que también
+// llega con un movimiento normal (en esta retícula triangular el rey alcanza
+// dos casillas a cada lado dentro de su fila). No hay ambigüedad porque el
+// enroque se introduce como "rey a la casilla de su propia torre" —una
+// jugada imposible de otro modo—, no como "rey a su casilla de destino".
+const CASTLING = [
+  { king: 3, rook: 0, kingTo: 1, rookTo: 2 },   // corto
+  { king: 3, rook: 8, kingTo: 6, rookTo: 5 },   // largo
+];
+
+// Casillas de llegada de un enroque, o null si (kingKey, rookKey) no es uno.
+function castlingLanding(color, kingKey, rookKey) {
+  const row = backRow(color);
+  const ki = row.findIndex(c => c.key === kingKey);
+  const ri = row.findIndex(c => c.key === rookKey);
+  const c = CASTLING.find(x => x.king === ki && x.rook === ri);
+  return c ? { kingTo: row[c.kingTo].key, rookTo: row[c.rookTo].key } : null;
+}
+
+// ¿La jugada (fromKey → toKey) es un enroque sobre este tablero?
+function isCastling(board, fromKey, toKey) {
+  const piece = board.get(fromKey);
+  const target = board.get(toKey);
+  return !!(piece && piece.type === 'K' && target && target.type === 'R' &&
+    target.color === piece.color &&
+    castlingLanding(piece.color, fromKey, toKey));
+}
+
+// Enroques legales del rey que está en kingKey: devuelve las casillas de las
+// torres con las que puede enrocarse (ver CASTLING sobre por qué el destino
+// es la torre y no la casilla de llegada del rey).
+function castleMoves(board, kingKey, piece) {
+  if (piece.moved) return [];
+  const row = backRow(piece.color);
+  const ki = row.findIndex(c => c.key === kingKey);
+  if (ki === -1) return [];
+  const foe = rival(piece.color);
+  // el rey no puede enrocarse estando en jaque
+  if (isAttacked(board, row[ki], foe)) return [];
+
+  const out = [];
+  for (const c of CASTLING) {
+    if (c.king !== ki) continue;
+    const rookCell = row[c.rook];
+    const rook = board.get(rookCell.key);
+    if (!rook || rook.type !== 'R' || rook.color !== piece.color || rook.moved) continue;
+    // todo lo que hay entre rey y torre debe estar vacío
+    const lo = Math.min(c.rook, ki) + 1, hi = Math.max(c.rook, ki) - 1;
+    let ok = true;
+    for (let i = lo; i <= hi && ok; i++) if (board.get(row[i].key)) ok = false;
+    if (!ok) continue;
+    // el rey no puede cruzar ni acabar en casilla atacada; se simula el paso
+    // porque al vaciar su casilla puede abrir una línea contra sí mismo
+    const step = Math.sign(c.kingTo - ki);
+    for (let i = ki + step; ok; i += step) {
+      const copy = new Map(board);
+      copy.delete(kingKey);
+      copy.set(row[i].key, piece);
+      if (i === c.kingTo) {   // la última: con la torre ya colocada
+        copy.delete(rookCell.key);
+        copy.set(row[c.rookTo].key, rook);
+      }
+      if (isAttacked(copy, row[i], foe)) ok = false;
+      if (i === c.kingTo) break;
+    }
+    if (ok) out.push(rookCell);
+  }
+  return out;
+}
+
 function newGame() {
   game = {
     board: new Map(),
@@ -104,12 +184,14 @@ function goToEnd() {
 // --- tablas por repetición y por la regla de los 50 movimientos ---
 
 // Clave que identifica una posición a efectos de repetición: piezas, turno y
-// casilla de captura al paso. El flag `moved` solo altera las jugadas futuras
-// de los peones (doble avance), así que solo se incluye en ellos.
+// casilla de captura al paso. El flag `moved` altera las jugadas futuras de
+// los peones (doble avance) y las del rey y las torres (enroque), así que
+// solo se incluye en esos tres tipos.
+const MOVED_MATTERS = { P: true, K: true, R: true };
 function positionKey(board, turn, ep) {
   const parts = [];
   for (const [key, p] of board) {
-    parts.push(key + ':' + p.type + p.color + (p.type === 'P' && !p.moved ? '*' : ''));
+    parts.push(key + ':' + p.type + p.color + (MOVED_MATTERS[p.type] && !p.moved ? '*' : ''));
   }
   parts.sort();
   return turn + '|' + (ep ? ep.targetKey : '-') + '|' + parts.join(' ');
@@ -217,6 +299,9 @@ function legalMoves(board, fromKey, piece, ep = game && game.enPassant) {
     const king = piece.type === 'K' ? t : findKing(copy, piece.color);
     if (!isAttacked(copy, king, rival(piece.color))) out.push(t);
   }
+  // el enroque no sale de pseudoMoves (aterriza sobre una pieza propia y no
+  // es una casilla amenazada, ver attacks()), se añade aquí ya comprobado
+  if (piece.type === 'K') out.push(...castleMoves(board, fromKey, piece));
   return out;
 }
 
@@ -232,6 +317,21 @@ function makeMove(fromKey, toKey) {
   const target = game.board.get(toKey);
   const fromCell = CELL_MAP.get(fromKey);
   const toCell = CELL_MAP.get(toKey);
+
+  // Enroque: toKey es la casilla de la torre propia, no el destino del rey
+  // (ver CASTLING). Ni captura, ni promoción, ni captura al paso posible.
+  const castle = isCastling(game.board, fromKey, toKey)
+    ? castlingLanding(piece.color, fromKey, toKey) : null;
+  if (castle) {
+    game.board.delete(fromKey);
+    game.board.delete(toKey);
+    game.board.set(castle.kingTo, { ...piece, moved: true });
+    game.board.set(castle.rookTo, { ...target, moved: true });
+    game.enPassant = null;
+    game.lastMove = { from: fromKey, to: castle.kingTo };
+    finishMove(piece.color, false, false);
+    return;
+  }
 
   // captura normal o al paso
   let captured = target;
@@ -256,11 +356,17 @@ function makeMove(fromKey, toKey) {
     ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
     : null;
   game.lastMove = { from: fromKey, to: toKey };
+  finishMove(piece.color, !!captured, piece.type === 'P');
+}
 
-  const next = rival(piece.color);
+// Cierre común a toda jugada, ya aplicada sobre el tablero: pasa el turno,
+// actualiza el reloj de los 50 movimientos, decide el estado de la partida
+// (jaque, mate, ahogado, tablas) y registra la posición en el historial.
+function finishMove(color, captured, isPawn) {
+  const next = rival(color);
   game.turn = next;
-  game.clock = (captured || piece.type === 'P') ? 0 : game.clock + 1;
-  const inCheck = isAttacked(game.board, findKing(game.board, next), piece.color);
+  game.clock = (captured || isPawn) ? 0 : game.clock + 1;
+  const inCheck = isAttacked(game.board, findKing(game.board, next), color);
   const hasMoves = sideHasMoves(game.board, next);
   // veces que la posición resultante ha aparecido ya en la partida (una
   // repetición exige al menos 4 medias jugadas reversibles, de ahí la guarda)
@@ -271,7 +377,7 @@ function makeMove(fromKey, toKey) {
       if (game.history[i].posKey === key) reps++;
     }
   }
-  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = piece.color; }
+  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = color; }
   else if (!hasMoves) { game.status = 'stalemate'; }
   else if (reps >= 3) { game.status = 'repetition'; }   // aun con jaque: perpetuo
   else if (game.clock >= FIFTY_MOVE_LIMIT) { game.status = 'fifty'; }

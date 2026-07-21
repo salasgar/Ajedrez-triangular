@@ -41,6 +41,15 @@ También hay captura al paso. Jaque, jaque mate y ahogado funcionan como en el
 ajedrez clásico; además son tablas por triple repetición y por la regla de las
 50 jugadas.
 
+El **enroque** exige, como siempre, que el rey y la torre no se hayan movido,
+que no quede nada entre ellos y que el rey ni esté en jaque ni cruce casillas
+atacadas. Por el lado corto el rey se desplaza dos casillas hacia la torre y
+esta salta al otro lado; por el lado largo, tres. Para enrocarse se selecciona
+el rey y se pulsa la casilla de la torre propia: en esta retícula el rey ya
+alcanza por sí solo dos casillas a cada lado de su fila, así que indicar el
+destino del rey sería ambiguo, mientras que "rey a su propia torre" no puede
+significar ninguna otra cosa.
+
 ## Interfaz
 
 - Navegación por el historial: inicio, deshacer, rehacer, final, y reproducción

@@ -101,6 +101,17 @@ function applyMoveSim(board, fromKey, toKey, ep) {
   const fromCell = CELL_MAP.get(fromKey);
   const toCell = CELL_MAP.get(toKey);
 
+  // enroque: toKey es la casilla de la torre propia (ver CASTLING en rules.js)
+  if (isCastling(board, fromKey, toKey)) {
+    const rook = board.get(toKey);
+    const { kingTo, rookTo } = castlingLanding(piece.color, fromKey, toKey);
+    board.delete(fromKey);
+    board.delete(toKey);
+    board.set(kingTo, { ...piece, moved: true });
+    board.set(rookTo, { ...rook, moved: true });
+    return null;
+  }
+
   if (piece.type === 'P' && !board.get(toKey) && ep && toKey === ep.targetKey) {
     board.delete(ep.pawnKey);
   }
@@ -141,9 +152,17 @@ function evaluate(board, color, cfg) {
   return score;
 }
 
+// Pieza capturada por una jugada, o null si no captura. Ojo: "hay algo en la
+// casilla de destino" no basta, porque el enroque aterriza sobre la torre
+// propia (ver CASTLING en rules.js); de ahí la comprobación de color.
+function capturedBy(board, m) {
+  const v = board.get(m.to);
+  return v && v.color !== board.get(m.from).color ? v : null;
+}
+
 // capturas primero, la pieza más valiosa antes
 function orderMoves(board, moves, values = PIECE_VALUE) {
-  const gain = m => { const v = board.get(m.to); return v ? values[v.type] : -1; };
+  const gain = m => { const v = capturedBy(board, m); return v ? values[v.type] : -1; };
   moves.sort((m1, m2) => gain(m2) - gain(m1));
 }
 
@@ -161,11 +180,11 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth) {
   if (standPat > alpha) alpha = standPat;
   if (qdepth <= 0) return alpha;
 
-  const captures = movesForSide(board, color, ep).filter(m => board.get(m.to));
+  const captures = movesForSide(board, color, ep).filter(m => capturedBy(board, m));
   if (captures.length === 0) return alpha;
   if (cfg.order) orderMoves(board, captures, values);
   for (const m of captures) {
-    const gain = values[board.get(m.to).type];
+    const gain = values[capturedBy(board, m).type];
     if (standPat + gain + DELTA_MARGIN < alpha) continue;   // poda por diferencia
     const copy = new Map(board);
     const nextEp = applyMoveSim(copy, m.from, m.to, ep);
@@ -225,7 +244,7 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt) {
   let best = -Infinity;
   for (const m of moves) {
     const copy = new Map(board);
-    const nextClock = (board.get(m.to) || board.get(m.from).type === 'P') ? 0 : clock + 1;
+    const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P') ? 0 : clock + 1;
     const nextEp = applyMoveSim(copy, m.from, m.to, ep);
     const score = -negamax(copy, rival(color), nextEp, nextClock, keys, depth - 1,
       -beta, -alpha, cfg, tt);
@@ -304,7 +323,7 @@ function chooseAiMove(level, st = searchState()) {
   const scored = [];
   for (const m of moves) {
     const copy = new Map(st.board);
-    const nextClock = (st.board.get(m.to) || st.board.get(m.from).type === 'P')
+    const nextClock = (capturedBy(st.board, m) || st.board.get(m.from).type === 'P')
       ? 0 : st.clock + 1;
     const nextEp = applyMoveSim(copy, m.from, m.to, st.enPassant);
     const score = -negamax(copy, rival(st.turn), nextEp, nextClock, keys,

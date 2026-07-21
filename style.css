@@ -112,6 +112,7 @@ h1 {
 .cell.selected  { fill: #baca44; }
 .cell.legal     { fill: #8fb7dd; }
 .cell.capture   { fill: #e0836a; }
+.cell.castle    { fill: #b9a3d9; }   /* enroque: la casilla de la torre propia */
 .cell.in-check  { fill: #d84b3a; }
 
 .cell:hover { fill-opacity: 0.85; }

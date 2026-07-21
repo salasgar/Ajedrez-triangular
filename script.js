@@ -165,7 +165,7 @@ function render() {
   const idx = effIndex();
 
   for (const poly of cellPolys.values()) {
-    poly.classList.remove('selected', 'legal', 'capture', 'last-move', 'in-check');
+    poly.classList.remove('selected', 'legal', 'capture', 'castle', 'last-move', 'in-check');
   }
   if (lastMove) {
     cellPolys.get(lastMove.from).classList.add('last-move');
@@ -174,7 +174,11 @@ function render() {
   if (!reviewing && selected) cellPolys.get(selected).classList.add('selected');
   if (!reviewing) {
     for (const t of legalTargets) {
-      cellPolys.get(t.key).classList.add(board.get(t.key) ? 'capture' : 'legal');
+      // el enroque se marca sobre la casilla de la torre propia, así que ahí
+      // hay una pieza pero no es una captura (ver CASTLING en rules.js)
+      const occ = board.get(t.key);
+      cellPolys.get(t.key).classList.add(
+        !occ ? 'legal' : (occ.color === turn ? 'castle' : 'capture'));
     }
   }
   if (status === 'check' || status === 'checkmate') {
