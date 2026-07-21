@@ -9,24 +9,24 @@ const PIECE_VALUE = { P: 100, N: 300, B: 330, E: 350, R: 500, Q: 900, K: 0 };
 // imprime `node tune-values.js` (aprendidos de autojuego, ver ese script).
 // No los usa ningún otro nivel, así que se pueden probar sin arriesgar el
 // balance de PIECE_VALUE.
-const PIECE_VALUE_TUNED = { P: 100, N: 249, B: 320, E: 334, R: 436, Q: 900, K: 0 };
+const PIECE_VALUE_TUNED = { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 981, K: 0 };
 // Bonificación posicional experimental para el nivel 8, en las mismas
 // unidades que PIECE_VALUE (centipeón): "centrality" premia estar cerca del
 // centro del tablero, "advance" (solo peones) premia acercarse a la fila de
 // coronación. Igual que PIECE_VALUE_TUNED, se actualiza pegando la salida de
 // `node tune-values.js`; empieza en 0 (sin efecto) hasta la primera corrida.
 const PIECE_POSITION_TUNED = {
-  P: { centrality: -27, advance: -16 },
-  N: { centrality: 1 },
-  B: { centrality: -3 },
+  P: { centrality: -2, advance: 21 },
+  N: { centrality: 13 },
+  B: { centrality: -6 },
   E: { centrality: -3 },
-  R: { centrality: -2 },
-  Q: { centrality: 3 },
+  R: { centrality: 21 },
+  Q: { centrality: 14 },
 };
 // Cuánto vale cada jugada disponible al contar movilidad; el resto de
 // niveles usan el 2 fijo de siempre (ver evaluate()). También se actualiza
 // pegando la salida de `node tune-values.js`.
-const MOBILITY_WEIGHT_TUNED = 2;
+const MOBILITY_WEIGHT_TUNED = 1.61;
 const MATE = 100000;
 // Tope de capturas encadenadas que explora quiesce() antes de rendirse y
 // devolver la evaluación tal cual. Es un cinturón de seguridad: sin poda
@@ -256,6 +256,10 @@ function searchState() {
            clock: game.clock, posKeys };
 }
 
+// Margen (en centipeones) dentro del cual una jugada se considera tan buena
+// como la mejor a efectos del sorteo de chooseAiMove.
+const PLAY_TOLERANCE = 25;
+
 // Elige la jugada del ordenador según el nivel, para la posición actual o
 // para el estado `st` dado. Devuelve {from, to} o null si no hay jugadas.
 function chooseAiMove(level, st = searchState()) {
@@ -271,79 +275,49 @@ function chooseAiMove(level, st = searchState()) {
   // tabla de transposición de esta jugada, ver negamax()
   const tt = new Map();
 
-  // bucle raíz: acumula las jugadas empatadas a mejor puntuación y elige
-  // una al azar entre ellas, para dar variedad a las partidas
+  // Bucle raíz: acumula las jugadas que quedan a menos de PLAY_TOLERANCE de
+  // la mejor y sortea entre ellas. Antes se acumulaban solo las EMPATADAS a
+  // mejor puntuación, pero con la ventana estrecha los empates exactos casi
+  // nunca se dan: la partida salía idéntica cada vez (muy visible en
+  // ordenador contra ordenador).
+  //
+  // De ahí el +PLAY_TOLERANCE en beta: con la ventana justa (-best + 1) las
+  // jugadas peores que la mejor solo devuelven una COTA superior, y una
+  // jugada con cota best−5 puede ser en realidad malísima, así que no se
+  // puede sortear con ellas. Ensanchando la ventana esa tolerancia, toda
+  // jugada dentro de la banda devuelve su puntuación EXACTA, y las que se
+  // salen fallan alto y quedan por debajo de best − PLAY_TOLERANCE, que es
+  // justo lo que hace falta para descartarlas. Cuesta prácticamente lo mismo
+  // que la ventana justa (25 centipeones apenas abren nodos extra); la otra
+  // vía, una segunda pasada que rebusque cada candidata con ventana acotada,
+  // medía 2,6x.
+  //
+  // La banda es absoluta, no un porcentaje: un umbral relativo se rompe con
+  // puntuaciones negativas (ver la historia de este criterio junto a run() en
+  // tune-values.js) y se ensancharía de más en posiciones ya decididas. Con
+  // 25 centipeones el sorteo solo entra entre jugadas prácticamente
+  // equivalentes, así que da variedad sin debilitar el juego.
+  //
+  // El autojuego de entrenamiento (tune-values.js) usa esta misma función:
+  // aprende de partidas jugadas exactamente como juega el ordenador real.
   let best = -Infinity;
-  let bestMoves = [];
+  const scored = [];
   for (const m of moves) {
     const copy = new Map(st.board);
     const nextClock = (st.board.get(m.to) || st.board.get(m.from).type === 'P')
       ? 0 : st.clock + 1;
     const nextEp = applyMoveSim(copy, m.from, m.to, st.enPassant);
     const score = -negamax(copy, rival(st.turn), nextEp, nextClock, keys,
-      cfg.depth - 1, -Infinity, -best + 1, cfg, tt);
-    if (score > best) { best = score; bestMoves = [m]; }
-    else if (score === best) bestMoves.push(m);
+      cfg.depth - 1, -Infinity, -best + PLAY_TOLERANCE + 1, cfg, tt);
+    if (score > best) best = score;
+    scored.push({ move: m, score });
   }
-  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+  // el filtro va al final porque `best` sube durante el bucle; las jugadas
+  // buscadas antes con un `best` más bajo tenían una ventana MÁS ancha, así
+  // que su puntuación sigue siendo exacta (o una cota aún más baja) y el
+  // filtro las trata igual de bien
+  const top = scored.filter(s => s.score >= best - PLAY_TOLERANCE);
+  return top[Math.floor(Math.random() * top.length)].move;
 }
 
-// Ventana de aspiración de rootMoveScores: solo se calcula la puntuación
-// EXACTA de las jugadas raíz que quedan a menos de esto (en centipeones) por
-// debajo de la mejor. Las demás se devuelven como cota superior, que basta
-// para descartarlas del muestreo de entrenamiento (una jugada 3 peones peor
-// que la mejor nunca es "casi tan buena"). Ver rootMoveScores.
-const ROOT_EXACT_BAND = 300;
-
-// Como chooseAiMove, pero devuelve una puntuación por jugada raíz:
-// [{ move, score }]. La usa el autojuego de entrenamiento (tune-values.js)
-// para muestrear entre las jugadas casi-tan-buenas-como-la-mejor con
-// probabilidad proporcional a su calidad, en vez de jugar al azar.
-//
-// chooseAiMove usa una ventana estrecha (beta = -best + 1) y solo da la
-// puntuación exacta de la mejor jugada; el resto salen como cota. Buscar
-// cada candidata con ventana completa daría exactitud pero es carísimo con
-// quiescence (medido: ~15x chooseAiMove en mediojuego revuelto, inservible).
-// En su lugar, dos pasadas: (1) ventana estrecha para fijar la mejor y una
-// cota superior barata de las demás; (2) re-búsqueda exacta SOLO de las que
-// caen dentro de ROOT_EXACT_BAND de la mejor —las únicas que pueden salir
-// elegidas—, con ventana acotada (cortes alfa-beta fuertes → barato). Las
-// claramente peores conservan su cota de la pasada 1. chooseAiMove queda
-// intacto para no ralentizar el juego real (niveles 1-8).
-function rootMoveScores(level, st = searchState()) {
-  const cfg = AI_LEVELS[level] || AI_LEVELS[1];
-  const moves = movesForSide(st.board, st.turn, st.enPassant);
-  if (moves.length === 0) return [];
-  if (cfg.order) orderMoves(st.board, moves, cfg.pieceValues || PIECE_VALUE);
-
-  const keys = new Map();
-  for (const k of st.posKeys) keys.set(k, (keys.get(k) || 0) + 1);
-  const tt = new Map();
-
-  const search = (m, alpha, beta) => {
-    const copy = new Map(st.board);
-    const nextClock = (st.board.get(m.to) || st.board.get(m.from).type === 'P')
-      ? 0 : st.clock + 1;
-    const nextEp = applyMoveSim(copy, m.from, m.to, st.enPassant);
-    return -negamax(copy, rival(st.turn), nextEp, nextClock, keys,
-      cfg.depth - 1, alpha, beta, cfg, tt);
-  };
-
-  // pasada 1: mejor puntuación exacta + cota superior de cada jugada
-  let best = -Infinity;
-  const bound = moves.map(m => {
-    const s = search(m, -Infinity, -best + 1);
-    if (s > best) best = s;
-    return s;
-  });
-
-  // pasada 2: puntuación exacta solo de las candidatas dentro de la banda.
-  // La tabla de transposición reutiliza el trabajo de la pasada 1.
-  const floor = best - ROOT_EXACT_BAND;
-  return moves.map((m, i) => {
-    const score = (bound[i] >= floor && bound[i] < best)
-      ? search(m, floor - 1, best + 1)
-      : bound[i];
-    return { move: m, score };
-  });
-}

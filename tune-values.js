@@ -28,6 +28,14 @@ const path = require('path');
 //                 más corto que el reglamentario 100, para no perder tiempo
 //                 en partidas ya estancadas — solo afecta a este script, el
 //                 juego real sigue arrancando en 100.
+// --guardar-partidas=DIR : guarda todas las partidas del autojuego en
+//                 DIR/partidas-<fecha>.jsonl, una por línea, para poder
+//                 analizarlas después. Se guardan TAMBIÉN las descartadas
+//                 (las que no entran al corpus), que suelen ser las más
+//                 informativas cuando el ajuste sale raro. Formato compacto:
+//                 solo la lista de jugadas (~3 KB por partida, ~5 MB la
+//                 tanda entera), que replay.js vuelve a convertir en un
+//                 guardado cargable desde la web para verla jugada a jugada.
 function argValue(name, def) {
   const arg = process.argv.find(a => a.startsWith('--' + name + '='));
   return arg ? arg.slice(name.length + 3) : def;
@@ -35,6 +43,7 @@ function argValue(name, def) {
 const CLI_LEVEL = argValue('level', null);
 const CLI_MINUTES = argValue('minutes', null);
 const FIFTY_LIMIT_TRAINING = Number(argValue('fifty', 30));
+const SAVE_GAMES_DIR = argValue('guardar-partidas', null);
 
 // --- parámetros del experimento ---
 const N_GAMES = 1500;        // nº de partidas si no se da --minutes (~20 min en total)
@@ -142,7 +151,7 @@ function fitValues(dataset, initialWeights) {
   return w;
 }
 
-function report(w) {
+function report(w, centralityBase, advanceBase, mobBase) {
   // normaliza para que el peón siga valiendo 100, como hoy (ya está fijo en
   // su valor inicial escalado por K, así que esto solo deshace esa escala).
   // Las 14 componentes de w comparten la misma escala interna (todas entran
@@ -151,15 +160,37 @@ function report(w) {
   const pawnIdx = PIECES.indexOf('P');
   const scale = 100 / w[pawnIdx];
   const scaled = w.map(v => v * scale);
-  const material = scaled.slice(0, PIECES.length);
-  const centralityW = scaled.slice(PIECES.length, 2 * PIECES.length);
-  const advanceW = scaled[2 * PIECES.length];
-  const mobilityW = scaled[2 * PIECES.length + 1];
+  let material = scaled.slice(0, PIECES.length);
+  let centralityW = scaled.slice(PIECES.length, 2 * PIECES.length);
+  let advanceW = scaled[2 * PIECES.length];
+  let mobilityW = scaled[2 * PIECES.length + 1];
+
+  // Deshacer la referencia que positionalDiff resta a cada pieza. El ajuste
+  // modela  Σ w_cent·(centralidad − base),  mientras que evaluate() suma
+  // w_cent·centralidad en bruto; la diferencia, −w_cent·base por pieza, es una
+  // constante por pieza, es decir, parte del VALOR de la pieza. Pasarla al
+  // material deja una evaluación idénticamente equivalente pero expresada como
+  // la espera evaluate().
+  // ídem para la movilidad media de cada tipo (ver el centrado en run()):
+  // −w_mov·media[tipo] por pieza también es una constante por pieza
+  const mobilityPerMove = mobilityW / MOBILITY_SCALE;
+  material = material.map((v, i) =>
+    v - centralityW[i] * centralityBase - mobilityPerMove * mobBase[i]);
+  material[pawnIdx] -= advanceW * advanceBase;
+
+  // el traspaso mueve el valor del peón, así que se renormaliza a 100. Escalar
+  // todos los pesos por un mismo factor no cambia qué jugada prefiere
+  // evaluate(), solo las unidades.
+  const renorm = 100 / material[pawnIdx];
+  material = material.map(v => v * renorm);
+  centralityW = centralityW.map(v => v * renorm);
+  advanceW *= renorm;
+  mobilityW *= renorm;
 
   // igual que material/posición, pero deshaciendo también MOBILITY_SCALE
   // para que este número ya sea comparable al 2 de hoy
-  const displayValues = scaled.slice();
-  displayValues[displayValues.length - 1] /= MOBILITY_SCALE;
+  const displayValues = [...material, ...centralityW, advanceW,
+    mobilityW / MOBILITY_SCALE];
   console.log('Valores ajustados (en bruto):');
   FEATURE_NAMES.forEach((name, i) => console.log(`  ${name}: ${displayValues[i].toFixed(2)}`));
 
@@ -198,9 +229,26 @@ function report(w) {
 // evaluado siempre puede leer el ámbito desde el que se invocó, aunque no
 // pueda filtrar sus propias declaraciones hacia fuera.
 const driverSrc = `
+// Referencias de "colocación neutra": la centralidad media de una casilla del
+// tablero, y el avance de un peón a mitad de camino. Ver positionalDiff.
+const CENTRALITY_BASE = CELLS.reduce((s, c) => s + centrality(c), 0) / CELLS.length;
+const ADVANCE_BASE = 0.5;   // simétrico: avance(w) + avance(b) = 1 en la misma casilla
+
 // Diferencia de centralidad por tipo de pieza + diferencia de avance de
 // peones (blancas − negras), en ese orden. Va dentro del eval porque usa
 // centrality()/pawnAdvance()/CELL_MAP, definidas en ai.js/geometry.js.
+//
+// Cada pieza aporta su centralidad MENOS la de una casilla media, no la
+// centralidad en bruto. Sin esa resta, la característica es una suma que crece
+// con el NÚMERO de piezas, así que mide sobre todo material — justo lo que ya
+// miden las seis características de material. Esa colinealidad hacía que el
+// ajuste explicase "más piezas = ganar" con el material (anclado a PIECE_VALUE
+// por la regularización) y dejase a la centralidad un residuo negativo: salían
+// pesos posicionales negativos corrida tras corrida, aunque el autojuego fuese
+// limpio. Restando la referencia, un bando con muchas piezas colocadas del
+// montón aporta ~0 y la característica mide COLOCACIÓN, no cantidad.
+// report() deshace la resta para que los valores impresos sigan sirviendo tal
+// cual en evaluate(), que suma la bonificación en bruto pieza a pieza.
 function positionalDiff(board) {
   const cent = PIECES.map(() => 0);
   let advance = 0;
@@ -209,8 +257,8 @@ function positionalDiff(board) {
     if (idx === -1) continue;
     const sign = p.color === 'w' ? 1 : -1;
     const cell = CELL_MAP.get(key);
-    cent[idx] += sign * centrality(cell);
-    if (p.type === 'P') advance += sign * pawnAdvance(cell, p.color);
+    cent[idx] += sign * (centrality(cell) - CENTRALITY_BASE);
+    if (p.type === 'P') advance += sign * (pawnAdvance(cell, p.color) - ADVANCE_BASE);
   }
   return [...cent, advance];
 }
@@ -226,57 +274,42 @@ function positionalDiff(board) {
 // pie de igualdad si las características tienen escalas muy distintas), y
 // el peso salía disparado e inestable entre corridas (550, luego -243,
 // luego 130). report() deshace esta escala al final.
+// Acumuladores para la movilidad media de cada tipo de pieza, con los que
+// run() centra esta característica una vez generado el corpus.
+const mobTotal = PIECES.map(() => 0);
+const mobCount = PIECES.map(() => 0);
+
 function mobilityDiff(board) {
   let m = 0;
   for (const [key, p] of board) {
     const n = pseudoMoves(board, CELL_MAP.get(key), p, null).length;
     m += p.color === 'w' ? n : -n;
+    const idx = PIECES.indexOf(p.type);
+    if (idx !== -1) { mobTotal[idx] += n; mobCount[idx]++; }
   }
-  return m / MOBILITY_SCALE;
+  return m;   // en bruto: run() la centra y le aplica MOBILITY_SCALE
 }
 
-// Elige la jugada de entrenamiento con variedad pero sin jugadas absurdas.
-// Sustituye a EPSILON (jugada uniforme al azar en cualquier momento de la
-// partida), que metía posiciones caóticas: disparaban quiesce() en niveles
-// 4+ y cambiaban el signo de las features posicionales (una pieza "avanzada"
-// justo antes de un blunder correlaciona con perder).
+// El autojuego usa directamente chooseAiMove (ai.js), que ya sortea entre las
+// jugadas dentro de PLAY_TOLERANCE centipeones de la mejor: el entrenamiento
+// juega exactamente como juega el ordenador de verdad, sin criterio propio.
 //
-// Para cada candidata se estima su probabilidad de victoria p = sigmoid(K·score)
-// (mismo sigmoid/K que el ajuste Texel). Se aplica el umbral en ESPACIO DE
-// PROBABILIDAD, no de puntuación bruta: un 95% aplicado a un score negativo se
-// rompe (0.95·(-300) = -285 es MEJOR que -300, excluiría a la propia mejor
-// jugada). Entre las que superan TOP_MOVE_THRESHOLD·pBest, se muestrea
-// proporcional a p.
-//
-// 0.95 (no 0.85): la prueba corta mostró que en aperturas equilibradas casi
-// todas las jugadas puntúan parecido (sigmoid ≈ 0.5), así que el umbral apenas
-// discrimina ahí y la variedad se mantiene igual (aperturas ~100% distintas)
-// aunque se suba. Donde sí importa es en mediojuego/final: con 0.85 el juego
-// era tan flojo que un 24% de las partidas vagaba hasta el corte de 160 plies
-// sin concluir (descartadas); con 0.95 baja al ~5%, forzando remates decisivos
-// sin perder diversidad.
-const TOP_MOVE_THRESHOLD = 0.95;
-
-function pickTrainingMove(level, st = searchState()) {
-  const scored = rootMoveScores(level, st);
-  if (scored.length === 0) return null;
-
-  const probs = scored.map(s => sigmoid(K * s.score));
-  const pBest = Math.max(...probs);
-  const cutoff = TOP_MOVE_THRESHOLD * pBest;
-  const eligible = [];
-  for (let i = 0; i < scored.length; i++) {
-    if (probs[i] >= cutoff) eligible.push({ move: scored[i].move, p: probs[i] });
-  }
-
-  const total = eligible.reduce((sum, e) => sum + e.p, 0);
-  let r = Math.random() * total;
-  for (const e of eligible) {
-    r -= e.p;
-    if (r <= 0) return e.move;
-  }
-  return eligible[eligible.length - 1].move;   // por si el redondeo deja r > 0
-}
+// Historia de este punto, porque el equilibrio es delicado. Primero fue
+// EPSILON (jugada uniforme al azar en cualquier momento de la partida), que
+// metía posiciones caóticas: disparaban quiesce() en niveles 4+ y cambiaban el
+// signo de las features posicionales (una pieza "avanzada" justo antes de un
+// blunder correlaciona con perder). Lo sustituyó un umbral relativo sobre la
+// probabilidad de victoria sigmoid(K·score), muestreando proporcional a ella;
+// tenía que ir en espacio de PROBABILIDAD y no de puntuación bruta porque un
+// porcentaje aplicado a un score negativo se rompe (0.95·(-300) = -285 es
+// MEJOR que -300, excluiría a la propia mejor jugada). Ya entonces se vio que
+// aflojar el umbral no compraba diversidad y sí partidas flojas: con 0.85 un
+// 24% de las partidas vagaba hasta el corte de MAX_PLIES sin concluir
+// (descartadas), y con 0.95 bajaba al ~5%, con las mismas aperturas ~100%
+// distintas. La banda absoluta de PLAY_TOLERANCE es más estrecha todavía en
+// casi toda posición, así que va en esa misma dirección buena, y de paso
+// evita el problema del signo (25 centipeones son 25 tanto arriba como abajo
+// del cero) y ahorra la segunda pasada de búsqueda que exigía el umbral.
 
 function run() {
   // durante el entrenamiento, tablas por la regla de los 50 movimientos
@@ -300,10 +333,24 @@ function run() {
   let g = 0;             // partidas usadas (terminan de verdad)
   let attempted = 0;     // partidas jugadas (incluidas las descartadas)
   const discarded = { fifty: 0, maxplies: 0 };
+
+  // --guardar-partidas: un .jsonl por corrida, abierto en modo añadir y
+  // escrito partida a partida, para que una tanda interrumpida conserve todo
+  // lo jugado hasta ese momento.
+  let saveFd = null;
+  if (SAVE_GAMES_DIR) {
+    fs.mkdirSync(SAVE_GAMES_DIR, { recursive: true });
+    const nombre = 'partidas-' + new Date().toISOString().replace(/[:.]/g, '-') + '.jsonl';
+    saveFd = fs.openSync(path.join(SAVE_GAMES_DIR, nombre), 'a');
+    process.stderr.write('  guardando partidas en ' +
+      path.join(SAVE_GAMES_DIR, nombre) + '\\n');
+  }
+
   while (true) {
     if (budgetMs ? (Date.now() - t0 >= budgetMs) : (g >= N_GAMES)) break;
     newGame();
     const featuresThisGame = [];
+    const jugadas = [];
     let plies = 0;
     let aborted = false;
 
@@ -314,9 +361,10 @@ function run() {
       // se acaba el tiempo a medias, esa partida se descarta entera (no se
       // conoce su resultado).
       if (budgetMs && Date.now() - t0 >= budgetMs) { aborted = true; break; }
-      const mv = pickTrainingMove(selfPlayLevel);
+      const mv = chooseAiMove(selfPlayLevel);
       if (!mv) break;   // sin jugadas (gameEnded ya lo cubre, por si acaso)
       makeMove(mv.from, mv.to);
+      if (saveFd) jugadas.push(mv.from + '>' + mv.to);
       plies++;
 
       if (plies % SAMPLE_STRIDE === 0) {
@@ -327,6 +375,15 @@ function run() {
     if (aborted) break;   // presupuesto agotado a media partida: se descarta
 
     attempted++;
+
+    if (saveFd) {
+      const concluyente = game.status === 'checkmate' || game.status === 'stalemate' ||
+        game.status === 'repetition';
+      fs.writeSync(saveFd, JSON.stringify({
+        n: attempted, status: game.status, winner: game.winner || null,
+        plies, usada: concluyente, nivel: selfPlayLevel, jugadas,
+      }) + '\\n');
+    }
 
     // solo cuentan las partidas que terminan de verdad: mate, ahogado o
     // repetición. 'fifty' es artificial (regla acortada a --fifty durante el
@@ -355,6 +412,8 @@ function run() {
     }
   }
 
+  if (saveFd) fs.closeSync(saveFd);
+
   const mins = ((Date.now() - t0) / 60000).toFixed(1);
   console.log('--- nivel de autojuego: ' + selfPlayLevel +
     (CLI_LEVEL ? ' (real, AI_LEVELS[' + selfPlayLevel + '])' : ' (' + JSON.stringify(SELF_PLAY_CFG) + ')') +
@@ -370,10 +429,25 @@ function run() {
   // posicionales (centralidad y avance) no tienen un valor de hoy del que
   // partir: arrancan en 0, así que la regularización los deja en 0 salvo
   // que el corpus sí respalde un valor distinto.
+  // La movilidad en bruto es una suma que crece con el número de piezas, así
+  // que arrastra la misma colinealidad con el material que la centralidad (ver
+  // positionalDiff). Se le resta a cada pieza la movilidad MEDIA de su tipo,
+  // de modo que la característica mida "mis piezas se mueven mejor de lo
+  // normal", no "tengo más piezas". Como la cuenta de piezas por tipo ya está
+  // en las seis primeras componentes del vector, el centrado se puede aplicar
+  // aquí, con el corpus ya generado. report() lo deshace hacia el material.
+  const mobBase = PIECES.map((p, i) => (mobCount[i] ? mobTotal[i] / mobCount[i] : 0));
+  const mobIdx = 2 * PIECES.length + 1;
+  for (const row of dataset) {
+    let centered = row.diff[mobIdx];
+    for (let t = 0; t < PIECES.length; t++) centered -= mobBase[t] * row.diff[t];
+    row.diff[mobIdx] = centered / MOBILITY_SCALE;
+  }
+
   const initial = [...PIECES.map(p => PIECE_VALUE[p] * K), ...PIECES.map(() => 0), 0,
     MOBILITY_DEFAULT * MOBILITY_SCALE * K];
   const values = fitValues(dataset, initial);
-  report(values);
+  report(values, CENTRALITY_BASE, ADVANCE_BASE, mobBase);
 }
 run();
 `;

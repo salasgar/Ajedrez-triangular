@@ -5,8 +5,10 @@ en el navegador. Sin dependencias, sin compilación: basta abrir `index.html`.
 
 ## Cómo jugar
 
-Abre [index.html](index.html) en cualquier navegador moderno (funciona también
-desde `file://`, sin servidor).
+**Juega online:** https://salasgar.github.io/Ajedrez-triangular/
+
+También puedes abrir [index.html](index.html) en cualquier navegador moderno
+(funciona desde `file://`, sin servidor).
 
 Modalidades: humano contra humano, humano contra ordenador (con cualquiera de
 los dos colores) y ordenador contra ordenador.
