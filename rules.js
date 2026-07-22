@@ -328,7 +328,11 @@ function makeMove(fromKey, toKey) {
     game.board.set(castle.kingTo, { ...piece, moved: true });
     game.board.set(castle.rookTo, { ...target, moved: true });
     game.enPassant = null;
-    game.lastMove = { from: fromKey, to: castle.kingTo };
+    // `to` es la casilla de llegada del rey, no la de la torre; el flag marca
+    // el enroque para que la lista de jugadas pueda distinguirlo de un
+    // movimiento normal del rey a esa casilla (en esta retícula el rey llega
+    // por sí solo a dos casillas de su fila, así que `to` no basta).
+    game.lastMove = { from: fromKey, to: castle.kingTo, castle: true };
     finishMove(piece.color, false, false);
     return;
   }
