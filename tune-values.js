@@ -194,31 +194,36 @@ function report(w, centralityBase, advanceBase, mobBase) {
   console.log('Valores ajustados (en bruto):');
   FEATURE_NAMES.forEach((name, i) => console.log(`  ${name}: ${displayValues[i].toFixed(2)}`));
 
-  console.log('\nRedondeados, listos para pegar en PIECE_VALUE_TUNED (ai.js) y' +
-    ' probar en el nivel 8 (experimental) sin tocar PIECE_VALUE:');
+  // Son SUGERENCIAS, no un cambio listo para producción: la regresión
+  // minimiza el error de predecir el resultado, no la fuerza de juego. Antes
+  // de reemplazar PIECE_VALUE (o el peso de movilidad por defecto) en ai.js
+  // hay que confirmar el candidato en un match emparejado contra los valores
+  // vigentes (ver arena.js/analiza.js en el historial). Así se descubrió que
+  // los pesos posicionales de abajo eran ruido y que la movilidad la aprendía
+  // en el sentido contrario.
+  console.log('\nRedondeados (candidato para PIECE_VALUE en ai.js, a confirmar):');
   const rounded = {};
   PIECES.forEach((p, i) => { rounded[p] = Math.round(material[i]); });
-  const line = `const PIECE_VALUE_TUNED = { P: ${rounded.P}, N: ${rounded.N}, B: ${rounded.B}, ` +
+  const line = `const PIECE_VALUE = { P: ${rounded.P}, N: ${rounded.N}, B: ${rounded.B}, ` +
     `E: ${rounded.E}, R: ${rounded.R}, Q: ${rounded.Q}, K: 0 };`;
   console.log('  ' + line);
 
-  console.log('\nRedondeados, listos para pegar en PIECE_POSITION_TUNED (ai.js),' +
-    ' junto al nivel 8:');
+  console.log('\nPesos posicionales sugeridos (centralidad/avance; ojo: en la' +
+    ' confirmación salieron ruido, +12 elo p=0,62):');
   const roundedAdvance = Math.round(advanceW);
   const posLines = PIECES.map((p, i) => {
     const parts = [`centrality: ${Math.round(centralityW[i])}`];
     if (p === 'P') parts.push(`advance: ${roundedAdvance}`);
     return `  ${p}: { ${parts.join(', ')} },`;
   });
-  console.log('const PIECE_POSITION_TUNED = {\n' + posLines.join('\n') + '\n};');
+  console.log('{\n' + posLines.join('\n') + '\n}');
 
   // mobilityW está en unidades de la característica normalizada (dividida
   // por MOBILITY_SCALE en mobilityDiff); deshacer esa división para obtener
-  // el peso real por jugada disponible, comparable al 2 de hoy
+  // el peso real por jugada disponible, comparable al 4 por defecto de ai.js
   const mobilityReal = mobilityW / MOBILITY_SCALE;
-  console.log('\nRedondeado, listo para pegar en MOBILITY_WEIGHT_TUNED (ai.js),' +
-    ` junto al nivel 8 (valor de hoy para los demás niveles: ${MOBILITY_DEFAULT}):`);
-  console.log(`const MOBILITY_WEIGHT_TUNED = ${mobilityReal.toFixed(2)};`);
+  console.log(`\nPeso de movilidad sugerido: ${mobilityReal.toFixed(2)}  (por` +
+    ` defecto en ai.js: 4; la regresión tiende a subestimarlo, confírmalo en la arena)`);
 }
 
 // El bucle de autojuego (`run`) va dentro del mismo eval que gameSrc: así ve

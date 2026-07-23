@@ -4,29 +4,21 @@
 // al paso explícito, sin tocar el objeto global `game` salvo para leerlo
 // en chooseAiMove.
 
-const PIECE_VALUE = { P: 100, N: 300, B: 330, E: 350, R: 500, Q: 900, K: 0 };
-// Valores experimentales para el nivel 8: se actualizan pegando la línea que
-// imprime `node tune-values.js` (aprendidos de autojuego, ver ese script).
-// No los usa ningún otro nivel, así que se pueden probar sin arriesgar el
-// balance de PIECE_VALUE.
-const PIECE_VALUE_TUNED = { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 981, K: 0 };
-// Bonificación posicional experimental para el nivel 8, en las mismas
-// unidades que PIECE_VALUE (centipeón): "centrality" premia estar cerca del
-// centro del tablero, "advance" (solo peones) premia acercarse a la fila de
-// coronación. Igual que PIECE_VALUE_TUNED, se actualiza pegando la salida de
-// `node tune-values.js`; empieza en 0 (sin efecto) hasta la primera corrida.
-const PIECE_POSITION_TUNED = {
-  P: { centrality: -2, advance: 21 },
-  N: { centrality: 13 },
-  B: { centrality: -6 },
-  E: { centrality: -3 },
-  R: { centrality: 21 },
-  Q: { centrality: 14 },
-};
-// Cuánto vale cada jugada disponible al contar movilidad; el resto de
-// niveles usan el 2 fijo de siempre (ver evaluate()). También se actualiza
-// pegando la salida de `node tune-values.js`.
-const MOBILITY_WEIGHT_TUNED = 1.61;
+// Valor de cada pieza en centipeones. Estos números salieron de una regresión
+// tipo Texel sobre autojuego (ver tune-values.js) y se CONFIRMARON en matches
+// emparejados —colores invertidos, libro de aperturas fijo— contra los valores
+// clásicos { P:100, N:300, B:330, E:350, R:500, Q:900 }: el material ajustado
+// junto con un peso de movilidad 4 (ver evaluate) gana ~+113 elo a prof. 3
+// (p<0,0001, 134 partidas) y ~+89 a prof. 2. Antes vivían aislados en un
+// "nivel 8 experimental"; al quedar confirmados pasan a ser el material de
+// todos los niveles.
+//
+// Lo que NO sobrevivió a la confirmación y por eso no está aquí: las
+// bonificaciones posicionales (centralidad/avance) que aprendió la regresión
+// resultaron ruido (+12 elo, p=0,62), y el peso de movilidad 1,61 que también
+// aprendió iba en el sentido CONTRARIO al que da fuerza (−81 elo); subirlo a 4
+// es lo que gana. Ver la ablación en el historial de commits.
+const PIECE_VALUE = { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 981, K: 0 };
 const MATE = 100000;
 // Tope de capturas encadenadas que explora quiesce() antes de rendirse y
 // devolver la evaluación tal cual. Es un cinturón de seguridad: sin poda
@@ -65,8 +57,12 @@ const AI_LEVELS = {
   5: { depth: 4, mobility: true, order: true, quiesce: true },
   6: { depth: 5, mobility: true, order: true, quiesce: true },
   7: { depth: 6, mobility: true, order: true, quiesce: true }, // lento
-  8: { depth: 3, mobility: true, order: true, quiesce: true, pieceValues: PIECE_VALUE_TUNED,
-    positionWeights: PIECE_POSITION_TUNED, mobilityWeight: MOBILITY_WEIGHT_TUNED }, // experimental
+  // Ranura experimental. Ya no lleva valores propios: los que probaba
+  // (material ajustado + movilidad) se confirmaron y son ahora el estándar de
+  // todos los niveles, así que hoy juega igual que el 4. Se mantiene definido
+  // para no romper partidas guardadas que apunten al nivel 8, y queda libre
+  // para el siguiente experimento.
+  8: { depth: 3, mobility: true, order: true, quiesce: true },
 };
 
 // Centralidad de una casilla: 1 en el centro del tablero, 0 en el borde.
@@ -82,12 +78,25 @@ function pawnAdvance(cell, color) {
   return color === 'w' ? (cell.b - (1 - N)) / span : (N - cell.b) / span;
 }
 
-// Todas las jugadas legales de un color: [{from, to}].
+// Todas las jugadas legales de un color: [{from, to}], sin repeticiones.
+//
+// Hacen falta las dos comprobaciones porque legalMoves() SÍ repite destinos:
+// por una casilla triangular pasan tres carriles, y cada vecina por arista
+// pertenece a dos de ellos, así que la torre (y la dama, que la incluye)
+// genera dos veces su primer paso en cada dirección. No era un error visible
+// —la jugada es la misma—, pero se buscaba dos veces y aquí saldría dos veces
+// en la lista del análisis.
 function movesForSide(board, color, ep) {
   const out = [];
+  const seen = new Set();
   for (const [key, p] of board) {
     if (p.color !== color) continue;
-    for (const t of legalMoves(board, key, p, ep)) out.push({ from: key, to: t.key });
+    for (const t of legalMoves(board, key, p, ep)) {
+      const id = key + '>' + t.key;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push({ from: key, to: t.key });
+    }
   }
   return out;
 }
@@ -132,9 +141,10 @@ function applyMoveSim(board, fromKey, toKey, ep) {
 function evaluate(board, color, cfg) {
   const values = cfg.pieceValues || PIECE_VALUE;
   const posW = cfg.positionWeights;
-  // 2 puntos por jugada disponible es el valor de siempre; el nivel 8 puede
-  // sustituirlo por MOBILITY_WEIGHT_TUNED (ver AI_LEVELS y tune-values.js)
-  const mobilityWeight = cfg.mobilityWeight ?? 2;
+  // 4 puntos por jugada disponible. Confirmado a prof. 2-3 que gana fuerza
+  // sobre el 2 clásico (~+58 elo el salto de 2 a 4 junto con el material
+  // ajustado). Un cfg puede seguir sustituyéndolo para experimentar.
+  const mobilityWeight = cfg.mobilityWeight ?? 4;
   let score = 0;
   for (const [key, p] of board) {
     const sign = p.color === color ? 1 : -1;
@@ -275,17 +285,39 @@ function searchState() {
            clock: game.clock, posKeys };
 }
 
+// Lo mismo, pero para una posición cualquiera del historial (la usa el
+// análisis a petición cuando se está revisando una jugada pasada). Solo se
+// llama desde el hilo principal, para construir el mensaje: no hace falta
+// mandarla al worker.
+function stateAtIndex(i) {
+  const s = game.history[i];
+  const posKeys = [];
+  for (let j = 0; j <= i; j++) posKeys.push(game.history[j].posKey);
+  return { board: new Map(s.board.map(([k, p]) => [k, { ...p }])), turn: s.turn,
+           enPassant: s.enPassant, clock: s.clock, posKeys };
+}
+
 // Margen (en centipeones) dentro del cual una jugada se considera tan buena
 // como la mejor a efectos del sorteo de chooseAiMove.
 const PLAY_TOLERANCE = 25;
 
 // Elige la jugada del ordenador según el nivel, para la posición actual o
 // para el estado `st` dado. Devuelve {from, to} o null si no hay jugadas.
-function chooseAiMove(level, st = searchState()) {
+//
+// Con opts.analyze, además, adjunta a la jugada devuelta un `analysis`: la
+// lista de TODAS las jugadas legales con su puntuación, ordenada de mejor a
+// peor y con `chosen` marcado en la elegida (que no siempre es la primera,
+// ver el sorteo por PLAY_TOLERANCE más abajo). Eso obliga a buscar con
+// ventana completa, que cuesta 2-3 veces más: ver el comentario del bucle.
+function chooseAiMove(level, st = searchState(), opts = {}) {
   const cfg = AI_LEVELS[level] || AI_LEVELS[1];
   const moves = movesForSide(st.board, st.turn, st.enPassant);
   if (moves.length === 0) return null;
-  if (cfg.random) return moves[Math.floor(Math.random() * moves.length)];
+  // el nivel 1 juega al azar: no hay puntuaciones que enseñar
+  if (cfg.random) {
+    const m = moves[Math.floor(Math.random() * moves.length)];
+    return opts.analyze ? { ...m, analysis: null } : m;
+  }
   if (cfg.order) orderMoves(st.board, moves, cfg.pieceValues || PIECE_VALUE);
 
   // posiciones ya vistas en la partida, para las repeticiones en la búsqueda
@@ -319,6 +351,13 @@ function chooseAiMove(level, st = searchState()) {
   //
   // El autojuego de entrenamiento (tune-values.js) usa esta misma función:
   // aprende de partidas jugadas exactamente como juega el ordenador real.
+  //
+  // En modo análisis la ventana se abre del todo (beta = Infinity). Es justo
+  // lo que la ventana estrecha evita, y por eso cuesta 2-3 veces más: sin
+  // beta no hay cortes entre jugadas hermanas. Pero es la única forma de que
+  // las jugadas MALAS devuelvan su puntuación real y no una cota superior
+  // (una jugada con cota −40 puede ser en realidad −900), que es justo lo
+  // que hay que enseñar para poder comparar unas jugadas con otras.
   let best = -Infinity;
   const scored = [];
   for (const m of moves) {
@@ -327,7 +366,8 @@ function chooseAiMove(level, st = searchState()) {
       ? 0 : st.clock + 1;
     const nextEp = applyMoveSim(copy, m.from, m.to, st.enPassant);
     const score = -negamax(copy, rival(st.turn), nextEp, nextClock, keys,
-      cfg.depth - 1, -Infinity, -best + PLAY_TOLERANCE + 1, cfg, tt);
+      cfg.depth - 1, -Infinity, opts.analyze ? Infinity : -best + PLAY_TOLERANCE + 1,
+      cfg, tt);
     if (score > best) best = score;
     scored.push({ move: m, score });
   }
@@ -337,6 +377,17 @@ function chooseAiMove(level, st = searchState()) {
   // que su puntuación sigue siendo exacta (o una cota aún más baja) y el
   // filtro las trata igual de bien
   const top = scored.filter(s => s.score >= best - PLAY_TOLERANCE);
-  return top[Math.floor(Math.random() * top.length)].move;
+  const chosen = top[Math.floor(Math.random() * top.length)].move;
+  if (!opts.analyze) return chosen;
+  scored.sort((a, b) => b.score - a.score);
+  return {
+    ...chosen,
+    analysis: scored.map(s => ({
+      from: s.move.from, to: s.move.to, score: s.score,
+      // por identidad, no por from/to: en el enroque `to` es la casilla de
+      // la torre y no distingue lo bastante (ver CASTLING en rules.js)
+      ...(s.move === chosen ? { chosen: true } : {}),
+    })),
+  };
 }
 

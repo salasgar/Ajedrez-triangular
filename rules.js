@@ -5,7 +5,17 @@
 //          'E' elefante, 'P' peón
 //   color: 'w' blancas (abajo), 'b' negras (arriba)
 
-const GLYPH = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', E: '🐘', P: '♟' };
+// El selector de variación U+FE0E fuerza la presentación de TEXTO (no emoji):
+// sin él, iOS/Safari pinta el peón ♟ como emoji coloreado de fábrica e ignora
+// el fill del CSS. Es zero-width, no afecta al centrado ni al texto de jugadas.
+// El elefante no aparece aquí como carácter: se dibuja como icono SVG
+// (#piece-elephant), salvo en el texto de las jugadas, donde GLYPH[E] sigue
+// siendo el emoji (ahí el color es indiferente).
+const VS_TEXT = '\uFE0E';
+const GLYPH = {
+  K: '♚' + VS_TEXT, Q: '♛' + VS_TEXT, R: '♜' + VS_TEXT, B: '♝' + VS_TEXT,
+  N: '♞' + VS_TEXT, E: '🐘', P: '♟' + VS_TEXT,
+};
 
 // Disposición inicial: la fila del borde completa (9 casillas), de izquierda
 // a derecha para las blancas. Los índices pares son ▽ y los impares ▲ (los

@@ -6,6 +6,9 @@ const boardWrap = document.getElementById('board-wrap');
 const turnEl = document.getElementById('turn');
 const statusEl = document.getElementById('status');
 const moveCounterEl = document.getElementById('move-counter');
+const analysisBodyEl = document.getElementById('analysis-body');
+const scoresheetBodyEl = document.getElementById('scoresheet-body');
+const optAnalysisEl = document.getElementById('opt-analysis');
 const capWEl = document.getElementById('cap-w');
 const capBEl = document.getElementById('cap-b');
 const btnStart = document.getElementById('btn-start');
@@ -36,6 +39,7 @@ let piecesLayer = null;
 let boardGroup = null;        // <g> con todo el dibujo, para poder voltearlo
 let selected = null;          // key de la casilla seleccionada
 let legalTargets = [];        // casillas destino legales de la selección
+let analysisHover = null;     // {baseIndex, from, to}: fila del análisis señalada
 
 // --- revisión del historial y pausa ---
 //
@@ -147,32 +151,79 @@ function renderCaptured(el, color, turn, capturedBy) {
   capturedBy[color].forEach((p, i) => {
     const span = document.createElement('span');
     span.className = 'cap-piece' + (i === recentLen - 1 ? ' recent' : '');
-    span.textContent = GLYPH[p.type];
+    if (p.type === 'E') {
+      // icono vectorial en línea (el emoji 🐘 no distingue color en iOS)
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const use = document.createElementNS(SVG_NS, 'use');
+      use.setAttribute('href', '#piece-elephant');
+      use.setAttribute('class', `piece-E piece-${p.color === 'w' ? 'w' : 'b'}`);
+      svg.appendChild(use);
+      span.appendChild(svg);
+    } else {
+      span.textContent = GLYPH[p.type];
+    }
     el.appendChild(span);
   });
 }
 
-function render() {
+// Un nodo SVG para una pieza en (cx, cy): texto Unicode para las piezas de
+// ajedrez, o el icono vectorial #piece-elephant para el elefante (el emoji 🐘
+// no se puede recolorear en iOS). En ambos casos con la clase de color, que
+// aporta el fill/stroke.
+function makePieceNode(type, color, cx, cy) {
+  const cls = `piece piece-${type} ` + (color === 'w' ? 'piece-w' : 'piece-b');
+  let node;
+  if (type === 'E') {
+    const s = 22;                       // lado del icono en unidades del tablero
+    node = document.createElementNS(SVG_NS, 'use');
+    node.setAttribute('href', '#piece-elephant');
+    node.setAttribute('x', cx - s / 2);
+    node.setAttribute('y', cy - s / 2);
+    node.setAttribute('width', s);
+    node.setAttribute('height', s);
+  } else {
+    node = document.createElementNS(SVG_NS, 'text');
+    node.setAttribute('x', cx);
+    node.setAttribute('y', cy);
+    node.textContent = GLYPH[type];
+  }
+  node.setAttribute('class', cls);
+  return node;
+}
+
+// Dibujo del tablero (casillas resaltadas y piezas). Va aparte de render()
+// porque al recorrer con el ratón la lista del análisis solo cambia el
+// tablero: un render() completo reconstruiría las filas justo debajo del
+// cursor y volvería a disparar sus eventos de entrada y salida del ratón.
+function drawBoard() {
   const reviewing = reviewIndex !== null;
-  // posición mostrada: la revisada (solo lectura) o la viva de `game`
-  const snap = reviewing ? game.history[reviewIndex] : null;
+  // posición dibujada: la de la jugada del análisis señalada con el ratón
+  // (que es la ANTERIOR a esa jugada, con la pieza todavía en su casilla de
+  // salida), la revisada, o la viva de `game`
+  const snapIndex = analysisHover ? analysisHover.baseIndex : reviewIndex;
+  const snap = snapIndex === null ? null : game.history[snapIndex];
   const board = snap ? new Map(snap.board) : game.board;
   const turn = snap ? snap.turn : game.turn;
   const status = snap ? snap.status : game.status;
-  const winner = snap ? snap.winner : game.winner;
   const lastMove = snap ? snap.lastMove : game.lastMove;
-  const capturedBy = snap ? snap.capturedBy : game.capturedBy;
-  const idx = effIndex();
 
   for (const poly of cellPolys.values()) {
-    poly.classList.remove('selected', 'legal', 'capture', 'castle', 'last-move', 'in-check');
+    poly.classList.remove('selected', 'legal', 'capture', 'castle', 'last-move',
+      'in-check', 'analysis-from', 'analysis-to');
   }
-  if (lastMove) {
+  if (lastMove && !analysisHover) {
     cellPolys.get(lastMove.from).classList.add('last-move');
     cellPolys.get(lastMove.to).classList.add('last-move');
   }
-  if (!reviewing && selected) cellPolys.get(selected).classList.add('selected');
-  if (!reviewing) {
+  if (analysisHover) {
+    cellPolys.get(analysisHover.from).classList.add('analysis-from');
+    cellPolys.get(analysisHover.to).classList.add('analysis-to');
+  }
+  if (!reviewing && !analysisHover && selected) {
+    cellPolys.get(selected).classList.add('selected');
+  }
+  if (!reviewing && !analysisHover) {
     for (const t of legalTargets) {
       // el enroque se marca sobre la casilla de la torre propia, así que ahí
       // hay una pieza pero no es una captura (ver CASTLING en rules.js)
@@ -189,15 +240,23 @@ function render() {
   piecesLayer.innerHTML = '';
   for (const [key, p] of board) {
     const cell = CELL_MAP.get(key);
-    const text = document.createElementNS(SVG_NS, 'text');
-    text.setAttribute('x', cell.cx);
-    text.setAttribute('y', cell.cy);
-    text.setAttribute('class',
-      `piece piece-${p.type} ` + (p.color === 'w' ? 'piece-w' : 'piece-b'));
-    if (boardFlipped) text.setAttribute('transform', `rotate(180 ${cell.cx} ${cell.cy})`);
-    text.textContent = GLYPH[p.type];
-    piecesLayer.appendChild(text);
+    const node = makePieceNode(p.type, p.color, cell.cx, cell.cy);
+    if (boardFlipped) node.setAttribute('transform', `rotate(180 ${cell.cx} ${cell.cy})`);
+    piecesLayer.appendChild(node);
   }
+}
+
+function render() {
+  const reviewing = reviewIndex !== null;
+  // posición mostrada: la revisada (solo lectura) o la viva de `game`
+  const snap = reviewing ? game.history[reviewIndex] : null;
+  const turn = snap ? snap.turn : game.turn;
+  const status = snap ? snap.status : game.status;
+  const winner = snap ? snap.winner : game.winner;
+  const capturedBy = snap ? snap.capturedBy : game.capturedBy;
+  const idx = effIndex();
+
+  drawBoard();
 
   const names = { w: 'blancas', b: 'negras' };
   if (status === 'checkmate') {
@@ -229,6 +288,8 @@ function render() {
   moveCounterEl.textContent = `Jugada ${idx} de ${game.history.length - 1}`;
   renderCaptured(capWEl, 'w', turn, capturedBy);
   renderCaptured(capBEl, 'b', turn, capturedBy);
+  renderScoresheet();
+  renderAnalysis();
 
   const playing = !!playTimer;
   // revisando, estos botones siguen útiles para volver a la partida en vivo
@@ -248,6 +309,323 @@ function clearSelection() {
   legalTargets = [];
 }
 
+// --- panel de análisis: puntuación de las jugadas ---
+//
+// Para elegir su jugada, la búsqueda ya puntúa TODAS las legales (ver el
+// bucle raíz de chooseAiMove) y luego tira esa lista. Con la casilla
+// «Guardar el análisis» activada, la lista se guarda en la instantánea de la
+// posición RESULTANTE —igual que `lastMove`—, de modo que al mirar una jugada
+// del ordenador se ve a la vez qué puntuación tenía y qué alternativas
+// descartó. Guardarla obliga a buscar con la ventana abierta, y por eso es
+// opcional: ver el comentario del bucle raíz en ai.js.
+//
+// Sin análisis guardado (jugada humana, casilla desactivada, partida vieja)
+// queda el botón «Analizar esta posición», que calcula a petición las jugadas
+// disponibles DESDE la posición mostrada.
+
+const ANALYSIS_ROWS = 8;    // filas visibles antes de «ver todas»
+const ANALYSIS_LEVEL = 4;   // nivel del análisis a petición si no juega el ordenador
+
+let liveAnalysis = null;    // {posKey, list} análisis pedido a mano
+let analysisBusy = false;   // hay un análisis a petición en marcha
+let analysisShowAll = false;
+
+// Puntuación en peones, desde el punto de vista de quien mueve (positivo =
+// bueno para él). Los mates valen ±MATE±profundidad, no un número de peones.
+function formatScore(s) {
+  if (s >= MATE - 1000) return 'mate';
+  if (s <= -MATE + 1000) return '−mate';
+  const v = s / 100;
+  return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
+}
+
+// El panel puede enseñar dos análisis distintos de la posición idx, y a la vez:
+//
+// - RETROSPECTIVO: las alternativas de la jugada que llevó HASTA idx (la que el
+//   ordenador ya hizo). Su tablero de partida es el anterior, idx − 1. 'random'
+//   si ese bando jugó al azar (nivel 1, sin puntuaciones).
+// - PRÓXIMO: lo que el bando al que le toca puede jugar AHORA desde idx. No se
+//   guarda en el historial; se calcula a petición (ver requestLiveAnalysis) y
+//   vive en liveAnalysis. Su tablero de partida es idx.
+//
+// `baseIndex` es, en cada caso, el tablero que hay que consultar para saber qué
+// pieza mueve en cada fila.
+function retroAnalysis(idx) {
+  const stored = idx > 0 ? game.history[idx].analysis : null;
+  if (stored === 'random') return { random: true };
+  if (Array.isArray(stored)) {
+    // en una partida cargada la lista viene recortada (ver trimAnalysis)
+    const total = game.history[idx].analysisTotal || stored.length;
+    return { list: stored, baseIndex: idx - 1, total };
+  }
+  return null;
+}
+
+function nextAnalysis(idx) {
+  if (liveAnalysis && liveAnalysis.posKey === game.history[idx].posKey) {
+    return { list: liveAnalysis.list, baseIndex: idx };
+  }
+  return null;
+}
+
+// Texto legible de una jugada sobre `board`: «♞ 1,0,1 → 0,1,0 ×♟». Se usa
+// tanto en el panel de análisis como en la lista de jugadas, para que ambos
+// muestren exactamente el mismo formato. `castle` fuerza la marca de enroque:
+// en la lista de jugadas `to` es la casilla de llegada del rey (no la de la
+// torre), así que isCastling() no lo detectaría (ver lastMove.castle en
+// rules.js); en el análisis se omite y basta isCastling sobre la torre.
+function moveText(board, from, to, castle) {
+  const piece = board.get(from);
+  const target = board.get(to);
+  // el enroque aterriza sobre la torre propia, no es captura (ver CASTLING)
+  const mark = (castle || isCastling(board, from, to)) ? ' ⇄'
+    : (target && target.color !== piece.color ? ' ×' + GLYPH[target.type] : '');
+  return `${GLYPH[piece.type]} ${from} → ${to}${mark}`;
+}
+
+// Una fila: «3. ♞ 1,0,1 → 0,1,0 ×♟   +0.35». Al señalarla con el ratón, el
+// tablero muestra la posición de partida con esa jugada marcada. Si `action`
+// no es null, pulsarla la ejecuta (`action(from, to)`), con `hint` de tooltip.
+function analysisRow(board, entry, rank, baseIndex, markChosen, action, hint) {
+  // `chosen` sale de la búsqueda, que siempre acaba eligiendo una jugada;
+  // solo tiene sentido enseñarla cuando esa jugada se llegó a jugar
+  const chosen = markChosen && entry.chosen;
+  const li = document.createElement('li');
+  li.className = 'an-row' + (chosen ? ' chosen' : '') + (action ? ' playable' : '');
+  li.title = action ? hint : chosen ? 'Jugada elegida por el ordenador' : '';
+  const add = (cls, txt) => {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = txt;
+    li.appendChild(s);
+  };
+  add('an-rank', rank + '.');
+  add('an-move', moveText(board, entry.from, entry.to));
+  add('an-score', formatScore(entry.score));
+
+  li.addEventListener('mouseenter', () => {
+    analysisHover = { baseIndex, from: entry.from, to: entry.to };
+    drawBoard();   // solo el tablero: ver el comentario de drawBoard()
+  });
+  li.addEventListener('mouseleave', () => { analysisHover = null; drawBoard(); });
+  if (action) li.addEventListener('click', () => action(entry.from, entry.to));
+  return li;
+}
+
+// Juega desde la lista del análisis, igual que pinchar en el tablero (ver la
+// rama del movimiento en onCellClick): es el humano moviendo en su turno, así
+// que reanuda la partida para que el ordenador (si lo hay) responda.
+function playAnalysisMove(from, to) {
+  applyListMove(from, to);
+  gamePaused = false;
+  render();
+  scheduleAi();
+}
+
+// Fuerza la jugada del bando que mueve (aunque lo controle el ordenador) y deja
+// la partida EN PAUSA, para examinar la posición resultante antes de seguir.
+function forceNextMove(from, to) {
+  applyListMove(from, to);
+  render();
+}
+
+// Rehace la última jugada de otra forma: deshace y juega la alternativa
+// elegida. Como makeMove→finishMove trunca el futuro rehacible, queda una rama
+// nueva. También en pausa.
+function replaceLastMove(from, to) {
+  undoMove();
+  applyListMove(from, to);
+  render();
+}
+
+// Parte común: aplica una jugada elegida en la lista sin decidir el después
+// (pausa/reanudación la pone quien llama). La posición cambia, así que el
+// análisis a petición y el resalte caducan.
+function applyListMove(from, to) {
+  analysisHover = null;
+  clearSelection();
+  makeMove(from, to);
+  liveAnalysis = null;
+}
+
+function analysisNote(txt) {
+  const p = document.createElement('p');
+  p.className = 'an-note';
+  p.textContent = txt;
+  analysisBodyEl.appendChild(p);
+}
+
+// Pinta una sección (encabezado + lista + «ver todas»). `action`, si no es
+// null, hace jugables las filas; `played` marca la jugada elegida y la saca al
+// final si se quedó fuera de las visibles.
+function appendAnalysisSection({ list, baseIndex, played, action, hint, header }) {
+  analysisNote(header);
+  const board = new Map(game.history[baseIndex].board);
+  const ul = document.createElement('ul');
+  ul.className = 'an-list';
+  const shown = analysisShowAll ? list.length : Math.min(ANALYSIS_ROWS, list.length);
+  for (let i = 0; i < shown; i++) {
+    ul.appendChild(analysisRow(board, list[i], i + 1, baseIndex, played, action, hint));
+  }
+  // la elegida no siempre está entre las mejores: el sorteo por
+  // PLAY_TOLERANCE puede coger cualquiera de la banda (ver ai.js)
+  const chosenAt = played ? list.findIndex(e => e.chosen) : -1;
+  if (chosenAt >= shown) {
+    const sep = document.createElement('li');
+    sep.className = 'an-gap';
+    sep.textContent = '⋮';
+    ul.appendChild(sep);
+    ul.appendChild(analysisRow(board, list[chosenAt], chosenAt + 1, baseIndex, true, action, hint));
+  }
+  analysisBodyEl.appendChild(ul);
+
+  if (list.length > ANALYSIS_ROWS) {
+    const more = document.createElement('button');
+    more.className = 'an-more';
+    more.textContent = analysisShowAll ? 'Ver solo las mejores' : `Ver todas (${list.length})`;
+    more.addEventListener('click', () => { analysisShowAll = !analysisShowAll; renderAnalysis(); });
+    analysisBodyEl.appendChild(more);
+  }
+}
+
+// Lista de todas las jugadas de la partida, una por fila. Pulsar una salta a
+// esa posición en modo revisión (solo lectura, como la reproducción ◀◀/▶▶):
+// no toca game.histIndex ni interrumpe al ordenador. La fila de la posición
+// mostrada queda resaltada (clase `current`).
+function renderScoresheet() {
+  scoresheetBodyEl.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'sheet-list';
+  const cur = effIndex();
+
+  for (let i = 1; i < game.history.length; i++) {
+    const prevBoard = new Map(game.history[i - 1].board);
+    const { from, to, castle } = game.history[i].lastMove;
+    const row = document.createElement('div');
+    row.className = 'sheet-row' + (i === cur ? ' current' : '');
+
+    const num = document.createElement('span');
+    num.className = 'sheet-num';
+    // el número de jugada solo en la ply de las blancas (i impar); i=1 es la
+    // primera jugada blanca, i=2 la primera negra, etc.
+    num.textContent = (i % 2 === 1) ? Math.ceil(i / 2) + '.' : '';
+    const mv = document.createElement('span');
+    mv.className = 'sheet-move';
+    mv.textContent = moveText(prevBoard, from, to, castle);
+    row.appendChild(num);
+    row.appendChild(mv);
+
+    row.addEventListener('click', () => {
+      if (playTimer) { clearInterval(playTimer); playTimer = null; }
+      // saltar a la última jugada = volver a seguir la partida en vivo
+      reviewIndex = (i === game.history.length - 1) ? null : i;
+      render();
+    });
+    list.appendChild(row);
+  }
+
+  if (game.history.length <= 1) {
+    const empty = document.createElement('p');
+    empty.className = 'an-note';
+    empty.textContent = 'Aún no se ha jugado ninguna jugada.';
+    scoresheetBodyEl.appendChild(empty);
+    return;
+  }
+  scoresheetBodyEl.appendChild(list);
+  // mantener a la vista la jugada actual al crecer la lista
+  const currentRow = list.querySelector('.sheet-row.current');
+  if (currentRow) currentRow.scrollIntoView({ block: 'nearest' });
+}
+
+function renderAnalysis() {
+  analysisBodyEl.innerHTML = '';
+  const idx = effIndex();
+  const retro = retroAnalysis(idx);
+  const next = nextAnalysis(idx);
+
+  // Intervenir (rehacer/forzar) solo tiene sentido en el extremo vivo del
+  // historial, sin una búsqueda a medias y con la partida en pausa (el análisis
+  // retrospectivo solo existe para jugadas del ordenador, así que rehacer sin
+  // pausa competiría con el worker que sigue jugando).
+  const canEdit = reviewIndex === null && game.histIndex === game.history.length - 1 &&
+    !analysisBusy && !aiBusy() && gamePaused;
+
+  // --- la jugada que el ordenador ya hizo, y sus alternativas ---
+  if (retro && retro.random) {
+    analysisNote('El nivel 1 juega al azar: no puntúa las jugadas.');
+  } else if (retro) {
+    const total = retro.total || retro.list.length;
+    appendAnalysisSection({
+      list: retro.list, baseIndex: retro.baseIndex, played: true,
+      action: canEdit ? replaceLastMove : null,
+      hint: 'Pulsa para rehacer la última jugada así',
+      header: `Jugada que hizo el ordenador — sus alternativas, de mejor a peor (${total} legales).`,
+    });
+  }
+
+  // --- lo que se puede jugar ahora desde esta posición ---
+  if (next) {
+    const humanTurn = aiConfig[game.turn] === null;
+    // forzar la jugada del ordenador exige la partida en pausa, para no competir
+    // con el worker; el humano juega en su turno como siempre (y reanuda)
+    const canPlay = reviewIndex === null && idx === game.histIndex && !gameEnded() &&
+      (humanTurn || gamePaused) && !analysisBusy && !aiBusy();
+    appendAnalysisSection({
+      list: next.list, baseIndex: next.baseIndex, played: false,
+      action: canPlay ? (humanTurn ? playAnalysisMove : forceNextMove) : null,
+      hint: humanTurn ? 'Pulsa para hacer esta jugada'
+        : 'Pulsa para forzar esta jugada del ordenador',
+      header: humanTurn
+        ? `Jugadas posibles desde esta posición, de mejor a peor (${next.list.length}).`
+        : `Próxima jugada — pulsa una para forzarla, de mejor a peor (${next.list.length}).`,
+    });
+    return;
+  }
+
+  // Sin lista de la posición actual: ofrecer calcularla. En una jugada del
+  // ordenador esto es «elegir/forzar»; en el turno del humano, «analizar».
+  const status = game.history[idx].status;
+  const hasMoves = status === 'playing' || status === 'check';
+  if (!retro && idx > 0 && !optAnalysisEl.checked) {
+    analysisNote('Marca «Guardar el análisis de cada jugada del ordenador» para ver aquí sus alternativas.');
+  }
+  if (reviewIndex !== null || idx !== game.histIndex || !hasMoves) return;
+
+  const btn = document.createElement('button');
+  btn.className = 'an-btn';
+  const forcing = aiConfig[game.turn] !== null;   // le toca al ordenador
+  btn.textContent = analysisBusy ? 'Analizando…'
+    : forcing ? 'Elegir la próxima jugada' : 'Analizar esta posición';
+  // el worker es el mismo que juega la partida: no se puede pedir mientras el
+  // ordenador piensa o le toca mover sin estar en pausa (isAiTurn ya es falso
+  // en pausa)
+  btn.disabled = analysisBusy || aiBusy() || isAiTurn();
+  if (!analysisBusy && (aiBusy() || isAiTurn())) {
+    btn.title = 'Pausa la partida para elegir la jugada (el ordenador está usando la búsqueda)';
+  }
+  btn.addEventListener('click', requestLiveAnalysis);
+  analysisBodyEl.appendChild(btn);
+}
+
+// Analiza a petición la posición mostrada (la revisada o la viva). Si el
+// bando que mueve no lo lleva el ordenador, se usa el nivel del rival o, en
+// humano contra humano, ANALYSIS_LEVEL; el nivel 1 no vale, no puntúa.
+function requestLiveAnalysis() {
+  const idx = effIndex();
+  const turn = game.history[idx].turn;
+  const level = Math.max(2, aiConfig[turn] ?? aiConfig[rival(turn)] ?? ANALYSIS_LEVEL);
+  const token = aiToken;
+  analysisBusy = true;
+  renderAnalysis();
+  requestAiMove(level, (mv) => {
+    if (token !== aiToken) return;   // deshacer, nueva partida, cambio de modo…
+    analysisBusy = false;
+    liveAnalysis = mv && mv.analysis
+      ? { posKey: game.history[idx].posKey, list: mv.analysis } : null;
+    render();
+  }, { analyze: true }, stateAtIndex(idx));
+}
+
 // --- modos de juego y turno del ordenador ---
 
 // Quién controla cada color: null = humano, o nivel 1..8 del ordenador.
@@ -257,7 +635,7 @@ let aiToken = 0;   // invalida los timers y búsquedas pendientes de la IA
 function atHistoryEnd() { return game.histIndex === game.history.length - 1; }
 function gameOver() { return gameEnded(); }
 function isAiTurn() { return !gamePaused && aiConfig[game.turn] !== null && !gameOver(); }
-function cancelAi() { aiToken++; abortAiSearch(); }
+function cancelAi() { aiToken++; abortAiSearch(); analysisBusy = false; }
 
 // Si le toca al ordenador (y estamos al final del historial), juega tras una
 // pequeña pausa. La búsqueda corre en un worker (ai-async.js), así que la
@@ -273,9 +651,15 @@ function scheduleAi() {
       if (token !== aiToken || !isAiTurn() || !atHistoryEnd()) return;
       if (!mv) return;
       makeMove(mv.from, mv.to);
+      // el análisis se guarda en la instantánea que acaba de crear makeMove,
+      // la de la posición resultante (ver el panel de análisis); el nivel 1
+      // juega al azar y no puntúa nada, de ahí la marca 'random'
+      if (mv.analysis !== undefined) {
+        game.history[game.histIndex].analysis = mv.analysis || 'random';
+      }
       render();
       scheduleAi();
-    });
+    }, { analyze: optAnalysisEl.checked });
   }, 400);
 }
 
@@ -307,6 +691,8 @@ modeEl.addEventListener('change', applyModeFromUI);
 levelWEl.addEventListener('change', applyModeFromUI);
 levelBEl.addEventListener('change', applyModeFromUI);
 btnFlip.addEventListener('click', () => setFlip(!boardFlipped));
+// solo cambia el texto del panel: el análisis se guarda en la jugada siguiente
+optAnalysisEl.addEventListener('change', render);
 
 btnStart.addEventListener('click', () => { exitReview(); cancelAi(); goToStart(); clearSelection(); render(); scheduleAi(); });
 btnUndo.addEventListener('click', () => {
@@ -372,6 +758,7 @@ document.getElementById('new-game').addEventListener('click', () => {
   exitReview();
   cancelAi();
   newGame();
+  liveAnalysis = null;
   gamePaused = !alreadyFreshAndPaused;   // si no, arranca en pausa: da tiempo a elegir modalidad/nivel
   clearSelection();
   render();
@@ -409,6 +796,7 @@ function loadEnvelope(data) {
   exitReview();
   cancelAi();
   applySave(data);
+  liveAnalysis = null;
   modeEl.value = data.mode;
   levelWEl.value = data.levelW;
   levelBEl.value = data.levelB;
@@ -496,13 +884,7 @@ function makeMini(pieces, blueKeys, capKeys) {
   }
   for (const [key, type, color] of pieces) {
     const cell = CELL_MAP.get(key);
-    const text = document.createElementNS(SVG_NS, 'text');
-    text.setAttribute('x', cell.cx);
-    text.setAttribute('y', cell.cy);
-    text.setAttribute('class',
-      `piece piece-${type} ` + (color === 'w' ? 'piece-w' : 'piece-b'));
-    text.textContent = GLYPH[type];
-    svg.appendChild(text);
+    svg.appendChild(makePieceNode(type, color, cell.cx, cell.cy));
   }
   return svg;
 }

@@ -58,6 +58,35 @@ significar ninguna otra cosa.
 - Guardar y cargar partidas en el navegador (`localStorage`), marcarlas como
   favoritas, y exportar o importar partidas en `.json`.
 
+### Análisis de las jugadas
+
+Al pulsar sobre **«Jugada N de M»** se despliega el panel de análisis. Puede
+mostrar dos listas de jugadas puntuadas, de mejor a peor; al pasar el ratón por
+una fila, el tablero vuelve a la posición de partida con esa jugada marcada. La
+puntuación va en peones y desde el punto de vista de quien mueve: `+1.00`
+equivale a un peón de ventaja para él.
+
+- **La jugada que hizo el ordenador y sus alternativas.** Con la elegida
+  resaltada (no siempre es la primera: entre las que quedan a menos de
+  `PLAY_TOLERANCE` de la mejor sortea, para que las partidas no salgan siempre
+  iguales). Con la partida en pausa, pulsar una alternativa **rehace esa última
+  jugada de otra forma** (crea una rama nueva).
+- **La próxima jugada.** El botón **«Elegir la próxima jugada»** calcula las
+  jugadas disponibles desde la posición actual. Pulsando una la **fuerzas**:
+  si te toca a ti, la juegas; si le toca al ordenador (partida en pausa), le
+  obligas a hacerla. Tras forzar, la partida sigue en pausa para que examines
+  la posición.
+
+Marcando **«Guardar el análisis de cada jugada del ordenador»** cada jugada suya
+guarda su lista en el historial (y en las partidas guardadas, recortada a las
+mejores). Cuesta tiempo: para dar la puntuación real de las jugadas malas hay
+que buscar con la ventana abierta, lo que mide alrededor de 1,5 veces el tiempo
+normal. Por eso viene desactivado.
+
+El cálculo a petición (botón «Elegir la próxima jugada» / «Analizar esta
+posición») usa el mismo Web Worker que la partida, así que solo está disponible
+cuando el ordenador no está pensando (pausa la partida si hace falta).
+
 ## Niveles del ordenador
 
 | Nivel | Motor |
@@ -66,7 +95,7 @@ significar ninguna otra cosa.
 | 2 | Codicioso (material inmediato, profundidad 1) |
 | 3 | Minimax con poda alfa-beta, profundidad 2 |
 | 4–7 | + ordenación de jugadas, movilidad y búsqueda de quietud, profundidad 3 a 6 |
-| 8 | Experimental: profundidad 3 con valores y pesos posicionales ajustados |
+| 8 | Ranura experimental (hoy igual que el 4; los valores ajustados que probaba son ya el estándar) |
 
 A partir del nivel 4 la búsqueda corre en un Web Worker
 ([ai-async.js](ai-async.js)) para que la interfaz no se congele mientras el
@@ -97,6 +126,11 @@ node tune-values.js --level=5  # autojuego con un nivel real concreto
 node tune-values.js --minutes=30
 ```
 
-No modifica `ai.js`: imprime las constantes para pegarlas a mano
-(`PIECE_VALUE_TUNED`, `PIECE_POSITION_TUNED`, `MOBILITY_WEIGHT_TUNED`), que solo
-usa el nivel 8.
+No modifica `ai.js`: imprime las constantes sugeridas para revisarlas y
+pegarlas a mano. Un valor sugerido solo debe entrar en `ai.js` tras
+confirmarse en un match emparejado contra los valores vigentes; la regresión
+minimiza el error de predecir el resultado, no la fuerza de juego, y las dos
+cosas no siempre coinciden (el peso de movilidad, por ejemplo, lo aprendió en
+el sentido contrario al que gana partidas). Los valores de `PIECE_VALUE` y el
+peso de movilidad por defecto de hoy salieron así y ya pasaron esa
+confirmación a profundidad 2 y 3.

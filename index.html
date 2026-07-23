@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Silueta del elefante, referenciada con <use href="#piece-elephant">.
+         El path no fija fill/stroke: los hereda de .piece-w/.piece-b como el
+         resto de piezas. (El emoji 🐘 no se puede recolorear en iOS.) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+        <symbol id="piece-elephant" viewBox="0 0 24 24">
+            <path d="M14 4.5 C18 4.5 21.5 7.6 21.5 11.7 L21.5 18.3 C21.5 19.1 20.9 19.7 20.1 19.7 L18.9 19.7 C18.1 19.7 17.5 19.1 17.5 18.3 L17.5 16 C16 16.4 14.4 16.6 12.8 16.6 L12.8 18.3 C12.8 19.1 12.2 19.7 11.4 19.7 L10.2 19.7 C9.4 19.7 8.8 19.1 8.8 18.3 L8.8 15.9 C7.6 15.3 6.6 14.4 5.9 13.2 C5.6 14.6 5.2 16.3 5 17.4 C4.9 18.1 5.1 18.8 5.5 19.3 C5.8 19.6 5.6 20.1 5.2 20.1 C3.9 20.1 3 18.7 3.2 17.2 C3.4 15.7 4 13.6 4.6 12.1 C4.2 11.2 4 10.2 4 9.2 C4 6.6 6.1 4.5 8.7 4.5 C9.9 4.5 11 4.9 11.8 5.7 C12.5 5 13.2 4.5 14 4.5 Z M8.5 5.9 C7.1 5.9 6 7 6 8.4 C6 9.8 7.1 10.9 8.5 10.9 C9.9 10.9 11 9.8 11 8.4 C11 7 9.9 5.9 8.5 5.9 Z"/>
+        </symbol>
+    </defs></svg>
     <h1>Ajedrez Triangular</h1>
     <div class="layout">
         <div id="board-col">
@@ -46,7 +54,14 @@
         <aside id="panel">
             <div id="turn"></div>
             <div id="status"></div>
-            <div id="move-counter"></div>
+            <details id="scoresheet" open>
+                <summary>Jugadas</summary>
+                <div id="scoresheet-body"></div>
+            </details>
+            <details id="analysis-box">
+                <summary id="move-counter" title="Ver la puntuación de las jugadas"></summary>
+                <div id="analysis-body"></div>
+            </details>
             <div class="captured">
                 <h2>Capturadas por las blancas</h2>
                 <div id="cap-w" class="cap-list"></div>
@@ -72,7 +87,7 @@
                         <option value="5">5 · Muy difícil</option>
                         <option value="6">6 · Experto</option>
                         <option value="7">7 · Maestro (lento)</option>
-                        <option value="8">8 · Experimental (valores ajustados)</option>
+                        <option value="8">8 · Experimental</option>
                     </select>
                 </label>
                 <label class="level-row hidden" id="row-level-b">Nivel negras
@@ -84,8 +99,12 @@
                         <option value="5">5 · Muy difícil</option>
                         <option value="6">6 · Experto</option>
                         <option value="7">7 · Maestro (lento)</option>
-                        <option value="8">8 · Experimental (valores ajustados)</option>
+                        <option value="8">8 · Experimental</option>
                     </select>
+                </label>
+                <label class="opt-row" title="El ordenador busca con ventana completa para puntuar todas las jugadas: piensa entre 2 y 3 veces más despacio">
+                    <input type="checkbox" id="opt-analysis">
+                    Guardar el análisis de cada jugada del ordenador (más lento)
                 </label>
             </div>
             <button id="new-game">Nueva partida</button>

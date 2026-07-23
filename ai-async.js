@@ -47,7 +47,7 @@ function aiWorkerSource() {
     '    CELLS = [...CELL_MAP.values()];',
     '    return;',
     '  }',
-    '  postMessage(chooseAiMove(e.data.level, e.data.state));',
+    '  postMessage(chooseAiMove(e.data.level, e.data.state, e.data.opts));',
     '};',
   ].join('\n');
 }
@@ -80,13 +80,14 @@ function failoverToSync() {
   if (aiWorker) { aiWorker.terminate(); aiWorker = null; }
   const req = aiPending;
   aiPending = null;
-  if (req) req.cb(chooseAiMove(req.level, req.state));
+  if (req) req.cb(chooseAiMove(req.level, req.state, req.opts));
 }
 
 // Calcula la jugada del nivel dado para la posición actual y llama a
 // cb(move): de forma asíncrona con el worker, o síncrona si no hay worker.
-function requestAiMove(level, cb) {
-  const state = searchState();
+// `opts` viaja tal cual a chooseAiMove (p. ej. {analyze: true}); `state`
+// permite analizar una posición que no sea la viva (ver stateAtIndex).
+function requestAiMove(level, cb, opts = {}, state = searchState()) {
   if (!aiWorkerBroken && !aiWorker) {
     try { aiWorker = startAiWorker(); }
     catch (err) {
@@ -94,10 +95,13 @@ function requestAiMove(level, cb) {
       aiWorkerBroken = true;
     }
   }
-  if (aiWorkerBroken) { cb(chooseAiMove(level, state)); return; }
-  aiPending = { cb, level, state };
-  aiWorker.postMessage({ level, state });
+  if (aiWorkerBroken) { cb(chooseAiMove(level, state, opts)); return; }
+  aiPending = { cb, level, state, opts };
+  aiWorker.postMessage({ level, state, opts });
 }
+
+// ¿Hay una búsqueda en marcha? (el worker atiende una petición cada vez)
+function aiBusy() { return aiPending !== null; }
 
 // Descarta la búsqueda en curso, si la hay. Matar el worker es la única forma
 // de interrumpirlo; se recreará en la siguiente petición.

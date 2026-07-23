@@ -115,6 +115,10 @@ h1 {
 .cell.castle    { fill: #b9a3d9; }   /* enroque: la casilla de la torre propia */
 .cell.in-check  { fill: #d84b3a; }
 
+/* jugada del panel de análisis señalada con el ratón: salida y destino */
+.cell.analysis-from { fill: #9fe0c8; }
+.cell.analysis-to   { fill: #3fb694; }
+
 .cell:hover { fill-opacity: 0.85; }
 
 /* --- piezas --- */
@@ -141,14 +145,11 @@ h1 {
     paint-order: stroke;
 }
 
-/* el elefante es un emoji: se distinguen los bandos con filtros */
-.piece-E {
-    font-size: 20px;
-    stroke: none;
-}
-
-.piece-E.piece-w { filter: grayscale(1) brightness(1.7); }
-.piece-E.piece-b { filter: grayscale(1) brightness(0.4); }
+/* El elefante es un icono SVG (#piece-elephant), no un carácter: hereda el
+   fill/stroke de .piece-w/.piece-b igual que el resto de piezas, así que se
+   distingue por bando y se ve en cualquier casilla (el emoji 🐘 no se podía
+   recolorear, y en iOS ambos bandos salían grises). */
+.piece-E { stroke-width: 0.8; }
 
 /* --- panel lateral --- */
 
@@ -156,7 +157,7 @@ h1 {
     background: #242424;
     border-radius: 10px;
     padding: 18px;
-    width: 260px;
+    width: 300px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -176,7 +177,174 @@ h1 {
 #move-counter {
     color: #bbb;
     font-size: 0.85rem;
+    cursor: pointer;
+    list-style-position: outside;
 }
+
+#move-counter:hover { color: #eee; }
+
+/* --- lista de jugadas (scoresheet) --- */
+
+#scoresheet > summary {
+    color: #bbb;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+#scoresheet > summary:hover { color: #eee; }
+
+#scoresheet-body { margin-top: 8px; }
+
+.sheet-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 15em;
+    overflow-y: auto;
+}
+
+.sheet-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.sheet-row:hover { background: #3a3a3a; }
+
+/* la posición que se está mostrando (viva o en revisión) */
+.sheet-row.current {
+    background: #45607e;
+    font-weight: bold;
+}
+
+.sheet-row.current:hover { background: #4f6c8c; }
+
+.sheet-num {
+    color: #888;
+    min-width: 1.8em;
+    text-align: right;
+}
+
+.sheet-move {
+    flex: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+/* --- panel de análisis --- */
+
+#analysis-body {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.an-note {
+    font-size: 0.75rem;
+    color: #999;
+    line-height: 1.35;
+}
+
+.an-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    max-height: 15em;
+    overflow-y: auto;
+}
+
+.an-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: default;
+}
+
+.an-row:hover { background: #3a3a3a; }
+
+/* fila jugable: pinchar la juega (ver playAnalysisMove) */
+.an-row.playable { cursor: pointer; }
+.an-row.playable:hover { background: #45607e; }
+
+/* la jugada que el ordenador acabó jugando (no siempre es la primera: entre
+   las que empatan dentro de la tolerancia sortea, ver ai.js) */
+.an-row.chosen {
+    background: #33503a;
+    font-weight: bold;
+}
+
+.an-row.chosen:hover { background: #3e6146; }
+
+.an-rank {
+    color: #888;
+    min-width: 1.8em;
+    text-align: right;
+}
+
+.an-move {
+    flex: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.an-score {
+    font-variant-numeric: tabular-nums;
+    color: #d8d8d8;
+}
+
+.an-gap {
+    color: #666;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.an-btn, .an-more {
+    align-self: flex-start;
+    background: #333;
+    color: #eee;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.an-btn:hover:not(:disabled), .an-more:hover { background: #444; }
+
+.an-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.an-more {
+    border: none;
+    background: none;
+    color: #7fa8dd;
+    padding: 2px 0;
+    text-decoration: underline;
+}
+
+.an-more:hover { background: none; color: #9dc0ee; }
+
+/* casilla de opción del panel (análisis) */
+.opt-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.opt-row input { margin-top: 2px; }
 
 .captured h2 {
     font-size: 0.8rem;
@@ -204,6 +372,13 @@ h1 {
     border-radius: 4px;
     padding: 0 3px;
     transition: background-color 0.2s;
+}
+
+/* elefante capturado: icono SVG en línea, al tamaño de los glifos */
+.cap-piece svg {
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -0.2em;
 }
 
 /* ficha recién capturada: se mantiene resaltada hasta que quien la capturó

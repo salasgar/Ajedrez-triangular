@@ -7,6 +7,20 @@
 const SAVE_PREFIX = 'ajedrez-triangular:save:';
 const SAVE_VERSION = 1;
 
+// El análisis de una jugada puede tener 80 entradas, y una partida entera
+// 200 jugadas: guardarlo entero multiplicaría por varias veces el tamaño del
+// fichero (y localStorage no da para tanto). Se conservan solo las mejores
+// más la elegida, que es lo que el panel enseña sin desplegar «ver todas».
+const SAVED_ANALYSIS_ROWS = 12;
+
+function trimAnalysis(list) {
+  if (!Array.isArray(list) || list.length <= SAVED_ANALYSIS_ROWS) return list;
+  const top = list.slice(0, SAVED_ANALYSIS_ROWS);
+  const chosen = list.find(e => e.chosen);
+  if (chosen && !top.includes(chosen)) top.push(chosen);
+  return top;
+}
+
 function serializeGame(mode, levelW, levelB) {
   return {
     version: SAVE_VERSION,
@@ -15,7 +29,11 @@ function serializeGame(mode, levelW, levelB) {
     mode,
     levelW,
     levelB,
-    history: game.history,
+    // `analysisTotal` recuerda cuántas jugadas legales había de verdad, para
+    // que el panel no anuncie 13 cuando eran 74
+    history: game.history.map(s => Array.isArray(s.analysis)
+      ? { ...s, analysis: trimAnalysis(s.analysis), analysisTotal: s.analysis.length }
+      : s),
     histIndex: game.histIndex,
   };
 }
