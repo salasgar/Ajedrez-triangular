@@ -151,6 +151,9 @@ h1 {
    recolorear, y en iOS ambos bandos salían grises). */
 .piece-E { stroke-width: 0.8; }
 
+/* peones un 20% más pequeños que el resto de piezas */
+.piece-P { font-size: 19.2px; }
+
 /* --- panel lateral --- */
 
 #panel {
@@ -509,3 +512,4 @@ h1 {
 /* en miniatura los glifos se agrandan para que se distingan */
 .mini-board .piece { font-size: 34px; }
 .mini-board .piece-E { font-size: 30px; }
+.mini-board .piece-P { font-size: 27.2px; }
