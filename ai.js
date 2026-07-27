@@ -218,6 +218,7 @@ function ttInit() {
     meta: new Int32Array(TT_SIZE),
     score: new Float64Array(TT_SIZE),
     gen: new Uint32Array(TT_SIZE),
+    age: new Uint32Array(TT_SIZE),  // búsqueda que escribió la entrada
     mv: new Int32Array(TT_SIZE),    // mejor jugada empaquetada (o -1)
   };
 }
@@ -237,10 +238,21 @@ function zxor(sx, cellKey, p) {
   sx.h2 = (sx.h2 ^ ZOBRIST.h2[zi]) >>> 0;
 }
 
-// (el worker declara estos tres con líneas propias en aiWorkerSource; aquí
-// viven para el hilo principal, Node y los drivers de entrenamiento)
+// (el worker declara estos con líneas propias en aiWorkerSource; aquí viven
+// para el hilo principal, Node y los drivers de entrenamiento)
+//
+// La TT PERSISTE entre jugadas consecutivas: ttGen solo avanza cuando cambia
+// la configuración de evaluación (ttCfgSig), porque los scores guardados
+// dependen de ella — en la arena, que alterna dos configuraciones en el
+// mismo proceso, esto vacía la tabla en cada jugada (correcto, aunque
+// pierda la persistencia). ttAge avanza en CADA búsqueda: los scores de
+// mate (-MATE - profundidad restante) llevan una distancia que caduca al
+// cambiar de posición raíz, así que solo se reutilizan dentro de la misma
+// búsqueda; como jugada de ordenación siguen valiendo siempre.
 let TT = null;
 let ttGen = 0;
+let ttAge = 0;
+let ttCfgSig = null;
 const ZOBRIST = initZobrist();
 
 // --- make/unmake: la búsqueda muta UN tablero en sitio y deshace ---
@@ -702,10 +714,14 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
   const hit = TT.gen[idx] === ttGen && TT.h2[idx] === kh2;
   if (hit && (TT.meta[idx] >> 2) >= depth) {
     const sc = TT.score[idx], flag = TT.meta[idx] & 3;
-    if (flag === 0) return sc;                        // exact
-    if (flag === 1) { if (sc > alpha) alpha = sc; }   // lower
-    else if (sc < beta) beta = sc;                    // upper
-    if (alpha >= beta) return sc;
+    // los scores de mate llevan distancia y caducan al cambiar de búsqueda
+    // (ver ttAge); la jugada de ordenación (TT.mv) se usa igualmente
+    if (Math.abs(sc) < MATE || TT.age[idx] === ttAge) {
+      if (flag === 0) return sc;                        // exact
+      if (flag === 1) { if (sc > alpha) alpha = sc; }   // lower
+      else if (sc < beta) beta = sc;                    // upper
+      if (alpha >= beta) return sc;
+    }
   }
 
   const moves = genMoves(board, color, ep, sx.kings, sx.probe);
@@ -757,8 +773,12 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
   // Política de reemplazo de siempre (la entrada previa gana si es más
   // profunda); una entrada de otra posición o de otra búsqueda (gen) se
   // pisa sin contemplaciones.
-  if (!hit || (TT.meta[idx] >> 2) <= depth) {
+  // política de reemplazo: la entrada previa gana solo si es de esta misma
+  // búsqueda Y más profunda; lo viejo se pisa (su valor de ordenación ya se
+  // aprovechó en el sondeo de arriba)
+  if (!hit || TT.age[idx] !== ttAge || (TT.meta[idx] >> 2) <= depth) {
     TT.gen[idx] = ttGen;
+    TT.age[idx] = ttAge;
     TT.h2[idx] = kh2;
     TT.meta[idx] = depth * 4 + (best <= alphaOrig ? 2 : best >= beta ? 1 : 0);
     TT.score[idx] = best;
@@ -846,11 +866,17 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   }
   if (cfg.order) orderMoves(board, moves, cfg.pieceValues || PIECE_VALUE);
 
-  // firma Zobrist de la raíz y TT lista (ttGen++ = tabla "vacía" sin borrar)
+  // firma Zobrist de la raíz y TT lista. La tabla PERSISTE entre jugadas
+  // mientras la configuración de evaluación no cambie (ver ttCfgSig arriba):
+  // en una partida normal las búsquedas consecutivas comparten muchísimas
+  // posiciones y arrancan con la tabla caliente.
   const [rh1, rh2] = computeHash(board);
   sx.h1 = rh1; sx.h2 = rh2;
   if (!TT) ttInit();
-  ttGen++;
+  const cfgSig = JSON.stringify([cfg.pieceValues || null, cfg.positionWeights || null,
+    cfg.mobilityWeight ?? 4, !!cfg.mobility, !!cfg.quiesce]);
+  if (cfgSig !== ttCfgSig) { ttCfgSig = cfgSig; ttGen++; }
+  ttAge++;
 
   // posiciones ya vistas en la partida, para las repeticiones en la
   // búsqueda; las claves 'h1,h2' las trae st.posHashes (searchState). El
@@ -891,21 +917,35 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   // las jugadas MALAS devuelvan su puntuación real y no una cota superior
   // (una jugada con cota −40 puede ser en realidad −900), que es justo lo
   // que hay que enseñar para poder comparar unas jugadas con otras.
+  // Profundización iterativa: la búsqueda a d-1 deja la TT caliente (el
+  // hash-move de cada posición) y ordena las jugadas raíz para la búsqueda
+  // a d, que es la única cuyos resultados se usan. Las iteraciones previas
+  // salen casi gratis con buena ordenación y suelen amortizarse de sobra.
   let best = -Infinity;
-  const scored = [];
+  let scored = [];
   const u = sx.undo[0];
-  for (const m of moves) {
-    const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P')
-      ? 0 : st.clock + 1;
-    const ph1 = sx.h1, ph2 = sx.h2;
-    const nextEp = makeSim(board, m.from, m.to, st.enPassant, u, kings, sx);
-    const score = -negamax(board, rival(st.turn), nextEp, nextClock, keys,
-      cfg.depth - 1, -Infinity, opts.analyze ? Infinity : -best + PLAY_TOLERANCE + 1,
-      cfg, sx, 1);
-    unmakeSim(board, u, kings);
-    sx.h1 = ph1; sx.h2 = ph2;
-    if (score > best) best = score;
-    scored.push({ move: m, score });
+  for (let d = 1; d <= cfg.depth; d++) {
+    best = -Infinity;
+    scored = [];
+    for (const m of moves) {
+      const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P')
+        ? 0 : st.clock + 1;
+      const ph1 = sx.h1, ph2 = sx.h2;
+      const nextEp = makeSim(board, m.from, m.to, st.enPassant, u, kings, sx);
+      const score = -negamax(board, rival(st.turn), nextEp, nextClock, keys,
+        d - 1, -Infinity, opts.analyze ? Infinity : -best + PLAY_TOLERANCE + 1,
+        cfg, sx, 1);
+      unmakeSim(board, u, kings);
+      sx.h1 = ph1; sx.h2 = ph2;
+      if (score > best) best = score;
+      scored.push({ move: m, score });
+    }
+    if (d < cfg.depth) {
+      // mejor raíz primero en la siguiente iteración (desempate estable)
+      const orden = new Map(scored.map(s => [s.move, s.score]));
+      moves.sort((a, b) => (orden.get(b) - orden.get(a)) ||
+        (a.from + a.to < b.from + b.to ? -1 : 1));
+    }
   }
 
   // el filtro va al final porque `best` sube durante el bucle; las jugadas

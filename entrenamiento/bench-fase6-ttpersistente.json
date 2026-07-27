@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase6-ttpersistente",
+ "fecha": "2026-07-27T19:35:08.074Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 28,
+   "nodos": 2991
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 18,
+   "nodos": 2869
+  },
+  {
+   "id": "enroque-2",
+   "ms": 58,
+   "nodos": 6427
+  },
+  {
+   "id": "media-1",
+   "ms": 406,
+   "nodos": 48744
+  },
+  {
+   "id": "jaque-3",
+   "ms": 47,
+   "nodos": 4764
+  },
+  {
+   "id": "media-3",
+   "ms": 69,
+   "nodos": 11548
+  },
+  {
+   "id": "corona-2",
+   "ms": 36,
+   "nodos": 9297
+  }
+ ],
+ "totalMs": 662,
+ "totalNodos": 86640,
+ "nodosPorSeg": 130876
+}

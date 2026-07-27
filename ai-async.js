@@ -53,6 +53,8 @@ function aiWorkerSource() {
     // que hace comparables los posHashes que llegan en cada petición.
     'let TT = null;',
     'let ttGen = 0;',
+    'let ttAge = 0;',
+    'let ttCfgSig = null;',
     'let ZOBRIST = null;',
     'onmessage = (e) => {',
     '  if (e.data.cells) {',
