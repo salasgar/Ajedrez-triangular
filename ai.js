@@ -137,6 +137,112 @@ function applyMoveSim(board, fromKey, toKey, ep) {
     : null;
 }
 
+// --- Zobrist: la firma de una posición como número, mantenida por XOR ---
+//
+// positionKey() serializa todas las piezas a strings, ORDENA el array y lo
+// une: se pagaba en cada nodo interior para la TT y la repetición. El hash
+// Zobrist asigna a cada (casilla, color, tipo, moved-relevante) un número
+// aleatorio fijo; la firma de la posición es el XOR de los de sus piezas, y
+// una jugada la actualiza con 2-4 XOR en vez de reserializar el tablero.
+//
+// Claves de 64 bits sin BigInt: dos mitades de 32 (h1/h2) en Uint32Array
+// paralelos. Las tablas se generan con un PRNG sembrado (mulberry32): misma
+// semilla ⇒ tablas idénticas también dentro del worker, que las reconstruye
+// con initZobrist() porque no puede recibirlas como constante JSON.
+//
+// El estado `moved` entra en el hash solo para P/R/K, exactamente como en
+// positionKey (MOVED_MATTERS, rules.js): es lo que distingue posiciones a
+// efectos de enroque, doble avance y repetición.
+const ZOBRIST_SEED = 0x9E3779B9;
+const TT_BITS = 19;
+const TT_SIZE = 1 << TT_BITS;
+const TT_MASK = TT_SIZE - 1;
+// código 0-9 dentro de la casilla+color: tipo, y variante "sin mover" para
+// los tipos donde moved importa
+const Z_CODE = { P: 0, N: 1, B: 2, E: 3, R: 4, Q: 5, K: 6 };
+const Z_UNMOVED = { P: 7, R: 8, K: 9 };
+const Z_PER_CELL = 20;   // 10 códigos × 2 colores
+
+function initZobrist() {
+  let s = ZOBRIST_SEED >>> 0;
+  const rnd = () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return (t ^ (t >>> 14)) >>> 0;
+  };
+  const nCells = CELLS.length;
+  const total = nCells * Z_PER_CELL + nCells + 1;   // piezas + al paso + turno
+  const h1 = new Uint32Array(total), h2 = new Uint32Array(total);
+  for (let i = 0; i < total; i++) { h1[i] = rnd(); h2[i] = rnd(); }
+  return { h1, h2, epBase: nCells * Z_PER_CELL, turnIdx: total - 1 };
+}
+
+function zIndex(cell, p) {
+  const code = (!p.moved && Z_UNMOVED[p.type] !== undefined)
+    ? Z_UNMOVED[p.type] : Z_CODE[p.type];
+  return cell.idx * Z_PER_CELL + (p.color === 'b' ? 10 : 0) + code;
+}
+
+// firma (solo piezas) de un tablero entero; acepta un Map o el array de
+// pares de un snapshot del historial
+function computeHash(boardEntries) {
+  let h1 = 0, h2 = 0;
+  for (const [key, p] of boardEntries) {
+    const zi = zIndex(CELL_MAP.get(key), p);
+    h1 ^= ZOBRIST.h1[zi];
+    h2 ^= ZOBRIST.h2[zi];
+  }
+  return [h1 >>> 0, h2 >>> 0];
+}
+
+// clave completa del nodo (piezas + turno + al paso) como string, para el
+// mapa de repeticiones (posiciones del historial + camino de búsqueda)
+function hashKey(h1, h2, color, ep) {
+  if (color === 'b') { h1 ^= ZOBRIST.h1[ZOBRIST.turnIdx]; h2 ^= ZOBRIST.h2[ZOBRIST.turnIdx]; }
+  if (ep) {
+    const i = ZOBRIST.epBase + CELL_MAP.get(ep.targetKey).idx;
+    h1 ^= ZOBRIST.h1[i]; h2 ^= ZOBRIST.h2[i];
+  }
+  return (h1 >>> 0) + ',' + (h2 >>> 0);
+}
+
+// La tabla de transposición: arrays paralelos de tamaño fijo, sin claves
+// string ni Map. `gen` marca a qué búsqueda pertenece cada entrada, así
+// "vaciar" la tabla es ttGen++ (sin recorrer nada). meta = depth*4 + flag
+// (0 exact, 1 lower, 2 upper).
+function ttInit() {
+  TT = {
+    h2: new Uint32Array(TT_SIZE),
+    meta: new Int32Array(TT_SIZE),
+    score: new Float64Array(TT_SIZE),
+    gen: new Uint32Array(TT_SIZE),
+    mv: new Int32Array(TT_SIZE),    // mejor jugada empaquetada (o -1)
+  };
+}
+
+// Jugada como entero: idx(origen)*128 + idx(destino). Sirve de identidad
+// compacta para el hash-move de la TT, los killers y la tabla de historia.
+function packMove(m) {
+  return CELL_MAP.get(m.from).idx * 128 + CELL_MAP.get(m.to).idx;
+}
+
+// XOR de la pieza `p` tal como está AHORA en `cellKey` sobre la firma de sx.
+// Autoinversa: la misma llamada añade o quita. Se llama antes de mutar una
+// pieza (quita su estado viejo) y después (añade el nuevo).
+function zxor(sx, cellKey, p) {
+  const zi = zIndex(CELL_MAP.get(cellKey), p);
+  sx.h1 = (sx.h1 ^ ZOBRIST.h1[zi]) >>> 0;
+  sx.h2 = (sx.h2 ^ ZOBRIST.h2[zi]) >>> 0;
+}
+
+// (el worker declara estos tres con líneas propias en aiWorkerSource; aquí
+// viven para el hilo principal, Node y los drivers de entrenamiento)
+let TT = null;
+let ttGen = 0;
+const ZOBRIST = initZobrist();
+
 // --- make/unmake: la búsqueda muta UN tablero en sitio y deshace ---
 //
 // Hasta aquí cada nodo copiaba el Map entero (~40 piezas) y cada test de
@@ -156,7 +262,11 @@ function deepCopyBoard(board) {
 // Aplica la jugada mutando tablero y pieza, apunta lo necesario para
 // deshacerla en `u`, mantiene `kings` (color → clave de su rey) y devuelve
 // el nuevo estado de captura al paso. Mismos efectos que applyMoveSim.
-function makeSim(board, fromKey, toKey, ep, u, kings) {
+// Con `sx` (opcional) mantiene además la firma Zobrist de sx.h1/h2: los
+// sondeos de legalidad llaman sin sx (nadie lee el hash ahí) y el que llama
+// con sx guarda y repone h1/h2 alrededor del par make/unmake, que es más
+// barato que deshacer los XOR uno a uno.
+function makeSim(board, fromKey, toKey, ep, u, kings, sx) {
   const piece = board.get(fromKey);
   u.fromKey = fromKey; u.toKey = toKey; u.piece = piece;
   u.prevMoved = piece.moved; u.prevType = piece.type;
@@ -167,6 +277,7 @@ function makeSim(board, fromKey, toKey, ep, u, kings) {
     const rook = board.get(toKey);
     const { kingTo, rookTo } = castlingLanding(piece.color, fromKey, toKey);
     u.castle = { rook, rookPrevMoved: rook.moved, kingTo, rookTo };
+    if (sx) { zxor(sx, fromKey, piece); zxor(sx, toKey, rook); }
     board.delete(fromKey);
     board.delete(toKey);
     piece.moved = true;
@@ -174,17 +285,24 @@ function makeSim(board, fromKey, toKey, ep, u, kings) {
     board.set(kingTo, piece);
     board.set(rookTo, rook);
     kings[piece.color] = kingTo;
+    if (sx) { zxor(sx, kingTo, piece); zxor(sx, rookTo, rook); }
     return null;
   }
 
   if (piece.type === 'P' && !board.get(toKey) && ep && toKey === ep.targetKey) {
     u.captured = board.get(ep.pawnKey);
     u.capturedKey = ep.pawnKey;
+    if (sx) zxor(sx, ep.pawnKey, u.captured);
     board.delete(ep.pawnKey);
   } else {
     const v = board.get(toKey);
-    if (v) { u.captured = v; u.capturedKey = toKey; }
+    if (v) {
+      u.captured = v;
+      u.capturedKey = toKey;
+      if (sx) zxor(sx, toKey, v);
+    }
   }
+  if (sx) zxor(sx, fromKey, piece);   // estado viejo, antes de mutar
   board.delete(fromKey);
   piece.moved = true;
   const fromCell = CELL_MAP.get(fromKey);
@@ -195,6 +313,7 @@ function makeSim(board, fromKey, toKey, ep, u, kings) {
     piece.type = 'Q';
   }
   board.set(toKey, piece);
+  if (sx) zxor(sx, toKey, piece);     // estado nuevo (movida y quizá coronada)
   if (u.prevType === 'K') kings[piece.color] = toKey;
   return (u.prevType === 'P' && Math.abs(toCell.b - fromCell.b) === 2)
     ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
@@ -287,14 +406,40 @@ function capturedBy(board, m) {
   return v && v.color !== board.get(m.from).color ? v : null;
 }
 
-// capturas primero, la pieza más valiosa antes; los empates se rompen por
-// la clave from>to para que el orden no dependa del orden interno del Map
-// del tablero (make/unmake reinserta piezas al final y lo va barajando; sin
-// desempate fijo, el árbol explorado cambiaría de una ejecución a otra)
+// capturas primero, ordenadas por MVV-LVA (la víctima más valiosa con el
+// atacante más barato antes: es lo que más probablemente aguanta la
+// recaptura); los empates se rompen por la clave from>to para que el orden
+// no dependa del orden interno del Map del tablero (make/unmake reinserta
+// piezas al final y lo va barajando; sin desempate fijo, el árbol explorado
+// cambiaría de una ejecución a otra)
 function orderMoves(board, moves, values = PIECE_VALUE) {
-  const gain = m => { const v = capturedBy(board, m); return v ? values[v.type] : -1; };
+  const gain = m => {
+    const v = capturedBy(board, m);
+    return v ? values[v.type] * 1024 - values[board.get(m.from).type] : -1;
+  };
   moves.sort((m1, m2) => (gain(m2) - gain(m1)) ||
     (m1.from + m1.to < m2.from + m2.to ? -1 : 1));
+}
+
+// Ordenación de la búsqueda interior: hash-move de la TT primero (la mejor
+// jugada que esta misma posición tuvo la última vez que se buscó), después
+// capturas por MVV-LVA, después los dos killers del ply (jugadas tranquilas
+// que acaban de provocar un corte a esta altura: suelen repetirse entre
+// ramas hermanas), y el resto por la tabla de historia (cuántos cortes ha
+// provocado cada par origen-destino en esta búsqueda, con más peso cuanto
+// más profundos). Deja m.pk calculado para el bucle.
+function orderSearchMoves(board, moves, values, hashMv, killers, history) {
+  for (const m of moves) {
+    const pk = packMove(m);
+    m.pk = pk;
+    if (pk === hashMv) { m.ord = 2e9; continue; }
+    const v = capturedBy(board, m);
+    if (v) { m.ord = 1e9 + values[v.type] * 1024 - values[board.get(m.from).type]; continue; }
+    if (pk === killers[0]) { m.ord = 9e8; continue; }
+    if (pk === killers[1]) { m.ord = 8.9e8; continue; }
+    m.ord = history[pk];
+  }
+  moves.sort((m1, m2) => (m2.ord - m1.ord) || (m1.pk - m2.pk));
 }
 
 // Cuenta de una tirada de rayos sin construir el array (ver slideMoves, que
@@ -507,22 +652,37 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth, sx, pl
 }
 
 // `clock` son las medias jugadas sin captura ni peón; `keys` es un Map con
-// las posiciones ya vistas (historial real + camino de búsqueda actual);
-// `tt` es la tabla de transposición de esta búsqueda (ver chooseAiMove): un
-// Map posición → { depth, score, flag } que evita repetir trabajo cuando
-// dos secuencias de jugadas distintas llegan a la misma posición (algo
-// frecuente: intercambiar dos jugadas propias que no interfieren entre sí
-// da la misma posición final). Vive solo dentro de una llamada a
-// chooseAiMove; no se comparte entre jugadas ni entre niveles.
-function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt, sx, ply) {
+// las posiciones ya vistas (historial real + camino de búsqueda actual),
+// con claves 'h1,h2' de hashKey(). La tabla de transposición es la TT
+// global de arrays (ver ttInit): evita repetir trabajo cuando dos
+// secuencias distintas llegan a la misma posición, indexada por la firma
+// Zobrist que sx.h1/h2 mantienen por XOR — aquí ya no se serializa nada.
+function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply) {
   const values = cfg.pieceValues || PIECE_VALUE;
   // tablas por la regla de los 50 movimientos (ver FIFTY_MOVE_LIMIT en rules.js)
   if (clock >= FIFTY_MOVE_LIMIT) return drawScore(board, color, values);
+
+  // clave completa del nodo: firma de piezas + turno + al paso
+  let kh1 = sx.h1, kh2 = sx.h2;
+  if (color === 'b') { kh1 ^= ZOBRIST.h1[ZOBRIST.turnIdx]; kh2 ^= ZOBRIST.h2[ZOBRIST.turnIdx]; }
+  if (ep) {
+    const i = ZOBRIST.epBase + CELL_MAP.get(ep.targetKey).idx;
+    kh1 ^= ZOBRIST.h1[i]; kh2 ^= ZOBRIST.h2[i];
+  }
+  kh1 >>>= 0; kh2 >>>= 0;
+
   // repetición: ver una posición por segunda vez ya se puntúa como tablas
-  // (basta para detectar perpetuos con poca profundidad); solo puede darse
-  // tras al menos 4 medias jugadas reversibles, de ahí la guarda
-  const key = clock >= 4 ? positionKey(board, color, ep) : null;
-  if (key && keys.has(key)) return drawScore(board, color, values);
+  // (basta para detectar perpetuos con poca profundidad); la DETECCIÓN solo
+  // puede saltar tras 4 medias jugadas reversibles (guarda del clock), pero
+  // el REGISTRO (más abajo) es incondicional: un descendiente con clock
+  // alto tiene que poder reconocer a un ancestro que aún lo tenía bajo. El
+  // string solo se construye cuando hace falta: las hojas que se van a
+  // quiesce con clock bajo no pagan nada.
+  let key = null;
+  if (clock >= 4) {
+    key = kh1 + ',' + kh2;
+    if (keys.has(key)) return drawScore(board, color, values);
+  }
 
   // en las hojas, los niveles que lo piden siguen explorando por capturas
   // (quiesce) en vez de evaluar tal cual, para no cortar a mitad de un
@@ -532,15 +692,20 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt, sx,
       ? quiesce(board, color, ep, clock, keys, alpha, beta, cfg, QUIESCE_MAX_DEPTH, sx, ply)
       : evaluate(board, color, cfg);
   }
+  if (key === null) key = kh1 + ',' + kh2;
 
-  const myKey = key || positionKey(board, color, ep);
   const alphaOrig = alpha;
-  const entry = tt.get(myKey);
-  if (entry && entry.depth >= depth) {
-    if (entry.flag === 'exact') return entry.score;
-    if (entry.flag === 'lower') { if (entry.score > alpha) alpha = entry.score; }
-    else if (entry.score < beta) beta = entry.score;   // 'upper'
-    if (alpha >= beta) return entry.score;
+  const idx = kh1 & TT_MASK;
+  // entrada válida: de esta búsqueda (gen) y verificada con la otra mitad
+  // de la firma (la probabilidad de que dos posiciones distintas compartan
+  // índice Y h2 es despreciable)
+  const hit = TT.gen[idx] === ttGen && TT.h2[idx] === kh2;
+  if (hit && (TT.meta[idx] >> 2) >= depth) {
+    const sc = TT.score[idx], flag = TT.meta[idx] & 3;
+    if (flag === 0) return sc;                        // exact
+    if (flag === 1) { if (sc > alpha) alpha = sc; }   // lower
+    else if (sc < beta) beta = sc;                    // upper
+    if (alpha >= beta) return sc;
   }
 
   const moves = genMoves(board, color, ep, sx.kings, sx.probe);
@@ -549,30 +714,55 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt, sx,
     return isAttackedFast(board, CELL_MAP.get(sx.kings[color]), rival(color))
       ? -MATE - depth : drawScore(board, color, values);
   }
-  if (cfg.order) orderMoves(board, moves, values);
+  if (cfg.order) {
+    orderSearchMoves(board, moves, values, hit ? TT.mv[idx] : -1,
+      sx.killers[ply], sx.history);
+  }
   // registrar la posición para que las líneas descendientes la detecten
-  keys.set(myKey, (keys.get(myKey) || 0) + 1);
+  keys.set(key, (keys.get(key) || 0) + 1);
   let best = -Infinity;
+  let bestMv = -1;
   const u = sx.undo[ply];
   for (const m of moves) {
-    const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P') ? 0 : clock + 1;
-    const nextEp = makeSim(board, m.from, m.to, ep, u, sx.kings);
+    const captura = capturedBy(board, m);
+    const nextClock = (captura || board.get(m.from).type === 'P') ? 0 : clock + 1;
+    const ph1 = sx.h1, ph2 = sx.h2;
+    const nextEp = makeSim(board, m.from, m.to, ep, u, sx.kings, sx);
     const score = -negamax(board, rival(color), nextEp, nextClock, keys, depth - 1,
-      -beta, -alpha, cfg, tt, sx, ply + 1);
+      -beta, -alpha, cfg, sx, ply + 1);
     unmakeSim(board, u, sx.kings);
-    if (score > best) best = score;
+    sx.h1 = ph1; sx.h2 = ph2;
+    if (score > best) {
+      best = score;
+      bestMv = m.pk !== undefined ? m.pk : packMove(m);
+    }
     if (best > alpha) alpha = best;
-    if (alpha >= beta) break;
+    if (alpha >= beta) {
+      // una jugada tranquila que corta se apunta como killer del ply y suma
+      // historia (con más peso cuanto más profunda era la búsqueda restante)
+      if (!captura && cfg.order) {
+        const k = sx.killers[ply];
+        if (k[0] !== m.pk) { k[1] = k[0]; k[0] = m.pk; }
+        sx.history[m.pk] += depth * depth;
+      }
+      break;
+    }
   }
-  const n = keys.get(myKey) - 1;
-  if (n > 0) keys.set(myKey, n); else keys.delete(myKey);
+  const n = keys.get(key) - 1;
+  if (n > 0) keys.set(key, n); else keys.delete(key);
 
   // flag: si ningún movimiento superó alfa, `best` es solo una cota
   // superior (podría ser peor con más tiempo); si se produjo un corte beta,
-  // es una cota inferior (podría ser mejor); si no, es el valor exacto
-  if (!entry || entry.depth <= depth) {
-    const flag = best <= alphaOrig ? 'upper' : best >= beta ? 'lower' : 'exact';
-    tt.set(myKey, { depth, score: best, flag });
+  // es una cota inferior (podría ser mejor); si no, es el valor exacto.
+  // Política de reemplazo de siempre (la entrada previa gana si es más
+  // profunda); una entrada de otra posición o de otra búsqueda (gen) se
+  // pisa sin contemplaciones.
+  if (!hit || (TT.meta[idx] >> 2) <= depth) {
+    TT.gen[idx] = ttGen;
+    TT.h2[idx] = kh2;
+    TT.meta[idx] = depth * 4 + (best <= alphaOrig ? 2 : best >= beta ? 1 : 0);
+    TT.score[idx] = best;
+    TT.mv[idx] = bestMv;
   }
   return best;
 }
@@ -581,10 +771,18 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt, sx,
 // que viaja al worker de ai-async.js, por lo que solo contiene datos
 // clonables (el Map del tablero, escalares y claves de posición).
 function searchState() {
-  const posKeys = [];
-  for (let i = 0; i <= game.histIndex; i++) posKeys.push(game.history[i].posKey);
+  const posKeys = [], posHashes = [];
+  for (let i = 0; i <= game.histIndex; i++) {
+    const s = game.history[i];
+    posKeys.push(s.posKey);
+    // clave 'h1,h2' de cada posición del historial, en el mismo formato que
+    // usa negamax para las repeticiones (se calcula aquí, en el hilo que
+    // tiene el historial; al worker viajan solo los strings)
+    const [h1, h2] = computeHash(s.board);
+    posHashes.push(hashKey(h1, h2, s.turn, s.enPassant));
+  }
   return { board: game.board, turn: game.turn, enPassant: game.enPassant,
-           clock: game.clock, posKeys };
+           clock: game.clock, posKeys, posHashes };
 }
 
 // Lo mismo, pero para una posición cualquiera del historial (la usa el
@@ -593,10 +791,15 @@ function searchState() {
 // mandarla al worker.
 function stateAtIndex(i) {
   const s = game.history[i];
-  const posKeys = [];
-  for (let j = 0; j <= i; j++) posKeys.push(game.history[j].posKey);
+  const posKeys = [], posHashes = [];
+  for (let j = 0; j <= i; j++) {
+    const sj = game.history[j];
+    posKeys.push(sj.posKey);
+    const [h1, h2] = computeHash(sj.board);
+    posHashes.push(hashKey(h1, h2, sj.turn, sj.enPassant));
+  }
   return { board: new Map(s.board.map(([k, p]) => [k, { ...p }])), turn: s.turn,
-           enPassant: s.enPassant, clock: s.clock, posKeys };
+           enPassant: s.enPassant, clock: s.clock, posKeys, posHashes };
 }
 
 // Margen (en centipeones) dentro del cual una jugada se considera tan buena
@@ -621,11 +824,18 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   const kings = { w: null, b: null };
   for (const [key, p] of board) if (p.type === 'K') kings[p.color] = key;
   // contexto de búsqueda: registros de undo preasignados por ply (ninguna
-  // asignación por nodo) y uno aparte para los sondeos de legalidad
+  // asignación por nodo), otro para los sondeos de legalidad, killers por
+  // ply y tabla de historia origen-destino. Killers e historia viven SOLO
+  // dentro de esta llamada: la arena alterna dos configuraciones en el
+  // mismo proceso y no deben contaminarse entre sí.
+  const plies = (cfg.depth || 1) + QUIESCE_MAX_DEPTH + 4;
   const sx = {
     kings,
     probe: {},
-    undo: Array.from({ length: (cfg.depth || 1) + QUIESCE_MAX_DEPTH + 4 }, () => ({})),
+    undo: Array.from({ length: plies }, () => ({})),
+    killers: Array.from({ length: plies }, () => [-1, -1]),
+    history: new Int32Array(128 * 128),
+    h1: 0, h2: 0,
   };
   const moves = genMoves(board, st.turn, st.enPassant, kings, sx.probe);
   if (moves.length === 0) return null;
@@ -636,11 +846,18 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   }
   if (cfg.order) orderMoves(board, moves, cfg.pieceValues || PIECE_VALUE);
 
-  // posiciones ya vistas en la partida, para las repeticiones en la búsqueda
+  // firma Zobrist de la raíz y TT lista (ttGen++ = tabla "vacía" sin borrar)
+  const [rh1, rh2] = computeHash(board);
+  sx.h1 = rh1; sx.h2 = rh2;
+  if (!TT) ttInit();
+  ttGen++;
+
+  // posiciones ya vistas en la partida, para las repeticiones en la
+  // búsqueda; las claves 'h1,h2' las trae st.posHashes (searchState). El
+  // st.posKeys de siempre sigue existiendo para quien lo lea, pero la
+  // búsqueda ya no lo usa.
   const keys = new Map();
-  for (const k of st.posKeys) keys.set(k, (keys.get(k) || 0) + 1);
-  // tabla de transposición de esta jugada, ver negamax()
-  const tt = new Map();
+  for (const k of (st.posHashes || [])) keys.set(k, (keys.get(k) || 0) + 1);
 
   // Bucle raíz: acumula las jugadas que quedan a menos de PLAY_TOLERANCE de
   // la mejor y sortea entre ellas. Antes se acumulaban solo las EMPATADAS a
@@ -680,11 +897,13 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   for (const m of moves) {
     const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P')
       ? 0 : st.clock + 1;
-    const nextEp = makeSim(board, m.from, m.to, st.enPassant, u, kings);
+    const ph1 = sx.h1, ph2 = sx.h2;
+    const nextEp = makeSim(board, m.from, m.to, st.enPassant, u, kings, sx);
     const score = -negamax(board, rival(st.turn), nextEp, nextClock, keys,
       cfg.depth - 1, -Infinity, opts.analyze ? Infinity : -best + PLAY_TOLERANCE + 1,
-      cfg, tt, sx, 1);
+      cfg, sx, 1);
     unmakeSim(board, u, kings);
+    sx.h1 = ph1; sx.h2 = ph2;
     if (score > best) best = score;
     scored.push({ move: m, score });
   }

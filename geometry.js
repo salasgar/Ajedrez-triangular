@@ -38,6 +38,10 @@ for (let a = 1 - N; a <= N; a++) {
       const pts = corners.map(v => vertexXY(v[0], v[1]));
       const cell = {
         a, b, c, up,
+        // índice denso y estable (0..95): lo usan las tablas Zobrist y de
+        // historia de ai.js; es un número plano, así que sobrevive al clon
+        // estructurado hacia el worker (a diferencia del orden de un Map)
+        idx: CELLS.length,
         key: keyOf(a, b, c),
         corners, pts,
         cx: (pts[0][0] + pts[1][0] + pts[2][0]) / 3,

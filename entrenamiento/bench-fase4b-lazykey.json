@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase4b-lazykey",
+ "fecha": "2026-07-27T19:30:15.036Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 64,
+   "nodos": 8809
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 55,
+   "nodos": 9027
+  },
+  {
+   "id": "enroque-2",
+   "ms": 69,
+   "nodos": 8739
+  },
+  {
+   "id": "media-1",
+   "ms": 661,
+   "nodos": 73351
+  },
+  {
+   "id": "jaque-3",
+   "ms": 37,
+   "nodos": 3875
+  },
+  {
+   "id": "media-3",
+   "ms": 36,
+   "nodos": 7035
+  },
+  {
+   "id": "corona-2",
+   "ms": 47,
+   "nodos": 10334
+  }
+ ],
+ "totalMs": 969,
+ "totalNodos": 121170,
+ "nodosPorSeg": 125046
+}

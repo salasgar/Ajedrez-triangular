@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase4-zobrist",
+ "fecha": "2026-07-27T19:29:26.255Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 62,
+   "nodos": 8809
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 53,
+   "nodos": 9027
+  },
+  {
+   "id": "enroque-2",
+   "ms": 68,
+   "nodos": 8739
+  },
+  {
+   "id": "media-1",
+   "ms": 667,
+   "nodos": 73351
+  },
+  {
+   "id": "jaque-3",
+   "ms": 36,
+   "nodos": 3875
+  },
+  {
+   "id": "media-3",
+   "ms": 34,
+   "nodos": 7035
+  },
+  {
+   "id": "corona-2",
+   "ms": 48,
+   "nodos": 10334
+  }
+ ],
+ "totalMs": 968,
+ "totalNodos": 121170,
+ "nodosPorSeg": 125176
+}

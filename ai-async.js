@@ -16,14 +16,17 @@ const AI_WORKER_FNS = [
   legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
   drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
-  genMoves, isAttackedFast, centrality, pawnAdvance, evaluate, capturedBy, orderMoves,
+  genMoves, isAttackedFast, initZobrist, zIndex, computeHash, hashKey, zxor,
+  ttInit, packMove, orderSearchMoves, centrality, pawnAdvance, evaluate,
+  capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
   chooseAiMove,
 ];
 const AI_WORKER_CONSTS = {
   N, PIECE_VALUE, MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,
   BOARD_MAX_DIST, FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE, CASTLING,
-  MOVED_MATTERS,
+  MOVED_MATTERS, ZOBRIST_SEED, TT_BITS, TT_SIZE, TT_MASK, Z_CODE, Z_UNMOVED,
+  Z_PER_CELL,
 };
 
 let aiWorker = null;        // worker vivo (se crea bajo demanda)
@@ -43,10 +46,19 @@ function aiWorkerSource() {
     ...Object.entries(AI_WORKER_CONSTS)
       .map(([name, v]) => `const ${name} = ${JSON.stringify(v)};`),
     ...AI_WORKER_FNS.map(f => f.toString()),
+    // estado del motor que en el hilo principal declara ai.js en su nivel
+    // superior (solo las FUNCIONES viajan serializadas, así que el worker
+    // necesita sus propias declaraciones). ZOBRIST se reconstruye con la
+    // misma semilla: tablas idénticas a las del hilo principal, que es lo
+    // que hace comparables los posHashes que llegan en cada petición.
+    'let TT = null;',
+    'let ttGen = 0;',
+    'let ZOBRIST = null;',
     'onmessage = (e) => {',
     '  if (e.data.cells) {',
     '    CELL_MAP = e.data.cells;',
     '    CELLS = [...CELL_MAP.values()];',
+    '    ZOBRIST = initZobrist();',
     '    return;',
     '  }',
     '  postMessage(chooseAiMove(e.data.level, e.data.state, e.data.opts));',

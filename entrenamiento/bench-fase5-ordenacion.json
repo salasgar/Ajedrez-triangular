@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase5-ordenacion",
+ "fecha": "2026-07-27T19:32:21.458Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 43,
+   "nodos": 3630
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 28,
+   "nodos": 3883
+  },
+  {
+   "id": "enroque-2",
+   "ms": 47,
+   "nodos": 6605
+  },
+  {
+   "id": "media-1",
+   "ms": 188,
+   "nodos": 27481
+  },
+  {
+   "id": "jaque-3",
+   "ms": 39,
+   "nodos": 4408
+  },
+  {
+   "id": "media-3",
+   "ms": 34,
+   "nodos": 7253
+  },
+  {
+   "id": "corona-2",
+   "ms": 34,
+   "nodos": 8956
+  }
+ ],
+ "totalMs": 413,
+ "totalNodos": 62216,
+ "nodosPorSeg": 150644
+}
