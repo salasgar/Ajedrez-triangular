@@ -49,7 +49,28 @@ const LIBRO = process.env.LIBRO
   ? JSON.stringify(JSON.parse(fs.readFileSync(process.env.LIBRO, 'utf8')))
   : 'null';
 
-const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
+// Reanudación: con SALIDA=<fichero>, arena.js escribe ahí (añadiendo) y al
+// arrancar lee lo que ya haya para SALTARSE los pares terminados. Así una
+// tanda de días sobrevive a un apagón o a un reinicio sin perder trabajo ni
+// repetirlo: basta con volver a lanzar exactamente la misma orden.
+// Sin SALIDA escribe en stdout como siempre y no se reanuda nada.
+const SALIDA = process.env.SALIDA || null;
+const hechos = new Set();
+if (SALIDA && fs.existsSync(SALIDA)) {
+  for (const l of fs.readFileSync(SALIDA, 'utf8').split('\n')) {
+    if (!l.startsWith('{')) continue;
+    try {
+      const g = JSON.parse(l);
+      hechos.add(g.par + '/' + g.whiteIs);
+    } catch { /* línea a medias de un corte: se ignora y se rejugará */ }
+  }
+}
+
+// Dónde están geometry/rules/ai. Por defecto el repo; con MOTOR= se puede
+// apuntar a otra copia, que es lo que hace el servicio de arranque
+// automático: macOS no deja que un LaunchAgent lea ~/Documents (protección
+// de privacidad), así que trabaja sobre una copia del motor fuera de ahí.
+const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
 const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
@@ -141,11 +162,15 @@ function playFrom(opening, white, black) {
 }
 
 for (let par = ${FIRST}; par < ${FIRST} + ${PAIRS}; par++) {
+  // si las dos partidas del par ya están en el fichero de salida, ni se
+  // genera la apertura (ver la reanudación en la cabecera)
+  if (HECHOS.has(par + '/A') && HECHOS.has(par + '/B')) continue;
   const opening = openingFor(par);
   if (!opening) continue;
   const apertura = opening.map(m => m.from + '>' + m.to).join(' ');
   // las dos partidas del par: misma apertura, colores intercambiados
   for (const whiteIs of ['A', 'B']) {
+    if (HECHOS.has(par + '/' + whiteIs)) continue;
     const t0 = Date.now();
     const r = playFrom(opening, whiteIs, whiteIs === 'A' ? 'B' : 'A');
     const linea = {
@@ -153,10 +178,21 @@ for (let par = ${FIRST}; par < ${FIRST} + ${PAIRS}; par++) {
       secs: +((Date.now() - t0) / 1000).toFixed(1), apertura,
     };
     if (${SAVE_MOVES}) linea.jugadas = ultimasJugadas;
-    process.stdout.write(JSON.stringify(linea) + '\\n');
+    ESCRIBE(JSON.stringify(linea) + '\\n');
   }
 }
 `;
 
-process.stderr.write(`arena: ${NAME_A} vs ${NAME_B} · pares ${FIRST}..${FIRST + PAIRS - 1} · seed ${SEED}\n`);
+// Escritura de cada partida. Con SALIDA se añade al fichero y se fuerza el
+// volcado a disco: si el ordenador se apaga a mitad de la siguiente partida,
+// todo lo anterior ya está guardado y la reanudación no lo repite.
+const salidaFd = SALIDA ? fs.openSync(SALIDA, 'a') : null;
+const ESCRIBE = salidaFd === null
+  ? (s) => process.stdout.write(s)
+  : (s) => { fs.writeSync(salidaFd, s); fs.fsyncSync(salidaFd); };
+const HECHOS = hechos;
+
+process.stderr.write(`arena: ${NAME_A} vs ${NAME_B} · pares ${FIRST}..${FIRST + PAIRS - 1}` +
+  ` · seed ${SEED}` + (SALIDA ? ` · ${hechos.size} partidas ya hechas en ${SALIDA}` : '') + '\n');
 eval(gameSrc + '\n' + driverSrc);
+if (salidaFd !== null) fs.closeSync(salidaFd);

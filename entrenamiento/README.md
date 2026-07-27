@@ -38,6 +38,37 @@ arena**.
 Conclusión del ciclo 2: los valores vigentes sobrevivieron a un retador serio
 entrenado con datos más profundos. Confianza reforzada; sin cambio de valores.
 
+## Entrenamiento continuo (sobrevive a apagones)
+
+`./instalar-servicio.sh` deja el entrenamiento corriendo como servicio de
+macOS: arranca solo al iniciar sesión y, si se apaga el ordenador, al volver
+sigue por donde iba.
+
+```sh
+./instalar-servicio.sh             # instalar y arrancar
+./instalar-servicio.sh estado      # ¿corre? ¿cuántas partidas lleva?
+./instalar-servicio.sh resultados  # elo/IC/p de lo jugado hasta ahora
+./instalar-servicio.sh parar       # detener (sigue instalado)
+./instalar-servicio.sh quitar      # desinstalar del arranque
+```
+
+Dos cosas que conviene saber:
+
+- **La reanudación la hace `arena.js`, no launchd.** Con `SALIDA=<fichero>`
+  añade cada partida al fichero (con volcado a disco inmediato) y al arrancar
+  se salta los pares que ya estén dentro. Un corte solo pierde la partida a
+  medias; el resto no se repite. Verificado matando el servicio con SIGKILL:
+  launchd lo relanzó en 60 s y no duplicó ninguna partida.
+- **El servicio no trabaja dentro del repo.** macOS no deja que un LaunchAgent
+  lea `~/Documents`, así que `instalar-servicio.sh` copia el motor y las
+  herramientas a `~/Library/Application Support/ajedrez-triangular-entrenamiento`
+  y trabaja ahí (`MOTOR=` le dice a `arena.js` dónde está el motor). La copia
+  es una foto fija: para entrenar con una versión nueva del motor, vuelve a
+  ejecutar `./instalar-servicio.sh`.
+
+La tanda instalada (ronda 9) mide el **pico de movilidad a profundidad 4**:
+movilidad 4 (lo que juega hoy el motor) contra 3 y contra 5.
+
 ## Datos
 
 - `corp/` — corpus de posiciones del ciclo 2 (autojuego nivel 4, prof. 3).
