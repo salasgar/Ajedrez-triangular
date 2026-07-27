@@ -492,6 +492,73 @@ function appendAnalysisSection({ list, baseIndex, played, action, hint, header }
 // esa posición en modo revisión (solo lectura, como la reproducción ◀◀/▶▶):
 // no toca game.histIndex ni interrumpe al ordenador. La fila de la posición
 // mostrada queda resaltada (clase `current`).
+// Texto y anotación de cada jugada, cacheados por índice del historial: el
+// texto exige reconstruir el tablero anterior (un Map de ~40 piezas) y la
+// lista entera se repinta en cada render(), también cada 500 ms durante la
+// reproducción. Solo se calcula la fila que aún no está en la caché; se
+// invalida al deshacer, cargar o empezar partida (ver invalidateSheetCache).
+// Se autovalida comparando la jugada guardada con la del historial, así que
+// no hay que acordarse de invalidarla al deshacer, cargar o empezar partida:
+// si la entrada i ya no describe la misma jugada (o le ha llegado el
+// análisis después), se recalcula sola.
+const sheetCache = [];
+
+// Anotación de error: cuánto empeoró la evaluación al hacer la jugada,
+// comparando la de la posición anterior con la de la resultante.
+//
+// No sirve comparar la jugada con la mejor de su propia lista: el ordenador
+// siempre elige dentro de PLAY_TOLERANCE (25 cp) de la mejor, así que por
+// construcción nunca se desviaría lo bastante. La comparación entre
+// posiciones consecutivas, en cambio, mide lo que de verdad pasó —y es lo
+// que hacen los analizadores de partidas—: la evaluación de después la hizo
+// una búsqueda que ya vio la respuesta del rival.
+//
+// Necesita evaluación en las dos posiciones, así que solo aparece con el
+// análisis guardado en ambas (típicamente ordenador contra ordenador).
+const BLUNDER_MARKS = [[400, '??', 'Error grave'], [150, '?', 'Error'],
+  [50, '?!', 'Imprecisión']];
+
+// Evaluación de la posición i en centipeones desde el punto de vista de las
+// BLANCAS, o null si esa posición no tiene análisis guardado. El análisis de
+// history[i] puntúa desde quien movió (blancas cuando i es impar).
+function evalWhiteAt(i) {
+  const an = game.history[i] && game.history[i].analysis;
+  if (!Array.isArray(an)) return null;
+  const jugada = an.find(e => e.chosen);
+  if (!jugada) return null;
+  return (i % 2 === 1) ? jugada.score : -jugada.score;
+}
+
+function moveAnnotation(i) {
+  const antes = evalWhiteAt(i - 1);
+  const despues = evalWhiteAt(i);
+  if (antes === null || despues === null) return null;
+  // pérdida del que movió: las blancas pierden cuando la evaluación baja
+  const perdida = (i % 2 === 1) ? antes - despues : despues - antes;
+  for (const [umbral, marca, titulo] of BLUNDER_MARKS) {
+    if (perdida >= umbral) {
+      return { marca, titulo: `${titulo}: la evaluación empeoró ${(perdida / 100).toFixed(2)} peones` };
+    }
+  }
+  return null;
+}
+
+function sheetEntry(i) {
+  const h = game.history[i];
+  const { from, to, castle } = h.lastMove;
+  // marca del análisis: cambia cuando el ordenador lo adjunta tras mover
+  const anTag = Array.isArray(h.analysis) ? h.analysis.length : (h.analysis || 0);
+  const hit = sheetCache[i];
+  if (hit && hit.from === from && hit.to === to && hit.anTag === anTag) return hit;
+  const prevBoard = new Map(game.history[i - 1].board);
+  sheetCache[i] = {
+    from, to, anTag,
+    texto: moveText(prevBoard, from, to, castle),
+    anot: moveAnnotation(i),
+  };
+  return sheetCache[i];
+}
+
 function renderScoresheet() {
   scoresheetBodyEl.innerHTML = '';
   const list = document.createElement('div');
@@ -499,8 +566,7 @@ function renderScoresheet() {
   const cur = effIndex();
 
   for (let i = 1; i < game.history.length; i++) {
-    const prevBoard = new Map(game.history[i - 1].board);
-    const { from, to, castle } = game.history[i].lastMove;
+    const entrada = sheetEntry(i);
     const row = document.createElement('div');
     row.className = 'sheet-row' + (i === cur ? ' current' : '');
 
@@ -511,9 +577,17 @@ function renderScoresheet() {
     num.textContent = (i % 2 === 1) ? Math.ceil(i / 2) + '.' : '';
     const mv = document.createElement('span');
     mv.className = 'sheet-move';
-    mv.textContent = moveText(prevBoard, from, to, castle);
+    mv.textContent = entrada.texto;
     row.appendChild(num);
     row.appendChild(mv);
+    if (entrada.anot) {
+      const marca = document.createElement('span');
+      marca.className = 'sheet-mark mark-' + (entrada.anot.marca === '??' ? 'bad'
+        : entrada.anot.marca === '?' ? 'mid' : 'soft');
+      marca.textContent = entrada.anot.marca;
+      marca.title = entrada.anot.titulo;
+      row.appendChild(marca);
+    }
 
     row.addEventListener('click', () => {
       if (playTimer) { clearInterval(playTimer); playTimer = null; }
@@ -537,11 +611,89 @@ function renderScoresheet() {
   if (currentRow) currentRow.scrollIntoView({ block: 'nearest' });
 }
 
+// --- gráfica de la evaluación a lo largo de la partida ---
+//
+// Aprovecha lo que ya está guardado: la puntuación de cada jugada del
+// ordenador (history[i].analysis, la entrada `chosen`). Esa puntuación viene
+// del punto de vista de quien movía; aquí se normaliza a «desde las blancas»
+// para que la curva se lea como en cualquier motor: arriba = mejor para
+// blancas. Los mates se recortan a ±10 peones para que no aplasten la escala.
+const EVAL_CAP = 1000;
+const CHART_W = 260, CHART_H = 68;
+
+function evalSeries() {
+  const pts = [];
+  for (let i = 1; i < game.history.length; i++) {
+    const v = evalWhiteAt(i);   // ya viene normalizada a «desde las blancas»
+    if (v === null) continue;
+    pts.push({ i, v: Math.max(-EVAL_CAP, Math.min(EVAL_CAP, v)) });
+  }
+  return pts;
+}
+
+function buildEvalChart() {
+  const pts = evalSeries();
+  if (pts.length < 2) return null;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${CHART_W} ${CHART_H}`);
+  svg.setAttribute('class', 'eval-chart');
+  const maxI = game.history.length - 1;
+  const x = i => (maxI <= 1 ? 0 : (i / maxI) * CHART_W);
+  const y = v => CHART_H / 2 - (v / EVAL_CAP) * (CHART_H / 2 - 2);
+
+  const el = (tag, attrs) => {
+    const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  };
+  // banda de igualdad y línea del cero
+  svg.appendChild(el('rect', { x: 0, y: y(50), width: CHART_W,
+    height: Math.max(1, y(-50) - y(50)), class: 'eval-band' }));
+  svg.appendChild(el('line', { x1: 0, y1: y(0), x2: CHART_W, y2: y(0), class: 'eval-zero' }));
+  // área bajo la curva y curva
+  const d = pts.map((p, k) => (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+  svg.appendChild(el('path', {
+    d: d + ` L${x(pts[pts.length - 1].i).toFixed(1)} ${y(0).toFixed(1)} L${x(pts[0].i).toFixed(1)} ${y(0).toFixed(1)} Z`,
+    class: 'eval-area',
+  }));
+  svg.appendChild(el('path', { d, class: 'eval-line' }));
+  // marca de la jugada que se está viendo
+  const cur = effIndex();
+  if (cur >= 1) {
+    svg.appendChild(el('line', { x1: x(cur), y1: 0, x2: x(cur), y2: CHART_H, class: 'eval-cursor' }));
+  }
+  // zonas clicables: una por jugada con dato, para saltar a esa posición
+  for (const p of pts) {
+    const hit = el('rect', { x: Math.max(0, x(p.i) - 3), y: 0, width: 6, height: CHART_H,
+      class: 'eval-hit' });
+    const tip = el('title', {});
+    tip.textContent = `Jugada ${Math.ceil(p.i / 2)}${p.i % 2 ? '' : '…'}: ` +
+      `${formatScore(p.v)} para las blancas`;
+    hit.appendChild(tip);
+    hit.addEventListener('click', () => {
+      if (playTimer) { clearInterval(playTimer); playTimer = null; }
+      reviewIndex = (p.i === game.history.length - 1) ? null : p.i;
+      render();
+    });
+    svg.appendChild(hit);
+  }
+  return svg;
+}
+
 function renderAnalysis() {
   analysisBodyEl.innerHTML = '';
   const idx = effIndex();
   const retro = retroAnalysis(idx);
   const next = nextAnalysis(idx);
+
+  const chart = buildEvalChart();
+  if (chart) {
+    const caja = document.createElement('div');
+    caja.className = 'eval-box';
+    caja.title = 'Evaluación desde el punto de vista de las blancas; pulsa para ir a esa jugada';
+    caja.appendChild(chart);
+    analysisBodyEl.appendChild(caja);
+  }
 
   // Intervenir (rehacer/forzar) solo tiene sentido en el extremo vivo del
   // historial, sin una búsqueda a medias y con la partida en pausa (el análisis

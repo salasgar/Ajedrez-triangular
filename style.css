@@ -238,6 +238,41 @@ h1 {
     white-space: nowrap;
 }
 
+/* Anotación de la jugada (?!, ?, ??): cuánto peor fue de lo mejor que vio
+   el análisis de esa posición. Solo aparece con el análisis guardado. */
+.sheet-mark {
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding-left: 4px;
+}
+
+.mark-soft { color: #d8c169; }   /* ?!  imprecisión */
+.mark-mid  { color: #e09a4a; }   /* ?   error */
+.mark-bad  { color: #e06c5a; }   /* ??  error grave */
+
+/* --- gráfica de evaluación --- */
+
+.eval-box {
+    background: #1b1b1b;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.eval-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.eval-band { fill: #ffffff10; }                                   /* zona de igualdad */
+.eval-zero { stroke: #555; stroke-width: 1; }
+.eval-area { fill: #6f9fd815; }
+.eval-line { fill: none; stroke: #6f9fd8; stroke-width: 1.5; stroke-linejoin: round; }
+.eval-cursor { stroke: #d8c169; stroke-width: 1; stroke-dasharray: 2 2; }
+.eval-hit { fill: transparent; cursor: pointer; }
+.eval-hit:hover { fill: #ffffff18; }
+
 /* --- panel de análisis --- */
 
 #analysis-body {
@@ -513,3 +548,72 @@ h1 {
 .mini-board .piece { font-size: 34px; }
 .mini-board .piece-E { font-size: 30px; }
 .mini-board .piece-P { font-size: 27.2px; }
+
+/* --- pantallas estrechas (móvil y tableta en vertical) ---
+
+   El diseño base es de dos columnas: tablero a la izquierda, panel de 300 px
+   a la derecha. Por debajo de 900 px no caben lado a lado, así que el panel
+   pasa debajo del tablero y ocupa el ancho; y por debajo de 560 px se agrandan
+   los blancos táctiles (los botones de la barra eran de 34 px, por debajo de
+   los 44 px recomendados para el dedo). */
+
+@media (max-width: 900px) {
+    body { padding: 12px; }
+
+    .layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    /* el tablero manda: ocupa el ancho disponible sin pasarse de alto */
+    #board-col { width: min(96vw, 92vmin, 780px); }
+
+    #panel {
+        width: min(96vw, 780px);
+        box-sizing: border-box;
+    }
+
+    /* con el panel ancho caben más jugadas a la vista */
+    .sheet-list { max-height: 12em; }
+}
+
+@media (max-width: 560px) {
+    h1 {
+        font-size: 1.4rem;
+        margin-bottom: 12px;
+    }
+
+    body { padding: 8px; }
+
+    #toolbar { gap: 4px; }
+
+    /* blanco táctil de 44 px, con el icono del mismo tamaño de siempre */
+    #toolbar button {
+        width: 44px;
+        height: 44px;
+    }
+
+    #panel {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    /* los desplegables y botones de guardado, cómodos con el dedo */
+    #mode-box select,
+    #save-box select,
+    #save-box button,
+    #new-game {
+        min-height: 40px;
+        font-size: 0.95rem;
+    }
+
+    .sheet-row { padding: 3px 4px; }
+    .sheet-move { font-size: 0.78rem; }
+}
+
+/* Puntero grueso (dedo) a cualquier ancho: las filas de jugada y de análisis
+   son objetivos de pulsación, no solo de ratón. */
+@media (pointer: coarse) {
+    .sheet-row, .an-row { padding-top: 5px; padding-bottom: 5px; }
+}
