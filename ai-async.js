@@ -88,6 +88,16 @@ function failoverToSync() {
 // `opts` viaja tal cual a chooseAiMove (p. ej. {analyze: true}); `state`
 // permite analizar una posición que no sea la viva (ver stateAtIndex).
 function requestAiMove(level, cb, opts = {}, state = searchState()) {
+  // Petición sobre petición: antes se sobrescribía aiPending en silencio y la
+  // PRIMERA respuesta del worker (de la búsqueda vieja) se entregaba al
+  // callback nuevo — una jugada para otra posición. Los llamantes de
+  // script.js comprueban aiBusy(), así que llegar aquí es un descuido:
+  // se descarta la búsqueda vieja de forma explícita (con su worker, que es
+  // la única manera de interrumpirla) y se avisa por consola.
+  if (aiPending) {
+    console.warn('requestAiMove con una búsqueda en curso: se descarta la anterior.');
+    abortAiSearch();
+  }
   if (!aiWorkerBroken && !aiWorker) {
     try { aiWorker = startAiWorker(); }
     catch (err) {
@@ -102,6 +112,14 @@ function requestAiMove(level, cb, opts = {}, state = searchState()) {
 
 // ¿Hay una búsqueda en marcha? (el worker atiende una petición cada vez)
 function aiBusy() { return aiPending !== null; }
+
+// Da otra oportunidad al worker (p. ej. al empezar partida nueva): un fallo
+// puntual —pestaña sin memoria, extensión que bloquea blobs— no debería
+// condenar la sesión entera al cálculo síncrono, que congela la página.
+function resetAiWorker() {
+  if (aiPending) return;              // no tocar una búsqueda en curso
+  aiWorkerBroken = false;
+}
 
 // Descarta la búsqueda en curso, si la hay. Matar el worker es la única forma
 // de interrumpirlo; se recreará en la siguiente petición.

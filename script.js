@@ -757,6 +757,7 @@ document.getElementById('new-game').addEventListener('click', () => {
   const alreadyFreshAndPaused = gamePaused && game.history.length === 1;
   exitReview();
   cancelAi();
+  resetAiWorker();   // partida nueva = otra oportunidad para el worker caído
   newGame();
   liveAnalysis = null;
   gamePaused = !alreadyFreshAndPaused;   // si no, arranca en pausa: da tiempo a elegir modalidad/nivel

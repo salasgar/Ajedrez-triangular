@@ -38,14 +38,36 @@ function serializeGame(mode, levelW, levelB) {
   };
 }
 
+const SAVE_PIECES = new Set(['P', 'N', 'B', 'E', 'R', 'Q', 'K']);
+
 function validateSave(data) {
   if (!data || data.version !== SAVE_VERSION) return false;
   if (!Array.isArray(data.history) || data.history.length === 0) return false;
   if (!Number.isInteger(data.histIndex) ||
       data.histIndex < 0 || data.histIndex >= data.history.length) return false;
   if (!['hh', 'hc', 'ch', 'cc'].includes(data.mode)) return false;
-  const okSnap = s => s && Array.isArray(s.board) && typeof s.turn === 'string';
-  return okSnap(data.history[0]) && okSnap(data.history[data.histIndex]);
+  // Se valida CADA snapshot, no solo el primero y el actual: los datos entran
+  // directos al motor (applySave no clona) y la interfaz los desestructura
+  // sin red (renderScoresheet lee lastMove.from de todas las filas). Un .json
+  // importado con un snapshot a medias no debe pasar de aquí.
+  return data.history.every((s, i) => {
+    if (!s || (s.turn !== 'w' && s.turn !== 'b')) return false;
+    if (!Array.isArray(s.board) || s.board.length === 0) return false;
+    let reyes = 0;
+    for (const ent of s.board) {
+      if (!Array.isArray(ent) || ent.length !== 2) return false;
+      const [key, p] = ent;
+      if (!CELL_MAP.has(key)) return false;
+      if (!p || !SAVE_PIECES.has(p.type) ||
+          (p.color !== 'w' && p.color !== 'b')) return false;
+      if (p.type === 'K') reyes++;
+    }
+    if (reyes !== 2) return false;   // el mate no captura al rey: siempre 2
+    // toda jugada del historial (i >= 1) lleva su lastMove
+    if (i > 0 && (!s.lastMove || typeof s.lastMove.from !== 'string' ||
+        typeof s.lastMove.to !== 'string')) return false;
+    return true;
+  });
 }
 
 function applySave(data) {
