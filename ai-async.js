@@ -15,9 +15,10 @@ const AI_WORKER_FNS = [
   positionKey, slideMoves, pseudoMoves, attacks, findKing, isAttacked, rival,
   legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
-  drawScore, movesForSide, applyMoveSim, centrality, pawnAdvance, evaluate,
-  capturedBy, orderMoves, countSlide, countPseudoMoves, rayCaptures,
-  genCaptures, quiesce, negamax, chooseAiMove,
+  drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
+  genMoves, centrality, pawnAdvance, evaluate, capturedBy, orderMoves,
+  countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
+  chooseAiMove,
 ];
 const AI_WORKER_CONSTS = {
   N, PIECE_VALUE, MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,

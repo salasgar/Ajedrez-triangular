@@ -137,6 +137,123 @@ function applyMoveSim(board, fromKey, toKey, ep) {
     : null;
 }
 
+// --- make/unmake: la búsqueda muta UN tablero en sitio y deshace ---
+//
+// Hasta aquí cada nodo copiaba el Map entero (~40 piezas) y cada test de
+// legalidad otro más. Ahora chooseAiMove hace UNA copia profunda en la raíz
+// (innegociable: game.board llega por referencia en la vía síncrona, y los
+// snapshots del historial comparten los objetos-pieza con el tablero vivo) y
+// a partir de ahí makeSim/unmakeSim mutan esa copia y sus piezas en sitio.
+// El registro de undo es un objeto reutilizable por ply: cero asignaciones
+// por nodo.
+
+function deepCopyBoard(board) {
+  const out = new Map();
+  for (const [k, p] of board) out.set(k, { ...p });
+  return out;
+}
+
+// Aplica la jugada mutando tablero y pieza, apunta lo necesario para
+// deshacerla en `u`, mantiene `kings` (color → clave de su rey) y devuelve
+// el nuevo estado de captura al paso. Mismos efectos que applyMoveSim.
+function makeSim(board, fromKey, toKey, ep, u, kings) {
+  const piece = board.get(fromKey);
+  u.fromKey = fromKey; u.toKey = toKey; u.piece = piece;
+  u.prevMoved = piece.moved; u.prevType = piece.type;
+  u.captured = null; u.capturedKey = null; u.castle = null;
+
+  // enroque: toKey es la casilla de la torre propia (ver CASTLING en rules.js)
+  if (isCastling(board, fromKey, toKey)) {
+    const rook = board.get(toKey);
+    const { kingTo, rookTo } = castlingLanding(piece.color, fromKey, toKey);
+    u.castle = { rook, rookPrevMoved: rook.moved, kingTo, rookTo };
+    board.delete(fromKey);
+    board.delete(toKey);
+    piece.moved = true;
+    rook.moved = true;
+    board.set(kingTo, piece);
+    board.set(rookTo, rook);
+    kings[piece.color] = kingTo;
+    return null;
+  }
+
+  if (piece.type === 'P' && !board.get(toKey) && ep && toKey === ep.targetKey) {
+    u.captured = board.get(ep.pawnKey);
+    u.capturedKey = ep.pawnKey;
+    board.delete(ep.pawnKey);
+  } else {
+    const v = board.get(toKey);
+    if (v) { u.captured = v; u.capturedKey = toKey; }
+  }
+  board.delete(fromKey);
+  piece.moved = true;
+  const fromCell = CELL_MAP.get(fromKey);
+  const toCell = CELL_MAP.get(toKey);
+  if (piece.type === 'P' &&
+    ((piece.color === 'w' && toCell.b === N) ||
+      (piece.color === 'b' && toCell.b === 1 - N))) {
+    piece.type = 'Q';
+  }
+  board.set(toKey, piece);
+  if (u.prevType === 'K') kings[piece.color] = toKey;
+  return (u.prevType === 'P' && Math.abs(toCell.b - fromCell.b) === 2)
+    ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
+    : null;
+}
+
+function unmakeSim(board, u, kings) {
+  const piece = u.piece;
+  if (u.castle) {
+    board.delete(u.castle.kingTo);
+    board.delete(u.castle.rookTo);
+    piece.moved = u.prevMoved;
+    u.castle.rook.moved = u.castle.rookPrevMoved;
+    board.set(u.fromKey, piece);
+    board.set(u.toKey, u.castle.rook);
+    kings[piece.color] = u.fromKey;
+    return;
+  }
+  board.delete(u.toKey);
+  piece.moved = u.prevMoved;
+  piece.type = u.prevType;
+  board.set(u.fromKey, piece);
+  if (u.captured) board.set(u.capturedKey, u.captured);
+  if (u.prevType === 'K') kings[piece.color] = u.fromKey;
+}
+
+// Jugadas legales para la búsqueda: como movesForSide pero validando con
+// make/unmake sobre el mismo tablero en vez de copiar el Map por candidato
+// (y con el rey localizado en `kings`, sin el barrido lineal de findKing).
+// Conserva el orden de movesForSide: piezas en orden del Map y el enroque
+// pegado a las demás jugadas del rey.
+function genMoves(board, color, ep, kings, probe) {
+  const out = [];
+  const seen = new Set();
+  // Lista congelada: el sondeo con make/unmake borra y reinserta entradas, y
+  // un Map de JS recoloca lo reinsertado AL FINAL del orden de iteración —
+  // iterando el Map vivo, cada pieza sondeada se visitaría otra vez.
+  const entries = [...board.entries()];
+  for (const [key, p] of entries) {
+    if (p.color !== color) continue;
+    const cell = CELL_MAP.get(key);
+    for (const t of pseudoMoves(board, cell, p, ep)) {
+      const id = key + '>' + t.key;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      makeSim(board, key, t.key, ep, probe, kings);
+      const ok = !isAttacked(board, CELL_MAP.get(kings[color]), rival(color));
+      unmakeSim(board, probe, kings);
+      if (ok) out.push({ from: key, to: t.key });
+    }
+    // castleMoves ya devuelve el enroque comprobado; sus 2-6 copias de Map
+    // solo se pagan mientras el rey conserva el derecho a enrocar
+    if (p.type === 'K') {
+      for (const t of castleMoves(board, key, p)) out.push({ from: key, to: t.key });
+    }
+  }
+  return out;
+}
+
 // Material (y movilidad, según nivel) desde el punto de vista de `color`.
 function evaluate(board, color, cfg) {
   const values = cfg.pieceValues || PIECE_VALUE;
@@ -170,10 +287,14 @@ function capturedBy(board, m) {
   return v && v.color !== board.get(m.from).color ? v : null;
 }
 
-// capturas primero, la pieza más valiosa antes
+// capturas primero, la pieza más valiosa antes; los empates se rompen por
+// la clave from>to para que el orden no dependa del orden interno del Map
+// del tablero (make/unmake reinserta piezas al final y lo va barajando; sin
+// desempate fijo, el árbol explorado cambiaría de una ejecución a otra)
 function orderMoves(board, moves, values = PIECE_VALUE) {
   const gain = m => { const v = capturedBy(board, m); return v ? values[v.type] : -1; };
-  moves.sort((m1, m2) => gain(m2) - gain(m1));
+  moves.sort((m1, m2) => (gain(m2) - gain(m1)) ||
+    (m1.from + m1.to < m2.from + m2.to ? -1 : 1));
 }
 
 // Cuenta de una tirada de rayos sin construir el array (ver slideMoves, que
@@ -250,11 +371,13 @@ function rayCaptures(board, color, rays, out) {
 // será un cambio aparte y medido con la arena), NI enroque (aterriza sobre
 // torre propia). El Set deduplica el primer paso de los rayos de torre/dama
 // que solapan, como hace movesForSide.
-function genCaptures(board, color, ep) {
+function genCaptures(board, color, ep, kings, probe) {
   const out = [];
   const seen = new Set();
   const cands = [];
-  for (const [key, p] of board) {
+  // lista congelada por la misma razón que en genMoves: el sondeo reordena el Map
+  const entries = [...board.entries()];
+  for (const [key, p] of entries) {
     if (p.color !== color) continue;
     const cell = CELL_MAP.get(key);
     cands.length = 0;
@@ -289,13 +412,10 @@ function genCaptures(board, color, ep) {
       const id = key + '>' + t.key;
       if (seen.has(id)) continue;
       seen.add(id);
-      // misma simulación de legalidad que legalMoves (sin el caso al paso:
-      // aquí el destino siempre está ocupado)
-      const copy = new Map(board);
-      copy.delete(key);
-      copy.set(t.key, p);
-      const king = p.type === 'K' ? t : findKing(copy, color);
-      if (!isAttacked(copy, king, rival(color))) out.push({ from: key, to: t.key });
+      makeSim(board, key, t.key, ep, probe, kings);
+      const ok = !isAttacked(board, CELL_MAP.get(kings[color]), rival(color));
+      unmakeSim(board, probe, kings);
+      if (ok) out.push({ from: key, to: t.key });
     }
   }
   return out;
@@ -308,22 +428,24 @@ function genCaptures(board, color, ep) {
 // o el resultado ya sea peor que lo que el rival puede forzar (poda alfa-
 // beta), y usa evaluate() como "stand pat": la posición tal cual, sin más
 // capturas, es al menos tan buena como el peor caso de seguir capturando.
-function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth) {
+function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth, sx, ply) {
   const values = cfg.pieceValues || PIECE_VALUE;
   const standPat = evaluate(board, color, cfg);
   if (standPat >= beta) return beta;
   if (standPat > alpha) alpha = standPat;
   if (qdepth <= 0) return alpha;
 
-  const captures = genCaptures(board, color, ep);
+  const captures = genCaptures(board, color, ep, sx.kings, sx.probe);
   if (captures.length === 0) return alpha;
   if (cfg.order) orderMoves(board, captures, values);
+  const u = sx.undo[ply];
   for (const m of captures) {
     const gain = values[capturedBy(board, m).type];
     if (standPat + gain + DELTA_MARGIN < alpha) continue;   // poda por diferencia
-    const copy = new Map(board);
-    const nextEp = applyMoveSim(copy, m.from, m.to, ep);
-    const score = -quiesce(copy, rival(color), nextEp, 0, keys, -beta, -alpha, cfg, qdepth - 1);
+    const nextEp = makeSim(board, m.from, m.to, ep, u, sx.kings);
+    const score = -quiesce(board, rival(color), nextEp, 0, keys, -beta, -alpha, cfg,
+      qdepth - 1, sx, ply + 1);
+    unmakeSim(board, u, sx.kings);
     if (score >= beta) return beta;
     if (score > alpha) alpha = score;
   }
@@ -338,7 +460,7 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth) {
 // frecuente: intercambiar dos jugadas propias que no interfieren entre sí
 // da la misma posición final). Vive solo dentro de una llamada a
 // chooseAiMove; no se comparte entre jugadas ni entre niveles.
-function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt) {
+function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt, sx, ply) {
   const values = cfg.pieceValues || PIECE_VALUE;
   // tablas por la regla de los 50 movimientos (ver FIFTY_MOVE_LIMIT en rules.js)
   if (clock >= FIFTY_MOVE_LIMIT) return drawScore(board, color, values);
@@ -353,7 +475,7 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt) {
   // intercambio; el resto evalúa directamente, como antes
   if (depth === 0) {
     return cfg.quiesce
-      ? quiesce(board, color, ep, clock, keys, alpha, beta, cfg, QUIESCE_MAX_DEPTH)
+      ? quiesce(board, color, ep, clock, keys, alpha, beta, cfg, QUIESCE_MAX_DEPTH, sx, ply)
       : evaluate(board, color, cfg);
   }
 
@@ -367,22 +489,23 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt) {
     if (alpha >= beta) return entry.score;
   }
 
-  const moves = movesForSide(board, color, ep);
+  const moves = genMoves(board, color, ep, sx.kings, sx.probe);
   if (moves.length === 0) {
-    const king = findKing(board, color);
     // mate (los más rápidos puntúan más) o tablas por ahogado
-    return isAttacked(board, king, rival(color)) ? -MATE - depth : drawScore(board, color, values);
+    return isAttacked(board, CELL_MAP.get(sx.kings[color]), rival(color))
+      ? -MATE - depth : drawScore(board, color, values);
   }
   if (cfg.order) orderMoves(board, moves, values);
   // registrar la posición para que las líneas descendientes la detecten
   keys.set(myKey, (keys.get(myKey) || 0) + 1);
   let best = -Infinity;
+  const u = sx.undo[ply];
   for (const m of moves) {
-    const copy = new Map(board);
     const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P') ? 0 : clock + 1;
-    const nextEp = applyMoveSim(copy, m.from, m.to, ep);
-    const score = -negamax(copy, rival(color), nextEp, nextClock, keys, depth - 1,
-      -beta, -alpha, cfg, tt);
+    const nextEp = makeSim(board, m.from, m.to, ep, u, sx.kings);
+    const score = -negamax(board, rival(color), nextEp, nextClock, keys, depth - 1,
+      -beta, -alpha, cfg, tt, sx, ply + 1);
+    unmakeSim(board, u, sx.kings);
     if (score > best) best = score;
     if (best > alpha) alpha = best;
     if (alpha >= beta) break;
@@ -436,14 +559,28 @@ const PLAY_TOLERANCE = 25;
 // ventana completa, que cuesta 2-3 veces más: ver el comentario del bucle.
 function chooseAiMove(level, st = searchState(), opts = {}) {
   const cfg = AI_LEVELS[level] || AI_LEVELS[1];
-  const moves = movesForSide(st.board, st.turn, st.enPassant);
+  // Copia profunda ÚNICA de la posición: en la vía síncrona st.board es el
+  // Map vivo de la partida (searchState no copia) y los snapshots del
+  // historial comparten los objetos-pieza. La búsqueda muta tablero y piezas
+  // en sitio (make/unmake), así que necesita ejemplares propios.
+  const board = deepCopyBoard(st.board);
+  const kings = { w: null, b: null };
+  for (const [key, p] of board) if (p.type === 'K') kings[p.color] = key;
+  // contexto de búsqueda: registros de undo preasignados por ply (ninguna
+  // asignación por nodo) y uno aparte para los sondeos de legalidad
+  const sx = {
+    kings,
+    probe: {},
+    undo: Array.from({ length: (cfg.depth || 1) + QUIESCE_MAX_DEPTH + 4 }, () => ({})),
+  };
+  const moves = genMoves(board, st.turn, st.enPassant, kings, sx.probe);
   if (moves.length === 0) return null;
   // el nivel 1 juega al azar: no hay puntuaciones que enseñar
   if (cfg.random) {
     const m = moves[Math.floor(Math.random() * moves.length)];
     return opts.analyze ? { ...m, analysis: null } : m;
   }
-  if (cfg.order) orderMoves(st.board, moves, cfg.pieceValues || PIECE_VALUE);
+  if (cfg.order) orderMoves(board, moves, cfg.pieceValues || PIECE_VALUE);
 
   // posiciones ya vistas en la partida, para las repeticiones en la búsqueda
   const keys = new Map();
@@ -485,14 +622,15 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   // que hay que enseñar para poder comparar unas jugadas con otras.
   let best = -Infinity;
   const scored = [];
+  const u = sx.undo[0];
   for (const m of moves) {
-    const copy = new Map(st.board);
-    const nextClock = (capturedBy(st.board, m) || st.board.get(m.from).type === 'P')
+    const nextClock = (capturedBy(board, m) || board.get(m.from).type === 'P')
       ? 0 : st.clock + 1;
-    const nextEp = applyMoveSim(copy, m.from, m.to, st.enPassant);
-    const score = -negamax(copy, rival(st.turn), nextEp, nextClock, keys,
+    const nextEp = makeSim(board, m.from, m.to, st.enPassant, u, kings);
+    const score = -negamax(board, rival(st.turn), nextEp, nextClock, keys,
       cfg.depth - 1, -Infinity, opts.analyze ? Infinity : -best + PLAY_TOLERANCE + 1,
-      cfg, tt);
+      cfg, tt, sx, 1);
+    unmakeSim(board, u, kings);
     if (score > best) best = score;
     scored.push({ move: m, score });
   }

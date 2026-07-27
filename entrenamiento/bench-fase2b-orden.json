@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase2b-orden",
+ "fecha": "2026-07-27T19:19:16.511Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 70,
+   "nodos": 8809
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 61,
+   "nodos": 9027
+  },
+  {
+   "id": "enroque-2",
+   "ms": 77,
+   "nodos": 8739
+  },
+  {
+   "id": "media-1",
+   "ms": 919,
+   "nodos": 73351
+  },
+  {
+   "id": "jaque-3",
+   "ms": 41,
+   "nodos": 3875
+  },
+  {
+   "id": "media-3",
+   "ms": 47,
+   "nodos": 7035
+  },
+  {
+   "id": "corona-2",
+   "ms": 56,
+   "nodos": 10334
+  }
+ ],
+ "totalMs": 1271,
+ "totalNodos": 121170,
+ "nodosPorSeg": 95334
+}

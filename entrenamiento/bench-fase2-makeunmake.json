@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase2-makeunmake",
+ "fecha": "2026-07-27T19:18:13.796Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 82,
+   "nodos": 12303
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 67,
+   "nodos": 11065
+  },
+  {
+   "id": "enroque-2",
+   "ms": 91,
+   "nodos": 13291
+  },
+  {
+   "id": "media-1",
+   "ms": 2145,
+   "nodos": 185402
+  },
+  {
+   "id": "jaque-3",
+   "ms": 57,
+   "nodos": 5037
+  },
+  {
+   "id": "media-3",
+   "ms": 46,
+   "nodos": 7177
+  },
+  {
+   "id": "corona-2",
+   "ms": 58,
+   "nodos": 10342
+  }
+ ],
+ "totalMs": 2546,
+ "totalNodos": 244617,
+ "nodosPorSeg": 96079
+}
