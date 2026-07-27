@@ -150,7 +150,7 @@ function evaluate(board, color, cfg) {
     const sign = p.color === color ? 1 : -1;
     score += sign * values[p.type];
     if (cfg.mobility) {
-      score += sign * mobilityWeight * pseudoMoves(board, CELL_MAP.get(key), p, null).length;
+      score += sign * mobilityWeight * countPseudoMoves(board, CELL_MAP.get(key), p);
     }
     const pw = posW && posW[p.type];
     if (pw) {
@@ -176,6 +176,131 @@ function orderMoves(board, moves, values = PIECE_VALUE) {
   moves.sort((m1, m2) => gain(m2) - gain(m1));
 }
 
+// Cuenta de una tirada de rayos sin construir el array (ver slideMoves, que
+// es idéntico pero materializa la lista).
+function countSlide(board, piece, rays) {
+  let n = 0;
+  for (const ray of rays) {
+    for (const t of ray) {
+      const occ = board.get(t.key);
+      if (!occ) { n++; continue; }
+      if (occ.color !== piece.color) n++;
+      break;
+    }
+  }
+  return n;
+}
+
+// pseudoMoves(...).length sin materializar los arrays: es lo único que
+// necesita la movilidad de evaluate(), que generaba y descartaba un array
+// por pieza en cada hoja. Replica la cuenta EXACTA con ep = null, incluidos
+// los destinos repetidos donde los rayos solapan (la movilidad de siempre
+// los cuenta, y cambiarlo sería cambiar la evaluación). El peón delega en
+// pseudoMoves: sus listas son diminutas y la deduplicación del doble avance
+// es demasiado delicada para duplicarla.
+function countPseudoMoves(board, cell, piece) {
+  switch (piece.type) {
+    case 'R': return countSlide(board, piece, cell.rookRays);
+    case 'B': return countSlide(board, piece, cell.bishopRays);
+    case 'Q': return countSlide(board, piece, cell.rookRays)
+      + countSlide(board, piece, cell.elephantRays);
+    case 'E': return countSlide(board, piece, cell.elephantRays);
+    case 'N': {
+      let n = 0;
+      for (const t of cell.knightTargets) {
+        const o = board.get(t.key);
+        if (!o || o.color !== piece.color) n++;
+      }
+      return n;
+    }
+    case 'K': {
+      let n = 0;
+      for (const t of cell.kingNbrs) {
+        const o = board.get(t.key);
+        if (!o || o.color !== piece.color) n++;
+      }
+      return n;
+    }
+    case 'P': return pseudoMoves(board, cell, piece, null).length;
+  }
+  return 0;
+}
+
+// Primer ocupante de cada rayo, si es rival: los únicos destinos de captura
+// de una pieza deslizante.
+function rayCaptures(board, color, rays, out) {
+  for (const ray of rays) {
+    for (const t of ray) {
+      const occ = board.get(t.key);
+      if (!occ) continue;
+      if (occ.color !== color) out.push(t);
+      break;
+    }
+  }
+}
+
+// Capturas legales de un color, generadas directamente. quiesce() pagaba
+// movesForSide entero —generación Y comprobación de legalidad de TODOS los
+// movimientos, cada una con su copia de tablero— para quedarse con 2-6
+// capturas. Aquí solo nacen los destinos con pieza rival y solo esos pasan
+// el test de legalidad.
+//
+// Replica el filtro actual `capturedBy != null`: NI captura al paso (su
+// destino está vacío, así que hoy tampoco entra en quiesce — corregir eso
+// será un cambio aparte y medido con la arena), NI enroque (aterriza sobre
+// torre propia). El Set deduplica el primer paso de los rayos de torre/dama
+// que solapan, como hace movesForSide.
+function genCaptures(board, color, ep) {
+  const out = [];
+  const seen = new Set();
+  const cands = [];
+  for (const [key, p] of board) {
+    if (p.color !== color) continue;
+    const cell = CELL_MAP.get(key);
+    cands.length = 0;
+    switch (p.type) {
+      case 'R': rayCaptures(board, color, cell.rookRays, cands); break;
+      case 'B': rayCaptures(board, color, cell.bishopRays, cands); break;
+      case 'Q':
+        rayCaptures(board, color, cell.rookRays, cands);
+        rayCaptures(board, color, cell.elephantRays, cands);
+        break;
+      case 'E': rayCaptures(board, color, cell.elephantRays, cands); break;
+      case 'N':
+        for (const t of cell.knightTargets) {
+          const o = board.get(t.key);
+          if (o && o.color !== color) cands.push(t);
+        }
+        break;
+      case 'K':
+        for (const t of cell.kingNbrs) {
+          const o = board.get(t.key);
+          if (o && o.color !== color) cands.push(t);
+        }
+        break;
+      case 'P':
+        for (const t of cell.pawnCap[color]) {
+          const o = board.get(t.key);
+          if (o && o.color !== color) cands.push(t);
+        }
+        break;
+    }
+    for (const t of cands) {
+      const id = key + '>' + t.key;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      // misma simulación de legalidad que legalMoves (sin el caso al paso:
+      // aquí el destino siempre está ocupado)
+      const copy = new Map(board);
+      copy.delete(key);
+      copy.set(t.key, p);
+      const king = p.type === 'K' ? t : findKing(copy, color);
+      if (!isAttacked(copy, king, rival(color))) out.push({ from: key, to: t.key });
+    }
+  }
+  return out;
+}
+
 // Búsqueda de quietud: al llegar a una hoja, evaluate() puede pillar la
 // posición a mitad de un intercambio de capturas (efecto horizonte) y ver
 // una pieza como perdida sin ver la recaptura que la compensa. quiesce()
@@ -190,7 +315,7 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth) {
   if (standPat > alpha) alpha = standPat;
   if (qdepth <= 0) return alpha;
 
-  const captures = movesForSide(board, color, ep).filter(m => capturedBy(board, m));
+  const captures = genCaptures(board, color, ep);
   if (captures.length === 0) return alpha;
   if (cfg.order) orderMoves(board, captures, values);
   for (const m of captures) {

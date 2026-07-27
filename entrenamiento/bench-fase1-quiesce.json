@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase1-quiesce",
+ "fecha": "2026-07-27T19:11:02.205Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 94,
+   "nodos": 9971
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 84,
+   "nodos": 10268
+  },
+  {
+   "id": "enroque-2",
+   "ms": 106,
+   "nodos": 9319
+  },
+  {
+   "id": "media-1",
+   "ms": 998,
+   "nodos": 72206
+  },
+  {
+   "id": "jaque-3",
+   "ms": 66,
+   "nodos": 5117
+  },
+  {
+   "id": "media-3",
+   "ms": 55,
+   "nodos": 7009
+  },
+  {
+   "id": "corona-2",
+   "ms": 61,
+   "nodos": 10059
+  }
+ ],
+ "totalMs": 1464,
+ "totalNodos": 123949,
+ "nodosPorSeg": 84665
+}
