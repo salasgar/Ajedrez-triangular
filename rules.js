@@ -209,7 +209,8 @@ function positionKey(board, turn, ep) {
 
 function gameEnded() {
   return game.status === 'checkmate' || game.status === 'stalemate' ||
-    game.status === 'repetition' || game.status === 'fifty';
+    game.status === 'repetition' || game.status === 'fifty' ||
+    game.status === 'material';
 }
 
 // --- generación de movimientos ---
@@ -322,7 +323,23 @@ function sideHasMoves(board, color, ep = game && game.enPassant) {
   return false;
 }
 
-function makeMove(fromKey, toKey) {
+// Piezas a las que puede coronar un peón. La dama es la primera: es la
+// opción por defecto y la que juega siempre el ordenador (subcoronar es
+// rarísimo y ensancharía la búsqueda por cuatro).
+const PROMOTION_CHOICES = ['Q', 'R', 'E', 'B', 'N'];
+
+// ¿Esta jugada corona? (la comprobación vive aquí para que la interfaz no
+// tenga que repetir la condición de la fila de coronación)
+function isPromotion(board, fromKey, toKey) {
+  const p = board.get(fromKey);
+  if (!p || p.type !== 'P') return false;
+  const b = CELL_MAP.get(toKey).b;
+  return (p.color === 'w' && b === N) || (p.color === 'b' && b === 1 - N);
+}
+
+// `promo` es el tipo elegido al coronar; si no se pasa, dama (comportamiento
+// de siempre, y el que usan la IA y las partidas guardadas antiguas).
+function makeMove(fromKey, toKey, promo) {
   const piece = game.board.get(fromKey);
   const target = game.board.get(toKey);
   const fromCell = CELL_MAP.get(fromKey);
@@ -358,19 +375,35 @@ function makeMove(fromKey, toKey) {
 
   game.board.delete(fromKey);
   const moved = { ...piece, moved: true };
-  // Promoción: el peón que alcanza la fila del borde rival se convierte en dama
+  // Promoción: el peón que alcanza la fila del borde rival se convierte en la
+  // pieza elegida (dama si no se eligió ninguna)
+  let promoted = null;
   if (moved.type === 'P' &&
     ((moved.color === 'w' && toCell.b === N) ||
       (moved.color === 'b' && toCell.b === 1 - N))) {
-    moved.type = 'Q';
+    promoted = PROMOTION_CHOICES.includes(promo) ? promo : 'Q';
+    moved.type = promoted;
   }
   game.board.set(toKey, moved);
   // un doble avance de peón deja al rival la opción de capturar al paso
   game.enPassant = (piece.type === 'P' && Math.abs(toCell.b - fromCell.b) === 2)
     ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
     : null;
-  game.lastMove = { from: fromKey, to: toKey };
+  game.lastMove = { from: fromKey, to: toKey, ...(promoted ? { promo: promoted } : {}) };
   finishMove(piece.color, !!captured, piece.type === 'P');
+}
+
+// Posición muerta: con este material ya no puede darse mate de ninguna
+// manera, así que la partida son tablas.
+//
+// Aquí la regla es MUCHO más corta que en el ajedrez clásico, y se ha
+// comprobado por fuerza bruta, no copiado: en esta retícula triangular el rey
+// se acorrala contra el borde del hexágono con muy poco, y K+N contra K o
+// K+B contra K —tablas muertas en el ajedrez de siempre— SÍ tienen posiciones
+// de mate. Lo mismo el elefante, la torre, la dama y hasta el peón (que
+// además corona). El único final sin mate posible es rey contra rey.
+function deadPosition(board) {
+  return board.size === 2;   // los dos reyes y nada más
 }
 
 // Cierre común a toda jugada, ya aplicada sobre el tablero: pasa el turno,
@@ -394,6 +427,7 @@ function finishMove(color, captured, isPawn) {
   if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = color; }
   else if (!hasMoves) { game.status = 'stalemate'; }
   else if (reps >= 3) { game.status = 'repetition'; }   // aun con jaque: perpetuo
+  else if (deadPosition(game.board)) { game.status = 'material'; }
   else if (game.clock >= FIFTY_MOVE_LIMIT) { game.status = 'fifty'; }
   else if (inCheck) { game.status = 'check'; }
   else { game.status = 'playing'; }

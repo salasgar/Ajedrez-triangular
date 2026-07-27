@@ -107,9 +107,22 @@ function onCellClick(cell) {
   if (aiConfig[game.turn] !== null) return;   // le toca al ordenador
 
   if (selected && legalTargets.some(t => t.key === cell.key)) {
-    makeMove(selected, cell.key);
+    const from = selected, to = cell.key;
     selected = null;
     legalTargets = [];
+    // coronando: hay que elegir pieza antes de mover (la IA siempre corona a
+    // dama, pero el humano decide)
+    if (isPromotion(game.board, from, to)) {
+      askPromotion(game.board.get(from).color, (tipo) => {
+        makeMove(from, to, tipo);
+        gamePaused = false;
+        render();
+        scheduleAi();
+      });
+      render();   // repinta sin la selección mientras se elige
+      return;
+    }
+    makeMove(from, to);
     // el humano mueve: si estaba en pausa, la partida se reanuda sola
     gamePaused = false;
     render();
@@ -271,6 +284,9 @@ function render() {
   } else if (status === 'fifty') {
     turnEl.textContent = 'Fin de la partida';
     statusEl.textContent = 'Tablas por la regla de los 50 movimientos.';
+  } else if (status === 'material') {
+    turnEl.textContent = 'Fin de la partida';
+    statusEl.textContent = 'Tablas: solo quedan los reyes.';
   } else {
     turnEl.textContent = `Juegan las ${names[turn]}`;
     let msg = status === 'check' ? '¡Jaque!' : '';
@@ -307,6 +323,60 @@ function render() {
 function clearSelection() {
   selected = null;
   legalTargets = [];
+}
+
+// --- elección de pieza al coronar ---
+//
+// Se pregunta solo al humano: la IA corona siempre a dama (subcoronar es
+// rarísimo y multiplicaría por cinco las ramas de cada peón en la séptima).
+// El diálogo se monta sobre el tablero y no deja seguir hasta elegir; con
+// Escape se toma la dama, que es lo que se querrá en la práctica.
+const PROMOTION_NAMES = { Q: 'Dama', R: 'Torre', E: 'Elefante', B: 'Alfil', N: 'Caballo' };
+
+function askPromotion(color, onPick) {
+  const back = document.createElement('div');
+  back.className = 'promo-back';
+  const box = document.createElement('div');
+  box.className = 'promo-box';
+  const title = document.createElement('p');
+  title.className = 'promo-title';
+  title.textContent = 'Corona el peón:';
+  box.appendChild(title);
+
+  const cerrar = (tipo) => {
+    document.removeEventListener('keydown', onKey);
+    back.remove();
+    onPick(tipo);
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cerrar('Q'); }
+  };
+
+  const fila = document.createElement('div');
+  fila.className = 'promo-row';
+  for (const tipo of PROMOTION_CHOICES) {
+    const b = document.createElement('button');
+    b.className = 'promo-btn piece-' + (color === 'w' ? 'w' : 'b');
+    b.title = PROMOTION_NAMES[tipo];
+    if (tipo === 'E') {
+      // el elefante no tiene glifo Unicode recoloreable: va como símbolo SVG
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', '#piece-elephant');
+      svg.appendChild(use);
+      b.appendChild(svg);
+    } else {
+      b.textContent = GLYPH[tipo];
+    }
+    b.addEventListener('click', () => cerrar(tipo));
+    fila.appendChild(b);
+  }
+  box.appendChild(fila);
+  back.appendChild(box);
+  document.body.appendChild(back);
+  document.addEventListener('keydown', onKey);
+  fila.firstChild.focus();
 }
 
 // --- panel de análisis: puntuación de las jugadas ---

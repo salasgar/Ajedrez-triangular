@@ -35,11 +35,18 @@ el tablero, abre [coordenadas.html](coordenadas.html).
 | Caballo ♞ | Salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas. |
 | Elefante 🐘 | Se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas. |
 | Rey ♚ | Un paso a cualquier casilla que toque la suya, por arista o por vértice. |
-| Peón ♟ | Avanza sin capturar a la casilla de enfrente y captura en las dos frontales diagonales. Doble paso inicial y coronación a dama en la última fila. |
+| Peón ♟ | Avanza sin capturar a la casilla de enfrente y captura en las dos frontales diagonales. Doble paso inicial y coronación en la última fila, con elección de pieza (el ordenador siempre corona a dama). |
 
 También hay captura al paso. Jaque, jaque mate y ahogado funcionan como en el
-ajedrez clásico; además son tablas por triple repetición y por la regla de las
-50 jugadas.
+ajedrez clásico; además son tablas por triple repetición, por la regla de las
+50 jugadas y cuando solo quedan los dos reyes.
+
+Esa última condición es más corta que en el ajedrez clásico, y está comprobada
+por fuerza bruta sobre esta geometría, no copiada: en el hexágono triangular el
+rey se acorrala contra el borde con muy poco, así que **rey y caballo contra
+rey** o **rey y alfil contra rey** —tablas muertas en el ajedrez de siempre—
+aquí sí tienen posiciones de mate. El único material con el que el mate es
+imposible es rey contra rey.
 
 El **enroque** exige, como siempre, que el rey y la torre no se hayan movido,
 que no quede nada entre ellos y que el rey ni esté en jaque ni cruce casillas
