@@ -241,7 +241,7 @@ function genMoves(board, color, ep, kings, probe) {
       if (seen.has(id)) continue;
       seen.add(id);
       makeSim(board, key, t.key, ep, probe, kings);
-      const ok = !isAttacked(board, CELL_MAP.get(kings[color]), rival(color));
+      const ok = !isAttackedFast(board, CELL_MAP.get(kings[color]), rival(color));
       unmakeSim(board, probe, kings);
       if (ok) out.push({ from: key, to: t.key });
     }
@@ -347,6 +347,60 @@ function countPseudoMoves(board, cell, piece) {
   return 0;
 }
 
+// ¿Ataca `byColor` la casilla `cell`? Como isAttacked (rules.js), pero
+// dirigida: en vez de recorrer todas las piezas rivales generando sus listas
+// completas de ataques, mira DESDE la casilla hacia fuera con los rayos y
+// saltos precalculados de geometry.js, que son simétricos (el camino de ida
+// es el de vuelta; el salto de caballo invierte la orientación ▲/▽ en ambos
+// sentidos; los atacantes-peón de un color están en las casillas de captura
+// del color contrario). Cientos de arrays y .includes() se convierten en
+// ~40-60 board.get() con parada temprana y cero asignaciones.
+//
+// Equivalente a la vieja en su dominio de uso (el objetivo nunca es una
+// casilla ocupada por una pieza de byColor: siempre se pregunta por el rey
+// del OTRO color). Fuera de ese dominio la vieja tiene rarezas heredadas
+// (el peón "ataca" casillas ocupadas por los suyos, el caballo no) que no
+// merece la pena replicar.
+function isAttackedFast(board, cell, byColor) {
+  for (const ray of cell.rookRays) {
+    for (const t of ray) {
+      const o = board.get(t.key);
+      if (!o) continue;
+      if (o.color === byColor && (o.type === 'R' || o.type === 'Q')) return true;
+      break;
+    }
+  }
+  for (const ray of cell.elephantRays) {
+    for (const t of ray) {
+      const o = board.get(t.key);
+      if (!o) continue;
+      if (o.color === byColor && (o.type === 'E' || o.type === 'Q')) return true;
+      break;
+    }
+  }
+  for (const ray of cell.bishopRays) {
+    for (const t of ray) {
+      const o = board.get(t.key);
+      if (!o) continue;
+      if (o.color === byColor && o.type === 'B') return true;
+      break;
+    }
+  }
+  for (const t of cell.knightTargets) {
+    const o = board.get(t.key);
+    if (o && o.color === byColor && o.type === 'N') return true;
+  }
+  for (const t of cell.kingNbrs) {
+    const o = board.get(t.key);
+    if (o && o.color === byColor && o.type === 'K') return true;
+  }
+  for (const t of cell.pawnCap[rival(byColor)]) {
+    const o = board.get(t.key);
+    if (o && o.color === byColor && o.type === 'P') return true;
+  }
+  return false;
+}
+
 // Primer ocupante de cada rayo, si es rival: los únicos destinos de captura
 // de una pieza deslizante.
 function rayCaptures(board, color, rays, out) {
@@ -413,7 +467,7 @@ function genCaptures(board, color, ep, kings, probe) {
       if (seen.has(id)) continue;
       seen.add(id);
       makeSim(board, key, t.key, ep, probe, kings);
-      const ok = !isAttacked(board, CELL_MAP.get(kings[color]), rival(color));
+      const ok = !isAttackedFast(board, CELL_MAP.get(kings[color]), rival(color));
       unmakeSim(board, probe, kings);
       if (ok) out.push({ from: key, to: t.key });
     }
@@ -492,7 +546,7 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, tt, sx,
   const moves = genMoves(board, color, ep, sx.kings, sx.probe);
   if (moves.length === 0) {
     // mate (los más rápidos puntúan más) o tablas por ahogado
-    return isAttacked(board, CELL_MAP.get(sx.kings[color]), rival(color))
+    return isAttackedFast(board, CELL_MAP.get(sx.kings[color]), rival(color))
       ? -MATE - depth : drawScore(board, color, values);
   }
   if (cfg.order) orderMoves(board, moves, values);

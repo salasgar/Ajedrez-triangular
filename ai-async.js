@@ -16,7 +16,7 @@ const AI_WORKER_FNS = [
   legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
   drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
-  genMoves, centrality, pawnAdvance, evaluate, capturedBy, orderMoves,
+  genMoves, isAttackedFast, centrality, pawnAdvance, evaluate, capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
   chooseAiMove,
 ];

@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase3-isattacked",
+ "fecha": "2026-07-27T19:22:13.982Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 61,
+   "nodos": 8809
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 54,
+   "nodos": 9027
+  },
+  {
+   "id": "enroque-2",
+   "ms": 65,
+   "nodos": 8739
+  },
+  {
+   "id": "media-1",
+   "ms": 632,
+   "nodos": 73351
+  },
+  {
+   "id": "jaque-3",
+   "ms": 36,
+   "nodos": 3875
+  },
+  {
+   "id": "media-3",
+   "ms": 35,
+   "nodos": 7035
+  },
+  {
+   "id": "corona-2",
+   "ms": 48,
+   "nodos": 10334
+  }
+ ],
+ "totalMs": 931,
+ "totalNodos": 121170,
+ "nodosPorSeg": 130150
+}
