@@ -74,7 +74,10 @@ Dos cosas que conviene saber:
   con cero partidas. Con `Nice 10` + `LowPriorityIO` el servicio cede el paso
   igual pero corre a velocidad plena (~105% de CPU por proceso frente al 22%
   de antes). Regla práctica: **cuatro procesos rápidos rinden mucho más que
-  seis estrangulados**, y dejan media máquina libre.
+  seis estrangulados**, y dejan media máquina libre. Medido después del
+  cambio: 655 s por partida de profundidad 5 con los cuatro procesos en
+  marcha, o sea ~22 partidas/hora. Las 500 partidas que hacen falta para
+  decidir la ronda salen en un día de máquina encendida, no en dos meses.
 
 La tanda instalada (ronda 10) mide si el **peso de movilidad depende de la
 profundidad**: a profundidad 5, movilidad 4 (lo que juega hoy el motor) contra
