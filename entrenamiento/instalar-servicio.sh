@@ -28,6 +28,12 @@ CASA="$HOME/Library/Application Support/ajedrez-triangular-entrenamiento"
 ETIQUETA="com.salasgar.ajedreztriangular.entrenamiento"
 PLIST="$HOME/Library/LaunchAgents/$ETIQUETA.plist"
 NODE="$(command -v node)"
+# qué mide cada tanda, para que el estado y los resultados se lean solos
+typeset -A DESC_RONDA
+DESC_RONDA=(
+  r9  "profundidad 4: movilidad 4 contra 3 y 5"
+  r10 "profundidad 5: movilidad 4 contra 2 y 3"
+)
 
 case "${1:-instalar}" in
   estado)
@@ -38,24 +44,32 @@ case "${1:-instalar}" in
       echo "servicio: NO cargado"
     fi
     echo "procesos de arena vivos: $(pgrep -f 'arena.js' | wc -l | tr -d ' ')"
-    echo "trabajo en: $CASA/r9"
-    total=0
-    for f in "$CASA"/r9/*.log(N); do
-      # grep -c sale con 1 cuando no hay ninguna coincidencia, pero ya imprime
-      # el 0; el `|| true` evita que set -e corte y que se sumen dos ceros
-      n=$(grep -c '^{' "$f" 2>/dev/null || true)
-      total=$((total + n))
-      echo "   $(basename $f): $n partidas"
+    for ronda in r10 r9; do
+      [ -d "$CASA/$ronda" ] || continue
+      total=0
+      linea=""
+      for f in "$CASA"/$ronda/*.log(N); do
+        # grep -c sale con 1 cuando no hay coincidencias, pero ya imprime el 0;
+        # el `|| true` evita que set -e corte y que se sumen dos ceros
+        n=$(grep -c '^{' "$f" 2>/dev/null || true)
+        total=$((total + n))
+        linea="$linea   $(basename $f): $n"
+      done
+      echo "$ronda ($DESC_RONDA[$ronda]): $total partidas"
+      echo "$linea"
     done
-    echo "TOTAL: $total partidas"
     exit 0 ;;
   resultados)
-    for rival in mov3 mov5; do
-      archivos=("$CASA"/r9/$rival-*.log(N))
-      [ ${#archivos} -eq 0 ] && continue
-      echo "===== movilidad 4 (A) contra $rival (B) ====="
-      cat "${archivos[@]}" | node analiza.js 300
-      echo
+    for ronda in r10 r9; do
+      [ -d "$CASA/$ronda" ] || continue
+      echo "########## $ronda: $DESC_RONDA[$ronda] ##########"
+      for rival in mov2 mov3 mov5; do
+        archivos=("$CASA"/$ronda/$rival-*.log(N))
+        [ ${#archivos} -eq 0 ] && continue
+        echo "===== movilidad 4 (A) contra $rival (B) ====="
+        cat "${archivos[@]}" | node analiza.js 300
+        echo
+      done
     done
     exit 0 ;;
   parar)
