@@ -14,6 +14,37 @@ limpiador de `/tmp` de macOS purga por antigüedad.
 | `corpus.js` | Fase cara del ajuste tipo Texel: autojuego que vuelca posiciones etiquetadas con el resultado (una línea JSON por posición). Shards paralelos por `SEED`; `ADJ_MARGIN` adjudica por material las partidas cortadas (imprescindible a prof. ≥3). |
 | `ajusta.js` | Fase barata: la regresión sobre un corpus ya generado. `--features=mat|matmob|matpos|all`, `--holdout` para validación fuera de muestra, `--reg` para estabilidad. |
 
+## Cuánto se aceleró el motor, y por qué hay dos cifras
+
+Los `bench-fase*.json` guardan el banco de cada fase de la optimización (7
+posiciones, nivel 4). Sumando sus tiempos:
+
+| fase | ms | nodos | ×acumulado |
+|---|---|---|---|
+| motor original | 7144 | 123 949 | 1,0× |
+| 1. quiescence solo capturas | 1464 | 123 949 | 4,9× |
+| 2b. make/unmake (+ desempate estable) | 1271 | 121 170 | 5,6× |
+| 3. isAttackedFast | 931 | 121 170 | 7,7× |
+| 4. Zobrist + TT de arrays | 968 | 121 170 | 7,4× |
+| 5. ordenación (hash-move, MVV-LVA, killers, historia) | 413 | 62 216 | 17,3× |
+| 6. TT persistente + profundización iterativa | 662 | 86 640 | 10,8× |
+
+**Cuidado al leer las dos últimas filas.** El banco hace *una* búsqueda por
+posición con la tabla vacía, a propósito, para ser reproducible. Eso le cobra
+a la profundización iterativa todo su coste (buscar a profundidad 1, 2, 3…
+antes de la final) sin darle ninguno de sus beneficios, porque el beneficio
+aparece cuando la tabla sobrevive de una jugada a la siguiente. Por eso la
+fase 6 "empeora" en el banco y aun así se adoptó.
+
+La medida honesta es con jugadas **consecutivas** de partida real. 36 jugadas
+seguidas a profundidad 4, mismo libro y misma semilla:
+
+- motor original: 33 699 ms por jugada
+- motor actual: 613 ms por jugada → **55×**
+
+Es decir: 10,8× es lo que se gana por nodo, y 55× lo que se gana jugando. La
+diferencia entre ambos es exactamente lo que aporta la memoria entre jugadas.
+
 ## Resultados hasta la fecha (julio 2026)
 
 **Ciclo 1 (corpus prof. 2, ablación y confirmación → commit `22407e1`):**
