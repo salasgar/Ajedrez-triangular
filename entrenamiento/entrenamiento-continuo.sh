@@ -27,9 +27,10 @@ BASE='"depth":5,"mobility":true,"order":true,"quiesce":true'
 # MOTOR: la copia del motor que hay junto a este script (el servicio no puede
 # leer el repo, que vive en ~/Documents; ver instalar-servicio.sh)
 #
-# MAX_PLIES más corto que en prof. 4 (110): a esta profundidad cada partida
-# cuesta varias horas y con el tope de 110 no habría muestra en días. La
-# adjudicación por material ya demostró aguantar márgenes de 100 a 900 cp.
+# MAX_PLIES más corto que en prof. 4 (110): cada jugada cuesta ~1,4 s frente a
+# los ~0,24 s de la profundidad 4, así que la partida sale casi 6 veces más
+# cara. La adjudicación por material ya demostró aguantar márgenes de 100 a
+# 900 cp, de modo que cortar antes no sesga el marcador.
 export MOTOR="$(pwd)/motor" LIBRO=libro.json MAX_PLIES=80 FIFTY=40
 
 # Un proceso por rival y semilla. PAIRS alto: la tanda dura lo que haga falta
@@ -41,7 +42,12 @@ lanzar() {
     node arena.js >> r10/$nombre-$s.err 2>&1
 }
 
-for s in 0 1 2; do
+# DOS semillas por rival = 4 procesos, no 6. El ordenador tiene 8 núcleos y el
+# servicio ya no está confinado a los lentos (ver instalar-servicio.sh), así
+# que cada proceso corre a velocidad plena y sobra la mitad de la máquina para
+# el trabajo en primer plano. Cuatro procesos rápidos rinden bastante más que
+# seis peleándose por lo mismo.
+for s in 0 1; do
   lanzar mov2 '"mobilityWeight":2' $s &
   lanzar mov3 '"mobilityWeight":3' $s &
 done

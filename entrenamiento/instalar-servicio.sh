@@ -84,7 +84,7 @@ case "${1:-instalar}" in
 esac
 
 # --- copiar a la zona de trabajo accesible para el servicio ---
-mkdir -p "$CASA/motor" "$CASA/r9" "$HOME/Library/LaunchAgents"
+mkdir -p "$CASA/motor" "$HOME/Library/LaunchAgents"
 cp "$REPO"/geometry.js "$REPO"/rules.js "$REPO"/ai.js "$CASA/motor/"
 cp arena.js analiza.js libro.json entrenamiento-continuo.sh "$CASA/"
 chmod +x "$CASA/entrenamiento-continuo.sh"
@@ -107,11 +107,17 @@ cat > "$PLIST" <<PLISTEOF
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>ThrottleInterval</key><integer>120</integer>
-  <!-- prioridad baja: no debe estorbar al uso normal del ordenador -->
+  <!-- Prioridad baja para no estorbar al uso normal del ordenador, PERO SIN
+       ProcessType=Background. En Apple Silicon esa banda confina el proceso a
+       los núcleos de eficiencia: medido con taskpolicy -b, 208 -> 1429 ms por
+       jugada, 6,9x más lento. Con 6 procesos repartiéndose 4 núcleos lentos,
+       las partidas de la ronda 9 costaron 3219 s de media en vez de ~18 s, y
+       la profundidad 5 habría tardado semanas. Nice 10 + E/S de baja
+       prioridad ya ceden el paso al trabajo en primer plano. -->
   <key>Nice</key><integer>10</integer>
-  <key>ProcessType</key><string>Background</string>
-  <key>StandardOutPath</key><string>$CASA/r9/servicio.out</string>
-  <key>StandardErrorPath</key><string>$CASA/r9/servicio.err</string>
+  <key>LowPriorityIO</key><true/>
+  <key>StandardOutPath</key><string>$CASA/servicio.out</string>
+  <key>StandardErrorPath</key><string>$CASA/servicio.err</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key><string>$(dirname $NODE):/usr/bin:/bin:/usr/sbin:/sbin</string>

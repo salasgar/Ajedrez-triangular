@@ -65,9 +65,22 @@ Dos cosas que conviene saber:
   y trabaja ahí (`MOTOR=` le dice a `arena.js` dónde está el motor). La copia
   es una foto fija: para entrenar con una versión nueva del motor, vuelve a
   ejecutar `./instalar-servicio.sh`.
+- **Nunca `ProcessType=Background` en el plist.** Parece lo correcto para una
+  tarea de fondo y es una trampa: en Apple Silicon esa banda confina el
+  proceso a los núcleos de eficiencia. Medido con `taskpolicy -b`: 208 → 1429
+  ms por jugada, **6,9× más lento**, y encima los procesos se reparten solo 4
+  núcleos lentos. Así, las partidas de la ronda 9 costaron 3219 s de media
+  cuando sin restricción son ~18 s, y la ronda 10 (prof. 5) llevaba 3 horas
+  con cero partidas. Con `Nice 10` + `LowPriorityIO` el servicio cede el paso
+  igual pero corre a velocidad plena (~105% de CPU por proceso frente al 22%
+  de antes). Regla práctica: **cuatro procesos rápidos rinden mucho más que
+  seis estrangulados**, y dejan media máquina libre.
 
-La tanda instalada (ronda 9) mide el **pico de movilidad a profundidad 4**:
-movilidad 4 (lo que juega hoy el motor) contra 3 y contra 5.
+La tanda instalada (ronda 10) mide si el **peso de movilidad depende de la
+profundidad**: a profundidad 5, movilidad 4 (lo que juega hoy el motor) contra
+2 y contra 3. La ronda 9 hizo lo mismo a profundidad 4 y quedó sin veredicto:
+movilidad 4 contra 3 es empate (−37 elo, p=0,36) y contra 5 va +70 pero sin
+alcanzar significación (p=0,064). Sus 127 partidas quedan intactas en `r9/`.
 
 ## Datos
 
