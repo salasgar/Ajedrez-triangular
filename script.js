@@ -585,8 +585,24 @@ const sheetCache = [];
 //
 // Necesita evaluación en las dos posiciones, así que solo aparece con el
 // análisis guardado en ambas (típicamente ordenador contra ordenador).
-const BLUNDER_MARKS = [[400, '??', 'Error grave'], [150, '?', 'Error'],
-  [50, '?!', 'Imprecisión']];
+//
+// UMBRALES CALIBRADOS CONTRA EL RUIDO, no elegidos a ojo. Las dos
+// evaluaciones que se restan salen de búsquedas distintas —una desde la
+// posición anterior y otra desde la siguiente—, así que no están en la misma
+// escala: cada motor, recién buscado, se ve un poco mejor a sí mismo (el
+// clásico efecto par-impar). Midiéndolo con el mismo nivel jugando contra sí
+// mismo, donde por definición nadie se equivoca (entrenamiento/
+// ruido-anotaciones.js, 165 jugadas a profundidad 4):
+//
+//   sesgo medio +17,8 cp por jugada (deberia ser 0; 130 de 165 positivas)
+//   |perdida|: mediana 26, p95 60, MAXIMO 107
+//   con umbral 50 se marcaba el 6,1% de las jugadas normales; con 100, ninguna
+//
+// Por eso la imprecisión empieza en 120 cp, por encima del máximo observado.
+// El 50 de antes no marcaba errores: marcaba el desacuerdo entre dos
+// búsquedas. Vuelve a medirlo si cambias la evaluación o PLAY_TOLERANCE.
+const BLUNDER_MARKS = [[500, '??', 'Error grave'], [250, '?', 'Error'],
+  [120, '?!', 'Imprecisión']];
 
 // Evaluación de la posición i en centipeones desde el punto de vista de las
 // BLANCAS, o null si esa posición no tiene análisis guardado. El análisis de

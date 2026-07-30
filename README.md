@@ -90,6 +90,18 @@ mejores). Cuesta tiempo: para dar la puntuación real de las jugadas malas hay
 que buscar con la ventana abierta, lo que mide alrededor de 1,5 veces el tiempo
 normal. Por eso viene desactivado.
 
+Con el análisis guardado aparecen también la **gráfica de evaluación** de la
+partida y las marcas **?!**, **?** y **??** junto a las jugadas que empeoraron
+mucho la evaluación. Conviene saber qué miden exactamente: la diferencia entre
+dos búsquedas distintas, la de antes de la jugada y la de después. No están en
+la misma escala —cada búsqueda ve un paso más allá y tiende a favorecer a quien
+acaba de mover—, así que hay un suelo de ruido. Está medido, no supuesto: con
+el mismo nivel jugando contra sí mismo, donde nadie se equivoca, la diferencia
+tiene una mediana de 0,26 peones y un máximo de 1,07
+([entrenamiento/ruido-anotaciones.js](entrenamiento/ruido-anotaciones.js)). Por
+eso la imprecisión no empieza hasta 1,20 peones: por debajo de ahí, marcar sería
+marcar ruido.
+
 El cálculo a petición (botón «Elegir la próxima jugada» / «Analizar esta
 posición») usa el mismo Web Worker que la partida, así que solo está disponible
 cuando el ordenador no está pensando (pausa la partida si hace falta).
