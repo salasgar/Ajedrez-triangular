@@ -352,6 +352,65 @@ function unmakeSim(board, u, kings) {
   if (u.prevType === 'K') kings[piece.color] = u.fromKey;
 }
 
+// --- CLAVADAS -------------------------------------------------------------
+//
+// Mover una pieza propia solo puede dejar al rey en jaque si esa pieza estaba
+// TAPANDO un rayo enemigo, es decir, si está clavada. Localizando las clavadas
+// una vez por nodo, la inmensa mayoría de las jugadas se dan por legales sin
+// tocar el tablero, en vez de probarlas una por una con make/unmake.
+//
+// Sigue haciendo falta la comprobación completa en cuatro casos:
+//   - jugadas del rey (cambia la casilla que hay que defender),
+//   - cualquier jugada estando en jaque (hay que resolverlo),
+//   - jugadas de una pieza clavada (puede seguir tapando, o no),
+//   - captura al paso (el peón capturado desaparece de OTRA casilla, que
+//     puede ser la que tapaba el rayo).
+//
+// Es una optimización exacta: genera exactamente el mismo conjunto de jugadas,
+// así que el perft y los dorados de búsqueda la verifican sin arena.
+
+// Recorre los rayos que salen del rey buscando el patrón "pieza propia, y
+// detrás un deslizador enemigo del tipo adecuado". `dama` dice si la dama
+// también amenaza por esta familia de rayos: aquí la dama es torre+elefante,
+// NO torre+alfil, así que no clava por los rayos de alfil.
+function scanPins(board, rays, color, foe, tipo, dama, out) {
+  for (const ray of rays) {
+    let tapon = null;
+    for (const t of ray) {
+      const o = board.get(t.key);
+      if (!o) continue;
+      if (tapon === null) {
+        if (o.color !== color) break;   // el primero es enemigo: no clava nada
+        tapon = t.key;                  // candidato a clavado
+        continue;
+      }
+      if (o.color === foe && (o.type === tipo || (dama && o.type === 'Q'))) {
+        out.push(tapon);
+      }
+      break;                            // segunda pieza del rayo: se acabó
+    }
+  }
+}
+
+// Claves de las piezas propias clavadas. Suelen ser cero o una, así que un
+// array pequeño con indexOf sale más barato que un Set.
+function findPins(board, kingCell, color, out) {
+  out.length = 0;
+  const foe = rival(color);
+  scanPins(board, kingCell.rookRays, color, foe, 'R', true, out);
+  scanPins(board, kingCell.elephantRays, color, foe, 'E', true, out);
+  scanPins(board, kingCell.bishopRays, color, foe, 'B', false, out);
+  return out;
+}
+
+// ¿Hay que probar esta jugada con make/unmake, o es legal de oficio?
+function needsProbe(board, p, key, t, ep, enJaque, clavadas) {
+  if (enJaque || p.type === 'K') return true;
+  if (clavadas.length && clavadas.indexOf(key) >= 0) return true;
+  // captura al paso: el peón que desaparece no está en la casilla de destino
+  return p.type === 'P' && ep && t.key === ep.targetKey && !board.get(t.key);
+}
+
 // Jugadas legales para la búsqueda: como movesForSide pero validando con
 // make/unmake sobre el mismo tablero en vez de copiar el Map por candidato
 // (y con el rey localizado en `kings`, sin el barrido lineal de findKing).
@@ -364,6 +423,9 @@ function genMoves(board, color, ep, kings, probe) {
   // un Map de JS recoloca lo reinsertado AL FINAL del orden de iteración —
   // iterando el Map vivo, cada pieza sondeada se visitaría otra vez.
   const entries = [...board.entries()];
+  const kingCell = CELL_MAP.get(kings[color]);
+  const enJaque = isAttackedFast(board, kingCell, rival(color));
+  const clavadas = findPins(board, kingCell, color, []);
   for (const [key, p] of entries) {
     if (p.color !== color) continue;
     const cell = CELL_MAP.get(key);
@@ -371,6 +433,10 @@ function genMoves(board, color, ep, kings, probe) {
       const id = key + '>' + t.key;
       if (seen.has(id)) continue;
       seen.add(id);
+      if (!needsProbe(board, p, key, t, ep, enJaque, clavadas)) {
+        out.push({ from: key, to: t.key });
+        continue;
+      }
       makeSim(board, key, t.key, ep, probe, kings);
       const ok = !isAttackedFast(board, CELL_MAP.get(kings[color]), rival(color));
       unmakeSim(board, probe, kings);
@@ -588,6 +654,9 @@ function genCaptures(board, color, ep, kings, probe) {
   const cands = [];
   // lista congelada por la misma razón que en genMoves: el sondeo reordena el Map
   const entries = [...board.entries()];
+  const kingCell = CELL_MAP.get(kings[color]);
+  const enJaque = isAttackedFast(board, kingCell, rival(color));
+  const clavadas = findPins(board, kingCell, color, []);
   for (const [key, p] of entries) {
     if (p.color !== color) continue;
     const cell = CELL_MAP.get(key);
@@ -623,6 +692,10 @@ function genCaptures(board, color, ep, kings, probe) {
       const id = key + '>' + t.key;
       if (seen.has(id)) continue;
       seen.add(id);
+      if (!needsProbe(board, p, key, t, ep, enJaque, clavadas)) {
+        out.push({ from: key, to: t.key });
+        continue;
+      }
       makeSim(board, key, t.key, ep, probe, kings);
       const ok = !isAttackedFast(board, CELL_MAP.get(kings[color]), rival(color));
       unmakeSim(board, probe, kings);

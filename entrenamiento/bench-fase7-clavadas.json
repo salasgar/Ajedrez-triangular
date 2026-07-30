@@ -1,0 +1,45 @@
+{
+ "etiqueta": "fase7-clavadas",
+ "fecha": "2026-07-30T17:23:09.066Z",
+ "nivel": 4,
+ "filas": [
+  {
+   "id": "inicial",
+   "ms": 26,
+   "nodos": 2991
+  },
+  {
+   "id": "alpaso-3",
+   "ms": 17,
+   "nodos": 2869
+  },
+  {
+   "id": "enroque-2",
+   "ms": 50,
+   "nodos": 6427
+  },
+  {
+   "id": "media-1",
+   "ms": 337,
+   "nodos": 48744
+  },
+  {
+   "id": "jaque-3",
+   "ms": 37,
+   "nodos": 4764
+  },
+  {
+   "id": "media-3",
+   "ms": 57,
+   "nodos": 11548
+  },
+  {
+   "id": "corona-2",
+   "ms": 29,
+   "nodos": 9297
+  }
+ ],
+ "totalMs": 553,
+ "totalNodos": 86640,
+ "nodosPorSeg": 156673
+}

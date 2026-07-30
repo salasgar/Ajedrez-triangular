@@ -16,7 +16,8 @@ const AI_WORKER_FNS = [
   legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
   drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
-  genMoves, isAttackedFast, initZobrist, zIndex, computeHash, hashKey, zxor,
+  genMoves, isAttackedFast, scanPins, findPins, needsProbe,
+  initZobrist, zIndex, computeHash, hashKey, zxor,
   ttInit, packMove, orderSearchMoves, centrality, pawnAdvance, evaluate,
   capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,

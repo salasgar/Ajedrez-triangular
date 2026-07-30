@@ -28,6 +28,12 @@ posiciones, nivel 4). Sumando sus tiempos:
 | 4. Zobrist + TT de arrays | 968 | 121 170 | 7,4× |
 | 5. ordenación (hash-move, MVV-LVA, killers, historia) | 413 | 62 216 | 17,3× |
 | 6. TT persistente + profundización iterativa | 662 | 86 640 | 10,8× |
+| 7. clavadas | 553 | 86 640 | 12,9× |
+
+La fase 7 es **exacta**: el mismo recuento de nodos (86 640) demuestra que
+genera exactamente las mismas jugadas, y el perft y los dorados salen idénticos
+en las 21 posiciones. Por eso no necesitó arena. En el perfil, `isAttackedFast`
+bajó del 16,0% al 7,0% y `makeSim`/`unmakeSim` desaparecieron de la cabeza.
 
 **Cuidado al leer las dos últimas filas.** El banco hace *una* búsqueda por
 posición con la tabla vacía, a propósito, para ser reproducible. Eso le cobra
