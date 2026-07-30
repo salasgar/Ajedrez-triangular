@@ -9,8 +9,23 @@
 'use strict';
 const MARGEN = Number(process.argv[2] || 300);
 
-const juegos = require('fs').readFileSync(0, 'utf8').trim().split('\n')
-  .filter(l => l.startsWith('{')).map(JSON.parse);
+const lineas = require('fs').readFileSync(0, 'utf8').trim().split('\n');
+const juegos = lineas.filter(l => l.startsWith('{')).map(JSON.parse);
+
+// Cabeceras que escribe arena.js ('# {...}'): dicen qué configuración es A y
+// cuál B. Se imprimen las distintas, para que el marcador diga qué comparó y
+// no haya que adivinarlo por el nombre del fichero. Los logs antiguos no las
+// tienen y siguen funcionando igual.
+const cabeceras = [...new Set(lineas.filter(l => l.startsWith('#')))];
+for (const c of cabeceras) {
+  try {
+    const m = JSON.parse(c.slice(1));
+    console.log(`A = ${m.A.nombre} ${JSON.stringify(m.A.cfg)}`);
+    console.log(`B = ${m.B.nombre} ${JSON.stringify(m.B.cfg)}`);
+    console.log(`tope ${m.MAX_PLIES} jugadas, regla de 50 acortada a ${m.FIFTY}`);
+    break;                                  // todas iguales salvo semilla
+  } catch { /* cabecera de otra version: se ignora */ }
+}
 
 // Puntos de A en cada partida. ptsW viene desde el punto de vista de las
 // blancas; `whiteIs` dice cuál de las dos configuraciones las llevaba.

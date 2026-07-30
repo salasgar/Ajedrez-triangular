@@ -187,10 +187,29 @@ for (let par = ${FIRST}; par < ${FIRST} + ${PAIRS}; par++) {
 // volcado a disco: si el ordenador se apaga a mitad de la siguiente partida,
 // todo lo anterior ya está guardado y la reanudación no lo repite.
 const salidaFd = SALIDA ? fs.openSync(SALIDA, 'a') : null;
+
+// Cabecera con las configuraciones comparadas. Va en una línea que empieza
+// por '#', que tanto la reanudación de aquí arriba como analiza.js ignoran
+// (ambas exigen '{'), así que no rompe ningún log anterior.
+//
+// No es un adorno: los logs de la ronda 5 quedaron con las ramas llamadas
+// 'b1' y 'b2' y sin rastro de qué configuración era cada una, lo que impidió
+// después comparar aquella medida a profundidad 4 con la de profundidad 5.
+// Un log que no dice qué midió no sirve para nada dentro de un mes.
+const CABECERA = '# ' + JSON.stringify({
+  fecha: new Date().toISOString(),
+  A: { nombre: NAME_A, cfg: JSON.parse(CFG_A) },
+  B: { nombre: NAME_B, cfg: JSON.parse(CFG_B) },
+  MAX_PLIES, FIFTY, OPENING_PLIES, SEED, FIRST, PAIRS,
+  libro: process.env.LIBRO || null,
+}) + '\n';
 const ESCRIBE = salidaFd === null
   ? (s) => process.stdout.write(s)
   : (s) => { fs.writeSync(salidaFd, s); fs.fsyncSync(salidaFd); };
 const HECHOS = hechos;
+// una cabecera por proceso; al reanudar se añade otra, que documenta que ese
+// tramo se jugó en otra tanda (y con qué motor, si se hubiera cambiado)
+ESCRIBE(CABECERA);
 
 process.stderr.write(`arena: ${NAME_A} vs ${NAME_B} · pares ${FIRST}..${FIRST + PAIRS - 1}` +
   ` · seed ${SEED}` + (SALIDA ? ` · ${hechos.size} partidas ya hechas en ${SALIDA}` : '') + '\n');
