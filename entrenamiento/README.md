@@ -110,11 +110,40 @@ Dos cosas que conviene saber:
   marcha, o sea ~22 partidas/hora. Las 500 partidas que hacen falta para
   decidir la ronda salen en un día de máquina encendida, no en dos meses.
 
-La tanda instalada (ronda 10) mide si el **peso de movilidad depende de la
-profundidad**: a profundidad 5, movilidad 4 (lo que juega hoy el motor) contra
-2 y contra 3. La ronda 9 hizo lo mismo a profundidad 4 y quedó sin veredicto:
-movilidad 4 contra 3 es empate (−37 elo, p=0,36) y contra 5 va +70 pero sin
-alcanzar significación (p=0,064). Sus 127 partidas quedan intactas en `r9/`.
+## Ronda 10: la movilidad a profundidad 5 (406 partidas)
+
+Primera medida a profundidad 5, imposible antes de acelerar el motor.
+
+| | elo | IC 95% | p |
+|---|---|---|---|
+| movilidad 4 contra 2 | **+39** | [12, 66] | 0,005 |
+| movilidad 4 contra 3 | +8 | [−17, 32] | 0,54 |
+
+Robusto: repetido con márgenes de adjudicación de 100, 200, 300 y 500 cp, el
+primero sale positivo y con el intervalo fuera del cero en los cuatro casos
+(+59, +51, +39, +25) y el segundo nunca se separa del cero.
+
+Dos conclusiones:
+
+- **La movilidad sigue valiendo a profundidad 5.** No es un sustituto que la
+  búsqueda profunda vuelva innecesario.
+- **Los pesos 3 y 4 son indistinguibles ahí.** El intervalo descarta cualquier
+  diferencia mayor de ±32 elo. No hay motivo para tocar `ai.js`: afinar sobre
+  una diferencia no significativa es afinar sobre ruido.
+
+**Lo que esta ronda NO contesta** es si el peso óptimo baja con la
+profundidad, y conviene decir por qué. La comparación exigiría medir lo mismo
+a varias profundidades con el mismo tope de jugadas, y no se puede: el +90 de
+profundidad 4 que figura en el ciclo 1 se midió con tope 110 y esta ronda con
+tope 80, y el tope cambia el elo por sí solo (en estos mismos datos, la misma
+tanda da +59 o +25 según el margen). Encima los logs de la ronda 5 no
+guardaban qué configuración era cada rama. Por eso `arena.js` escribe ahora
+una cabecera con las configuraciones en cada log. El control limpio sería una
+ronda con movilidad 4 contra 2 a profundidades 3, 4 y 5 con topes idénticos.
+
+La ronda 9 (profundidad 4, 127 partidas) quedó sin veredicto: movilidad 4
+contra 3 empate (−37 elo, p=0,36) y contra 5 va +70 sin alcanzar
+significación (p=0,064). Sus datos siguen en `r9/`.
 
 ## Datos
 
