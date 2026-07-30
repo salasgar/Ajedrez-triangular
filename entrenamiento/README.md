@@ -13,6 +13,16 @@ limpiador de `/tmp` de macOS purga por antigüedad.
 | `aperturas.js` | Genera `libro.json`: 400 aperturas fijas de 6 jugadas al azar sin capturas, para que todas las ramas comparen sobre las mismas posiciones. |
 | `corpus.js` | Fase cara del ajuste tipo Texel: autojuego que vuelca posiciones etiquetadas con el resultado (una línea JSON por posición). Shards paralelos por `SEED`; `ADJ_MARGIN` adjudica por material las partidas cortadas (imprescindible a prof. ≥3). |
 | `ajusta.js` | Fase barata: la regresión sobre un corpus ya generado. `--features=mat|matmob|matpos|all`, `--holdout` para validación fuera de muestra, `--reg` para estabilidad. |
+| `perft.js` | `check` (perft + dorados de búsqueda sobre 21 posiciones), `bench`, `divide`, `gen`. Lo que verifica que una optimización del motor no cambió lo que juega. |
+| `test-worker.js` | Evalúa `aiWorkerSource()` en un contexto aislado y simula una petición: convierte "revienta en el navegador" en "falla un test". Obligatorio tras tocar `AI_WORKER_FNS`. |
+| `prueba-humo.js` | Partida completa, circuito serializar → validar → aplicar, guardados antiguos, basura rechazada, coronación y tablas por material. Sin navegador. |
+
+Antes de publicar (el repo se sirve con GitHub Pages desde la rama, así que
+un push despliega la aplicación en vivo):
+
+```sh
+node perft.js check && node test-worker.js && node prueba-humo.js
+```
 
 ## Cuánto se aceleró el motor, y por qué hay dos cifras
 
