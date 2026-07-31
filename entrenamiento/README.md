@@ -161,6 +161,32 @@ La ronda 9 (profundidad 4, 127 partidas) quedó sin veredicto: movilidad 4
 contra 3 empate (−37 elo, p=0,36) y contra 5 va +70 sin alcanzar
 significación (p=0,064). Sus datos siguen en `r9/`.
 
+## Ronda 11: ¿baja el peso de movilidad con la profundidad? NO
+
+1.162 partidas, movilidad 4 contra 2, **mismo libro, mismas aperturas, mismos
+topes** a las tres profundidades (la pata de profundidad 5 son las partidas de
+`r10/mov2-*.log`, que ya se jugaron con estos ajustes).
+
+| profundidad | elo | IC 95% | p | partidas |
+|---|---|---|---|---|
+| 3 | +25 | [6, 43] | 0,008 | 480 |
+| 4 | +39 | [14, 64] | 0,002 | 480 |
+| 5 | +40 | [13, 67] | 0,003 | 202 |
+
+Repetido con márgenes de adjudicación de 200, 300 y 500 cp: significativo en
+las nueve combinaciones, y el orden entre profundidades no se invierte nunca.
+
+**La teoría no se cumple.** Se esperaba que la movilidad, por ser un sustituto
+barato de lo que la búsqueda acaba viendo, perdiera valor al profundizar. No
+lo pierde: la ventaja es plana entre profundidad 4 y 5, y de hecho es MENOR a
+profundidad 3. Los intervalos se solapan mucho, así que lo prudente es
+quedarse con "no hay efecto detectable" antes que con "crece".
+
+Consecuencia práctica: **no hace falta un `mobilityWeight` por nivel**.
+`AI_LEVELS` admite el ajuste por si algún día hiciera falta, pero hoy ponerlo
+sería afinar sobre nada. Junto con la ronda 10 (pesos 3 y 4 indistinguibles a
+profundidad 5), el peso 4 único para todos los niveles queda confirmado.
+
 ## Datos
 
 - `corp/` — corpus de posiciones del ciclo 2 (autojuego nivel 4, prof. 3).
