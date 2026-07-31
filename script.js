@@ -82,6 +82,8 @@ function setFlip(v) {
 function buildSvg() {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', `${BBOX.x} ${BBOX.y} ${BBOX.w} ${BBOX.h}`);
+  svg.setAttribute('role', 'grid');
+  svg.setAttribute('aria-label', 'Tablero de ajedrez triangular');
 
   boardGroup = document.createElementNS(SVG_NS, 'g');
   const cellsLayer = document.createElementNS(SVG_NS, 'g');
@@ -89,7 +91,18 @@ function buildSvg() {
     const poly = document.createElementNS(SVG_NS, 'polygon');
     poly.setAttribute('points', cell.pts.map(p => p.join(',')).join(' '));
     poly.classList.add('cell', cell.up ? 'light' : 'dark');
+    // Cada casilla se puede identificar, enfocar y activar con el teclado.
+    // Antes solo respondía al ratón y no tenía ningún atributo que la
+    // distinguiera: ni un lector de pantalla podía nombrarla ni una prueba
+    // automática seleccionarla. El aria-label lo pone updateCellLabels con la
+    // pieza que haya encima, porque cambia en cada jugada.
+    poly.dataset.key = cell.key;
+    poly.setAttribute('role', 'gridcell');
+    poly.setAttribute('tabindex', '0');
     poly.addEventListener('click', () => onCellClick(cell));
+    poly.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCellClick(cell); }
+    });
     cellsLayer.appendChild(poly);
     cellPolys.set(cell.key, poly);
   }
@@ -257,6 +270,19 @@ function drawBoard() {
     if (boardFlipped) node.setAttribute('transform', `rotate(180 ${cell.cx} ${cell.cy})`);
     piecesLayer.appendChild(node);
   }
+  updateCellLabels(board);
+}
+
+// Nombre hablado de cada casilla: sus coordenadas y lo que hay encima. Las
+// piezas se dibujan en su propia capa, así que sin esto un lector de pantalla
+// anunciaría 96 casillas indistinguibles y vacías.
+function updateCellLabels(board) {
+  for (const cell of CELLS) {
+    const p = board.get(cell.key);
+    const poly = cellPolys.get(cell.key);
+    const que = p ? `${PIECE_NAMES[p.type]} ${colorAdj(p.type, p.color)}` : 'vacía';
+    poly.setAttribute('aria-label', `${cell.key}: ${que}`);
+  }
 }
 
 function render() {
@@ -331,7 +357,14 @@ function clearSelection() {
 // rarísimo y multiplicaría por cinco las ramas de cada peón en la séptima).
 // El diálogo se monta sobre el tablero y no deja seguir hasta elegir; con
 // Escape se toma la dama, que es lo que se querrá en la práctica.
-const PROMOTION_NAMES = { Q: 'Dama', R: 'Torre', E: 'Elefante', B: 'Alfil', N: 'Caballo' };
+const PIECE_NAMES = { P: 'Peón', N: 'Caballo', B: 'Alfil', E: 'Elefante',
+  R: 'Torre', Q: 'Dama', K: 'Rey' };
+// torre y dama son femeninas: "torre blanca", pero "peón blanco"
+const PIECE_FEM = new Set(['R', 'Q']);
+const colorAdj = (tipo, color) => PIECE_FEM.has(tipo)
+  ? (color === 'w' ? 'blanca' : 'negra')
+  : (color === 'w' ? 'blanco' : 'negro');
+const PROMOTION_NAMES = PIECE_NAMES;
 
 function askPromotion(color, onPick) {
   const back = document.createElement('div');
@@ -725,7 +758,13 @@ function buildEvalChart() {
   svg.setAttribute('class', 'eval-chart');
   const maxI = game.history.length - 1;
   const x = i => (maxI <= 1 ? 0 : (i / maxI) * CHART_W);
-  const y = v => CHART_H / 2 - (v / EVAL_CAP) * (CHART_H / 2 - 2);
+  // Escala vertical AJUSTADA A LA PARTIDA, no fija a EVAL_CAP. Con el tope de
+  // 10 peones clavado, una partida equilibrada —que es la mayoría— salía como
+  // una raya plana en el centro y no se leía nada. El suelo de 150 cp evita
+  // el efecto contrario: que el ruido de una partida igualada se vea como
+  // dientes de sierra dramáticos.
+  const tope = Math.max(150, ...pts.map(p => Math.abs(p.v)));
+  const y = v => CHART_H / 2 - (v / tope) * (CHART_H / 2 - 2);
 
   const el = (tag, attrs) => {
     const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
