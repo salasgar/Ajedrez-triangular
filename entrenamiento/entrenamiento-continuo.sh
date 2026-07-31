@@ -55,3 +55,38 @@ lanzar e45 "$N4" "$N5" nivel4 nivel5 &
 lanzar e56 "$N5" "$N6" nivel5 nivel6 &
 wait
 echo "RONDA 12 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r12/estado.txt
+
+# ---------------------------------------------------------------------------
+# RONDA 13: CALIBRAR EL PRESUPUESTO DE NODOS
+#
+# Va detrás de la 12 sin más ceremonia: cuando la 12 está terminada, arena.js
+# ve que todos sus pares están hechos y vuelve enseguida, así que el script
+# sigue de largo hasta aquí. Y si un apagón corta a mitad de la 13, al
+# reanudar pasa otra vez de largo por la 12 y retoma donde iba.
+#
+# QUE SE MIDE. El presupuesto de nodos es un mando CONTINUO: en vez de fijar
+# la profundidad, se deja profundizar hasta gastar N nodos y se juega la mejor
+# jugada de la última profundidad terminada. Aquí se enfrenta cada
+# presupuesto a un nivel existente cercano, para saber a qué altura de la
+# escalera cae cada uno y poder colocar niveles intermedios donde hoy hay
+# saltos de 300 a 1000 elo.
+#
+# El tope de profundidad es 6 en todos: quien manda es el presupuesto.
+mkdir -p r13
+TOPE='"depth":6,"mobility":true,"order":true,"quiesce":true'
+
+calibrar() {
+  local nombre=$1 nodos=$2 rival=$3 nomRival=$4
+  SALIDA=r13/$nombre.log FIRST=1 PAIRS=200 SEED=19000 \
+    CFG_A="{$TOPE,\"nodes\":$nodos}" CFG_B="{$rival}" \
+    NAME_A=$nombre NAME_B=$nomRival \
+    node arena.js >> r13/$nombre.err 2>&1
+}
+
+# cada presupuesto contra el nivel que por coste se le parece mas
+calibrar b2000     2000 "$N3" nivel3 &
+calibrar b10000   10000 "$N4" nivel4 &
+calibrar b40000   40000 "$N5" nivel5 &
+calibrar b150000 150000 "$N6" nivel6 &
+wait
+echo "RONDA 13 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r13/estado.txt

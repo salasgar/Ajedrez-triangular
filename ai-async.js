@@ -21,7 +21,7 @@ const AI_WORKER_FNS = [
   ttInit, packMove, orderSearchMoves, centrality, pawnAdvance, evaluate,
   capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
-  chooseAiMove,
+  pickSoftmax, chooseAiMove,
 ];
 const AI_WORKER_CONSTS = {
   N, PIECE_VALUE, MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,

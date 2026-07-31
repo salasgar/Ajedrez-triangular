@@ -35,8 +35,9 @@ DESC_RONDA=(
   r10 "profundidad 5: movilidad 4 contra 2 y 3"
   r11 "movilidad 4 contra 2 a profundidades 3 y 4 (la de 5 esta en r10)"
   r12 "escalera de elo: cada nivel contra el siguiente"
+  r13 "calibrar el presupuesto de nodos contra los niveles existentes"
 )
-RONDAS=(r12 r11 r10 r9)
+RONDAS=(r13 r12 r11 r10 r9)
 
 case "${1:-instalar}" in
   estado)
@@ -66,7 +67,7 @@ case "${1:-instalar}" in
     for ronda in $RONDAS; do
       [ -d "$CASA/$ronda" ] || continue
       echo "########## $ronda: $DESC_RONDA[$ronda] ##########"
-      for rival in e23 e34 e45 e56 d3 d4 mov2 mov3 mov5; do
+      for rival in b2000 b10000 b40000 b150000 e23 e34 e45 e56 d3 d4 mov2 mov3 mov5; do
         # con y sin sufijo de semilla: las rondas 9-11 parten cada rama en
         # varios procesos (mov2-0.log), la 12 usa uno solo (e23.log)
         archivos=("$CASA"/$ronda/$rival-*.log(N) "$CASA"/$ronda/$rival.log(N))

@@ -61,6 +61,53 @@ seguidas a profundidad 4, mismo libro y misma semilla:
 Es decir: 10,8× es lo que se gana por nodo, y 55× lo que se gana jugando. La
 diferencia entre ambos es exactamente lo que aporta la memoria entre jugadas.
 
+## Niveles intermedios: dos mandos nuevos en el motor
+
+La escalera de niveles tiene saltos enormes —de 300 a 1000 elo entre niveles
+contiguos, ver ronda 12—, así que `ai.js` admite ahora dos parámetros para
+poner peldaños en medio. Los dos son **inertes si no se definen**: sin ellos
+el motor juega exactamente igual que antes (perft y dorados idénticos).
+
+**`nodes`: presupuesto de nodos.** En vez de fijar la profundidad, se deja
+profundizar hasta gastar N nodos y se juega la mejor jugada de la **última
+profundidad terminada** (una iteración a medias ha mirado bien las primeras
+jugadas y nada las últimas, así que se descarta entera). Es el mando bueno:
+
+- Es **continuo**, frente a la profundidad, que salta de 4 a 6 veces el
+  trabajo en cada escalón. Medido en procesos limpios con tope de profundidad
+  6: 500 → 8 ms/jugada, 2.000 → 17, 10.000 → 59, 50.000 → 297, 200.000 →
+  1.129, sin tope → 4.822. Monótono y sin sorpresas.
+- Es **honesto**: juega peor porque piensa menos, no porque se le inyecten
+  errores. Es lo que distingue de verdad a un jugador más flojo.
+- La profundidad 1 se termina siempre, gaste lo que gaste: sin ella no habría
+  ninguna jugada que devolver.
+
+Un detalle que costó una medición equivocada: la firma de la tabla de
+transposición (`ttCfgSig`) **no** incluye `nodes` ni `temperature`, y hace
+bien, porque no cambian lo que vale una posición. Pero eso significa que
+midiendo varios presupuestos en el mismo proceso, los últimos encuentran el
+trabajo ya hecho: la primera tanda dio tiempos absurdos (200.000 nodos en 3
+ms) hasta que se midió cada presupuesto en un proceso propio.
+
+**`temperature`: sorteo ponderado.** La jugada *i* sale con probabilidad
+proporcional a `exp((score_i − best) / T)`, con T en centipeones. Sustituye al
+sorteo dentro de la ventana dura de `PLAY_TOLERANCE`, que como mando de
+dificultad reparte mal el castigo: la ventana es absoluta, así que en una
+posición tranquila sortea entre veinte jugadas y en una posición aguda —donde
+una sola salva— no se equivoca nunca. Debilita justo donde da igual. Medido
+sobre una misma posición, 200 sorteos:
+
+| T | jugadas distintas | la más frecuente |
+|---|---|---|
+| clásico | 1 | 100% |
+| 30 | 21 | 32% |
+| 100 | 32 | 9% |
+| 300 | 34 | 8% |
+
+Cuesta como el modo análisis (2-3× la ventana justa), porque necesita la
+puntuación **exacta** de las jugadas malas: con la ventana estrecha una jugada
+pésima solo devuelve una cota superior y el sorteo ponderado saldría mal.
+
 ## Resultados hasta la fecha (julio 2026)
 
 **Ciclo 1 (corpus prof. 2, ablación y confirmación → commit `22407e1`):**
@@ -160,6 +207,33 @@ ronda con movilidad 4 contra 2 a profundidades 3, 4 y 5 con topes idénticos.
 La ronda 9 (profundidad 4, 127 partidas) quedó sin veredicto: movilidad 4
 contra 3 empate (−37 elo, p=0,36) y contra 5 va +70 sin alcanzar
 significación (p=0,064). Sus datos siguen en `r9/`.
+
+## Ronda 12: la escalera de elo de los niveles (en curso)
+
+El selector prometía "Fácil", "Difícil" o "Experto" sin que nadie hubiera
+medido nunca cuánto se llevan entre sí. Parejas contiguas, mismos topes que
+las rondas anteriores:
+
+| escalón | elo | partidas |
+|---|---|---|
+| nivel 2 → 3 | −1040 | 400 · cerrado |
+| nivel 3 → 4 | −797 | 400 · cerrado |
+| nivel 4 → 5 | −382 | en curso |
+| nivel 5 → 6 | −280 | en curso |
+
+Saltos de 300 a 1000 elo. De ahí la ronda 13 y los dos mandos nuevos: hay
+sitio de sobra para niveles intermedios. Ojo con el escalón 3→4, que no es
+comparable con los demás: ahí cambian **cuatro cosas a la vez** (profundidad
+2→3 y se encienden movilidad, ordenación y quietud), lo que por sí solo da
+peldaños intermedios gratis apagándolas por separado.
+
+## Ronda 13: calibrar el presupuesto de nodos (en cola)
+
+Cada presupuesto contra el nivel que por coste se le parece más: 2.000 contra
+el nivel 3, 10.000 contra el 4, 40.000 contra el 5 y 150.000 contra el 6.
+Encadenada detrás de la 12 en el mismo script: cuando la 12 está terminada,
+`arena.js` ve todos sus pares hechos y vuelve enseguida, así que el servicio
+pasa de largo y sigue con la 13 sin intervención.
 
 ## Ronda 11: ¿baja el peso de movilidad con la profundidad? NO
 

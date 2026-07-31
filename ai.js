@@ -713,6 +713,9 @@ function genCaptures(board, color, ep, kings, probe) {
 // beta), y usa evaluate() como "stand pat": la posición tal cual, sin más
 // capturas, es al menos tan buena como el peor caso de seguir capturando.
 function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth, sx, ply) {
+  // cuenta para el presupuesto, pero no corta aquí: la quietud está acotada
+  // por qdepth y no puede dispararse, y así el corte vive en un solo sitio
+  if (sx.tope) sx.nodos++;
   const values = cfg.pieceValues || PIECE_VALUE;
   const standPat = evaluate(board, color, cfg);
   if (standPat >= beta) return beta;
@@ -743,6 +746,14 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth, sx, pl
 // secuencias distintas llegan a la misma posición, indexada por la firma
 // Zobrist que sx.h1/h2 mantienen por XOR — aquí ya no se serializa nada.
 function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply) {
+  // Presupuesto de nodos: cuando se agota se corta la búsqueda en seco. La
+  // puntuación que se devuelve aquí es basura a propósito —no hay nada que
+  // devolver—, y por eso chooseAiMove DESCARTA la iteración entera y se queda
+  // con la última profundidad terminada. Ver cfg.nodes en AI_LEVELS.
+  if (sx.tope) {
+    if (sx.agotado) return 0;
+    if (++sx.nodos > sx.tope) { sx.agotado = true; return 0; }
+  }
   const values = cfg.pieceValues || PIECE_VALUE;
   // tablas por la regla de los 50 movimientos (ver FIFTY_MOVE_LIMIT en rules.js)
   if (clock >= FIFTY_MOVE_LIMIT) return drawScore(board, color, values);
@@ -907,6 +918,37 @@ const PLAY_TOLERANCE = 25;
 // peor y con `chosen` marcado en la elegida (que no siempre es la primera,
 // ver el sorteo por PLAY_TOLERANCE más abajo). Eso obliga a buscar con
 // ventana completa, que cuesta 2-3 veces más: ver el comentario del bucle.
+// Sorteo ponderado por puntuación: la jugada i sale con probabilidad
+// proporcional a exp((score_i − best) / T), con T en centipeones.
+//
+// Es el mando de dificultad "blando", frente a la ventana dura de
+// PLAY_TOLERANCE. La ventana es absoluta y por eso reparte mal el castigo:
+// en una posición tranquila hay veinte jugadas dentro de la banda y sortea
+// entre todas, mientras que en una posición aguda —donde una sola jugada
+// salva— las diferencias son de cientos de centipeones y nunca se equivoca.
+// Debilita justo donde da igual. Con temperatura, en cambio, una jugada
+// claramente peor nunca es imposible pero sí rara, y el comportamiento es el
+// mismo en posiciones tranquilas y agudas.
+//
+// T = 0 (o sin definir) devuelve el comportamiento clásico y no pasa por
+// aquí. Cuanto mayor T, más plano el reparto: con T muy grande juega al azar.
+function pickSoftmax(scored, best, T) {
+  let suma = 0;
+  const pesos = scored.map(s => {
+    // restar `best` antes de exponenciar evita el desbordamiento; el mate,
+    // que vale decenas de miles, da peso 0 a todo lo demás, que es lo suyo
+    const w = Math.exp((s.score - best) / T);
+    suma += w;
+    return w;
+  });
+  let r = Math.random() * suma;
+  for (let i = 0; i < pesos.length; i++) {
+    r -= pesos[i];
+    if (r <= 0) return scored[i].move;
+  }
+  return scored[scored.length - 1].move;   // por redondeo
+}
+
 function chooseAiMove(level, st = searchState(), opts = {}) {
   const cfg = AI_LEVELS[level] || AI_LEVELS[1];
   // Copia profunda ÚNICA de la posición: en la vía síncrona st.board es el
@@ -929,6 +971,8 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
     killers: Array.from({ length: plies }, () => [-1, -1]),
     history: new Int32Array(128 * 128),
     h1: 0, h2: 0,
+    // presupuesto de nodos (ver cfg.nodes en AI_LEVELS): 0 = sin límite
+    nodos: 0, tope: 0, agotado: false,
   };
   const moves = genMoves(board, st.turn, st.enPassant, kings, sx.probe);
   if (moves.length === 0) return null;
@@ -997,7 +1041,14 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   let best = -Infinity;
   let scored = [];
   const u = sx.undo[0];
+  // La profundidad 1 se termina SIEMPRE, agote lo que agote: sin ella no hay
+  // ninguna jugada que devolver. El presupuesto empieza a regir a partir de
+  // la 2, que es donde de verdad se gasta el tiempo.
+  const topeNodos = cfg.nodes || 0;
   for (let d = 1; d <= cfg.depth; d++) {
+    sx.tope = (d === 1) ? 0 : topeNodos;
+    if (d > 1 && topeNodos && sx.nodos >= topeNodos) break;
+    const bestPrevio = best, scoredPrevio = scored;
     best = -Infinity;
     scored = [];
     for (const m of moves) {
@@ -1005,13 +1056,27 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
         ? 0 : st.clock + 1;
       const ph1 = sx.h1, ph2 = sx.h2;
       const nextEp = makeSim(board, m.from, m.to, st.enPassant, u, kings, sx);
+      // La temperatura necesita la puntuación EXACTA de las jugadas malas,
+      // igual que el modo análisis: con la ventana estrecha una jugada
+      // pésima solo devuelve una cota superior y el sorteo ponderado saldría
+      // mal. Por eso una configuración con temperatura cuesta como el
+      // análisis, 2-3 veces más que la ventana justa.
       const score = -negamax(board, rival(st.turn), nextEp, nextClock, keys,
-        d - 1, -Infinity, opts.analyze ? Infinity : -best + PLAY_TOLERANCE + 1,
+        d - 1, -Infinity,
+        (opts.analyze || cfg.temperature) ? Infinity : -best + PLAY_TOLERANCE + 1,
         cfg, sx, 1);
       unmakeSim(board, u, kings);
       sx.h1 = ph1; sx.h2 = ph2;
       if (score > best) best = score;
       scored.push({ move: m, score });
+      if (sx.agotado) break;
+    }
+    if (sx.agotado) {
+      // iteración a medias: sus puntuaciones no valen nada (las primeras
+      // jugadas se miraron enteras y las últimas ni se tocaron, así que
+      // quedarse con ellas sería peor que no haber profundizado)
+      best = bestPrevio; scored = scoredPrevio;
+      break;
     }
     if (d < cfg.depth) {
       // mejor raíz primero en la siguiente iteración (desempate estable)
@@ -1026,7 +1091,9 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   // que su puntuación sigue siendo exacta (o una cota aún más baja) y el
   // filtro las trata igual de bien
   const top = scored.filter(s => s.score >= best - PLAY_TOLERANCE);
-  const chosen = top[Math.floor(Math.random() * top.length)].move;
+  const chosen = cfg.temperature
+    ? pickSoftmax(scored, best, cfg.temperature)
+    : top[Math.floor(Math.random() * top.length)].move;
   if (!opts.analyze) return chosen;
   scored.sort((a, b) => b.score - a.score);
   return {
