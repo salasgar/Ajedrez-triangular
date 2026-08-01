@@ -71,9 +71,23 @@ echo "RONDA 12 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r12/estado.txt
 # escalera cae cada uno y poder colocar niveles intermedios donde hoy hay
 # saltos de 300 a 1000 elo.
 #
-# El tope de profundidad es 6 en todos: quien manda es el presupuesto.
+# EL TOPE DE PROFUNDIDAD VA MUY ALTO (24) A PROPOSITO. Con un presupuesto de
+# nodos, el tope no debe llegar a estorbar nunca, y con pocas piezas estorba
+# enseguida: al bajar el factor de ramificacion, el mismo presupuesto compra
+# mucha mas profundidad. Medido con 10.000 nodos:
+#
+#   apertura (40 piezas) -> profundidad 3
+#   final (10 piezas)    -> profundidad 4
+#   final minimo (4)     -> profundidad 8   (con tope 6 se quedaba en 6)
+#
+# Y con 50.000 nodos en el final minimo: profundidad 12 con tope alto, contra
+# 6 en 0 ms con tope 6, o sea sin gastar siquiera el presupuesto. Poner el
+# tope bajo tira justamente la mejor virtud de este mando —profundizar donde
+# hay poco que mirar— y encima donde mas falta hace, porque los finales se
+# ganan con secuencias largas. En la apertura el tope no cambia nada: alli
+# manda el presupuesto.
 mkdir -p r13
-TOPE='"depth":6,"mobility":true,"order":true,"quiesce":true'
+TOPE='"depth":24,"mobility":true,"order":true,"quiesce":true'
 
 calibrar() {
   local nombre=$1 nodos=$2 rival=$3 nomRival=$4

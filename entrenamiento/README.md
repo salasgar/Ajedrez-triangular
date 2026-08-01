@@ -81,6 +81,19 @@ jugadas y nada las últimas, así que se descarta entera). Es el mando bueno:
   errores. Es lo que distingue de verdad a un jugador más flojo.
 - La profundidad 1 se termina siempre, gaste lo que gaste: sin ella no habría
   ninguna jugada que devolver.
+- **Reparte el esfuerzo donde hace falta.** Al bajar el número de piezas baja
+  el factor de ramificación, así que el mismo presupuesto compra mucha más
+  profundidad. Con 10.000 nodos: apertura (40 piezas) profundidad 3, final (10
+  piezas) profundidad 4, final mínimo (4 piezas) profundidad 8. Eso es
+  exactamente lo contrario de lo que hace la profundidad fija, que se pasa el
+  mediojuego pensando y despacha el final en un suspiro, que es donde más
+  falta hace mirar lejos.
+
+Por eso, **con presupuesto el tope de profundidad debe ir muy alto** (24 en la
+ronda 13) para no llegar a estorbar nunca. Con tope 6, el final mínimo se
+quedaba en profundidad 6 gastando 0 ms: ni siquiera usaba el presupuesto. Con
+tope alto llega a 12. En la apertura el tope da igual: allí manda el
+presupuesto.
 
 Un detalle que costó una medición equivocada: la firma de la tabla de
 transposición (`ttCfgSig`) **no** incluye `nodes` ni `temperature`, y hace
