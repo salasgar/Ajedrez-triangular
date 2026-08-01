@@ -281,7 +281,7 @@ function updateCellLabels(board) {
     const p = board.get(cell.key);
     const poly = cellPolys.get(cell.key);
     const que = p ? `${PIECE_NAMES[p.type]} ${colorAdj(p.type, p.color)}` : 'vacía';
-    poly.setAttribute('aria-label', `${cell.key}: ${que}`);
+    poly.setAttribute('aria-label', `${cellName(cell)}: ${que}`);
   }
 }
 
@@ -477,13 +477,54 @@ function nextAnalysis(idx) {
 // en la lista de jugadas `to` es la casilla de llegada del rey (no la de la
 // torre), así que isCastling() no lo detectaría (ver lastMove.castle en
 // rules.js); en el análisis se omite y basta isCastling sobre la torre.
-function moveText(board, from, to, castle) {
+// --- notación de las jugadas ---------------------------------------------
+//
+// Antes una jugada se leía "♞ 1,-3,3 → -1,-1,4": las coordenadas en bruto del
+// motor, ilegibles y sin poder copiarse a ningún sitio. Ahora se escribe como
+// en el ajedrez de siempre, con las casillas nombradas B1A, N4H… (ver
+// cellName en geometry.js) y las iniciales españolas de las piezas.
+//
+//   CB3D×N4E+   caballo de B3D captura en N4E y da jaque
+//   B2D-B4D     peón de B2D a B4D
+//   0-0         enroque corto        0-0-0  enroque largo
+//   B7E-B8E=D   peón corona en B8E eligiendo dama
+//
+// SE ESCRIBE EL ORIGEN SIEMPRE (notación larga), y no por gusto: los nombres
+// de casilla empiezan por B o N y contienen letras A..H, que son justo las
+// iniciales de las piezas. En notación corta salían jugadas como "D×N5D",
+// que lo mismo es la Dama capturando que un peón de la franja D, o "CBB3C",
+// que no hay quien lo lea. Con el origen delante y un separador en medio no
+// hay ambigüedad posible, y de paso sobra toda la lógica de desambiguar, que
+// es una fuente de fallos menos.
+const LETRA_PIEZA = { K: 'R', Q: 'D', R: 'T', B: 'A', N: 'C', E: 'E', P: '' };
+
+// '+' si la jugada dio jaque, '#' si fue mate. Solo se sabe de las jugadas ya
+// hechas (el estado viene del snapshot siguiente); las jugadas propuestas del
+// panel de análisis se quedan sin marca.
+function marcaFinal(status) {
+  return status === 'checkmate' ? '#' : status === 'check' ? '+' : '';
+}
+
+function moveText(board, from, to, castle, opts = {}) {
   const piece = board.get(from);
+  if (!piece) return from + '→' + to;                 // historial incoherente
+  if (castle || isCastling(board, from, to)) {
+    // `to` es la casilla de la torre en una jugada propuesta y la de llegada
+    // del rey en una ya hecha; las dos caen en el lado corto para el enroque
+    // corto (índices 0 y 1 de la fila del borde, ver CASTLING en rules.js)
+    const fila = backRow(piece.color).map(c => c.key);
+    const i = fila.indexOf(to);
+    return (i === 0 || i === 1 ? '0-0' : '0-0-0') + marcaFinal(opts.status);
+  }
+  const celda = CELL_MAP.get(from);
   const target = board.get(to);
-  // el enroque aterriza sobre la torre propia, no es captura (ver CASTLING)
-  const mark = (castle || isCastling(board, from, to)) ? ' ⇄'
-    : (target && target.color !== piece.color ? ' ×' + GLYPH[target.type] : '');
-  return `${GLYPH[piece.type]} ${from} → ${to}${mark}`;
+  // al paso: el peón va en diagonal a una casilla vacía, así que la captura
+  // no se ve mirando el destino
+  const esCaptura = !!(target && target.color !== piece.color) ||
+    (piece.type === 'P' && celda.pawnCap[piece.color].some(c => c.key === to));
+  const corona = opts.promo ? '=' + LETRA_PIEZA[opts.promo] : '';
+  return LETRA_PIEZA[piece.type] + cellName(celda) + (esCaptura ? '×' : '-') +
+    cellName(CELL_MAP.get(to)) + corona + marcaFinal(opts.status);
 }
 
 // Una fila: «3. ♞ 1,0,1 → 0,1,0 ×♟   +0.35». Al señalarla con el ratón, el
@@ -503,6 +544,7 @@ function analysisRow(board, entry, rank, baseIndex, markChosen, action, hint) {
     li.appendChild(s);
   };
   add('an-rank', rank + '.');
+  // jugada propuesta: no se sabe si dará jaque, así que no lleva +/#
   add('an-move', moveText(board, entry.from, entry.to));
   add('an-score', formatScore(entry.score));
 
@@ -664,7 +706,7 @@ function moveAnnotation(i) {
 
 function sheetEntry(i) {
   const h = game.history[i];
-  const { from, to, castle } = h.lastMove;
+  const { from, to, castle, promo } = h.lastMove;
   // marca del análisis: cambia cuando el ordenador lo adjunta tras mover
   const anTag = Array.isArray(h.analysis) ? h.analysis.length : (h.analysis || 0);
   const hit = sheetCache[i];
@@ -672,7 +714,9 @@ function sheetEntry(i) {
   const prevBoard = new Map(game.history[i - 1].board);
   sheetCache[i] = {
     from, to, anTag,
-    texto: moveText(prevBoard, from, to, castle),
+    // el estado sale del snapshot de DESPUÉS: el jaque o el mate lo da
+    // justamente esta jugada
+    texto: moveText(prevBoard, from, to, castle, { promo, status: h.status }),
     anot: moveAnnotation(i),
   };
   return sheetCache[i];
@@ -1132,6 +1176,52 @@ btnExport.addEventListener('click', () => {
 btnImport.addEventListener('click', () => {
   fileImport.value = '';
   fileImport.click();
+});
+
+// --- copiar las jugadas como texto ---------------------------------------
+//
+// El .json guarda la partida entera para volver a cargarla; esto es lo otro
+// que hace falta: el texto de las jugadas, para pegarlo en un mensaje, un
+// cuaderno o donde sea. Sale numerado en pares, como una planilla.
+function movesAsText() {
+  const lineas = [];
+  lineas.push('Ajedrez Triangular — ' + new Date().toLocaleString('es'));
+  const modo = modeEl.options[modeEl.selectedIndex].text;
+  lineas.push('Modalidad: ' + modo +
+    (aiConfig.w !== null ? '  ·  blancas: nivel ' + aiConfig.w : '') +
+    (aiConfig.b !== null ? '  ·  negras: nivel ' + aiConfig.b : ''));
+  lineas.push('');
+  for (let i = 1; i < game.history.length; i += 2) {
+    const n = Math.ceil(i / 2) + '.';
+    const blancas = sheetEntry(i).texto;
+    const negras = game.history[i + 1] ? '  ' + sheetEntry(i + 1).texto : '';
+    lineas.push(n.padStart(4) + ' ' + blancas.padEnd(12) + negras);
+  }
+  const fin = { checkmate: 'Jaque mate', stalemate: 'Ahogado',
+    repetition: 'Tablas por repetición', fifty: 'Tablas por la regla de 50',
+    material: 'Tablas por material insuficiente' }[game.status];
+  if (fin) {
+    lineas.push('');
+    lineas.push(fin + (game.winner ? ', ganan las ' +
+      (game.winner === 'w' ? 'blancas' : 'negras') : ''));
+  }
+  return lineas.join('\n');
+}
+
+document.getElementById('btn-copy-moves').addEventListener('click', async (e) => {
+  const boton = e.currentTarget;
+  const texto = movesAsText();
+  const original = boton.textContent;
+  try {
+    // el portapapeles falla en file:// en algunos navegadores y siempre que
+    // la página no tenga el foco: se avisa en vez de quedarse callado
+    await navigator.clipboard.writeText(texto);
+    boton.textContent = '¡Copiado!';
+  } catch {
+    boton.textContent = 'No se pudo copiar';
+    console.warn('Portapapeles no disponible. Jugadas:\n' + texto);
+  }
+  setTimeout(() => { boton.textContent = original; }, 1500);
 });
 
 fileImport.addEventListener('change', () => {

@@ -21,6 +21,39 @@ const CELL_MAP = new Map();
 function keyOf(a, b, c) { return a + ',' + b + ',' + c; }
 function getCell(a, b, c) { return CELL_MAP.get(keyOf(a, b, c)) || null; }
 
+// --- nombre legible de una casilla: B1A, N4H… ------------------------------
+//
+// Las coordenadas (a, b, c) son perfectas para el motor e ilegibles para una
+// persona. El nombre corto se compone de tres cosas:
+//
+//   B o N   el color de la casilla (Blanca si apunta hacia arriba, Negra si
+//           apunta hacia abajo)
+//   1..8    la franja HORIZONTAL, que es la coordenada b (1 abajo, 8 arriba)
+//   A..H    la franja que va de abajo-derecha a arriba-izquierda, que es la
+//           coordenada c (A la de más a la izquierda, H la de más a la derecha)
+//
+// Una franja es el recorrido que haría una torre de un borde del tablero al
+// otro, y por cada casilla pasan tres. Nombrarla por DOS franjas más el color
+// basta: la tercera coordenada sale sola, porque a+b+c vale 2 en las casillas
+// que apuntan hacia arriba y 1 en las que apuntan hacia abajo. Comprobado que
+// (color, b, c) identifica una sola casilla de las 96.
+//
+// La casilla de más abajo del tablero es B1A y la de más a la derecha, N4H.
+const CELL_NAME_LETTERS = 'ABCDEFGH';
+function cellName(cell) {
+  return (cell.up ? 'B' : 'N') + (cell.b - (1 - N) + 1) +
+    CELL_NAME_LETTERS[N - cell.c];
+}
+// nombre → casilla (para leer partidas escritas con esta notación)
+function cellFromName(nombre) {
+  const m = /^([BN])(\d)([A-H])$/i.exec(String(nombre).trim());
+  if (!m) return null;
+  const up = m[1].toUpperCase() === 'B';
+  const b = Number(m[2]) - 1 + (1 - N);
+  const c = N - CELL_NAME_LETTERS.indexOf(m[3].toUpperCase());
+  return getCell((up ? 2 : 1) - b - c, b, c);
+}
+
 function vertexXY(alpha, beta) {
   return [EDGE * (alpha + beta / 2), -ROW_H * beta];
 }

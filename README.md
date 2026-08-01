@@ -57,6 +57,42 @@ alcanza por sí solo dos casillas a cada lado de su fila, así que indicar el
 destino del rey sería ambiguo, mientras que "rey a su propia torre" no puede
 significar ninguna otra cosa.
 
+## Cómo se nombra cada casilla
+
+Las coordenadas `(a, b, c)` son cómodas para el motor e ilegibles para una
+persona, así que cada casilla tiene además un nombre corto: **B1A**, **N4H**…
+
+- La inicial es el **color** de la casilla: `B` si apunta hacia arriba (clara),
+  `N` si apunta hacia abajo (oscura).
+- El número es la **franja horizontal**, del 1 (abajo, lado de las blancas) al
+  8 (arriba).
+- La letra es la franja que va de **abajo-derecha a arriba-izquierda**, de la
+  `A` (la más a la izquierda) a la `H`.
+
+Una franja es el recorrido que haría una torre de un borde del tablero al otro,
+y por cada casilla pasan tres. Nombrarla por dos franjas más el color basta,
+porque la tercera coordenada sale sola: `a + b + c` vale 2 en las casillas
+claras y 1 en las oscuras. La casilla de más abajo es `B1A` y la de más a la
+derecha, `N4H`.
+
+Las jugadas se escriben con la inicial de la pieza (Rey, Dama, Torre, Alfil,
+Caballo, Elefante; el peón no lleva), el origen, `-` o `×` si captura, y el
+destino:
+
+| Jugada | Significado |
+|---|---|
+| `N2D-N4E` | peón de N2D a N4E |
+| `CB1D-N3F` | caballo de B1D a N3F |
+| `AN1D×N5D` | alfil de N1D captura en N5D |
+| `AN5D-N5C+` | alfil a N5C, con jaque (`#` sería mate) |
+| `N7D-B8D=C` | peón corona en B8D eligiendo caballo |
+| `0-0` / `0-0-0` | enroque corto / largo |
+
+Se escribe el origen siempre, y no por gusto: los nombres de casilla empiezan
+por `B` o `N` y contienen letras `A`–`H`, que son justamente las iniciales de
+las piezas. En notación corta salían jugadas como `D×N5D`, que lo mismo es la
+Dama capturando que un peón de la franja D.
+
 ## Interfaz
 
 - Navegación por el historial: inicio, deshacer, rehacer, final, y reproducción
@@ -64,6 +100,8 @@ significar ninguna otra cosa.
 - Voltear el tablero, listado de piezas capturadas y contador de jugadas.
 - Guardar y cargar partidas en el navegador (`localStorage`), marcarlas como
   favoritas, y exportar o importar partidas en `.json`.
+- **Copiar jugadas** pone la planilla en el portapapeles como texto, numerada
+  en pares y con el resultado al final.
 
 ### Análisis de las jugadas
 
