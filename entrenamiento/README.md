@@ -24,6 +24,59 @@ un push despliega la aplicación en vivo):
 node perft.js check && node test-worker.js && node prueba-humo.js
 ```
 
+## Qué son los «dorados»
+
+Es el calco de *golden test* / *golden file*: se **congela la salida de una
+versión que se da por buena** y se guarda como referencia, de modo que
+cualquier cambio posterior que la altere salte a la vista. En español se diría
+«valores de referencia»; en este repo se les llama dorados y así aparecen en
+los comentarios y en los mensajes de commit.
+
+Viven todos en `perft-esperado.json` y son de dos clases:
+
+**Perft** — vigila el *generador de jugadas*. Cuántas secuencias legales de
+`d` jugadas salen de cada posición:
+
+```json
+"inicial": { "d": 3, "n": 23489 }
+```
+
+Un solo número que resume miles de casos. Se mueve si se rompe el enroque, la
+captura al paso, la coronación o la detección de jaque.
+
+**Dorados de búsqueda** — vigilan *el motor*. Por posición y configuración: la
+puntuación de la mejor jugada raíz, el conjunto de jugadas que quedan dentro
+de `PLAY_TOLERANCE` y cuántas legales hay:
+
+```json
+"DORADO_CARO": { "best": 164, "banda": ["2,-2,1>1,0,0", "…"], "legales": 28 }
+```
+
+Se guarda el **conjunto** y no la jugada elegida a propósito: el motor sortea
+dentro de esa banda, así que la elegida cambia entre ejecuciones y la banda
+no.
+
+```sh
+node perft.js gen     # congela (solo cuando el cambio es intencionado)
+node perft.js check   # compara con lo congelado
+```
+
+**Lo que prueban no es lo que parece.** Un dorado dice «esto sigue dando lo
+mismo que antes», no «esto es correcto». Nadie ha publicado números de perft
+para esta variante, así que el oráculo es el propio generador el día que se
+dio por bueno: detectan **cambios**, no errores preexistentes. Un fallo que ya
+estuviera ahí el primer día se habría congelado tan tranquilo. De hecho el
+enroque duplicado que apareció en la fase 2 no lo cazó un dorado, sino el
+perft comparado contra un recuento hecho por otra vía.
+
+Aun así son la red de seguridad de casi todo lo que hay en este README. Que
+las clavadas (fase 7) fueran una optimización **exacta** no es un argumento:
+es que los 21 perft y los 28 dorados salieron idénticos y el banco contó los
+mismos 86.640 nodos. Y cuando los niveles se rediseñaron, los dorados estaban
+atados a «el nivel 3» y «el nivel 4», así que el rediseño los habría
+invalidado justo cuando más falta hacían; por eso ahora llevan sus dos
+configuraciones escritas y son independientes del menú de niveles.
+
 ## Cuánto se aceleró el motor, y por qué hay dos cifras
 
 Los `bench-fase*.json` guardan el banco de cada fase de la optimización (7

@@ -11,14 +11,31 @@
 //   node perft.js bench [etiqueta]  mide ms y nodos por posición del subconjunto
 //                                   de bench y lo guarda en bench-<etiqueta>.json
 //
-// No hay números perft de referencia para esta variante: el generador actual
-// (movesForSide/applyMoveSim, con copias de Map) es el ORÁCULO. `gen` se
-// ejecuta UNA vez antes de tocar nada; a partir de ahí `check` decide.
+// QUÉ ES UN "DORADO". Es el calco de golden test / golden file: se congela la
+// salida de una versión que se da por buena y se guarda como referencia, de
+// modo que cualquier cambio posterior que la altere salte a la vista. En
+// español se diría "valores de referencia"; aquí se les llama dorados.
 //
-// Los dorados guardan, por posición y nivel: el score de la mejor jugada raíz
-// y el conjunto de jugadas dentro de PLAY_TOLERANCE (con opts.analyze la
-// ventana se abre del todo, así que esas puntuaciones son exactas y estables;
-// la jugada *elegida* es un sorteo y no vale como invariante).
+// OJO CON LO QUE PRUEBAN, que no es lo que parece: un dorado dice "esto sigue
+// dando lo mismo que antes", NO "esto es correcto". No hay números perft
+// publicados para esta variante, así que el oráculo es el propio generador
+// (movesForSide/applyMoveSim, con copias de Map) el día que se dio por bueno.
+// Detectan CAMBIOS, no errores preexistentes: un fallo que ya estuviera ahí
+// el primer día se habría congelado tan tranquilo. `gen` se ejecuta UNA vez
+// antes de tocar nada; a partir de ahí manda `check`.
+//
+// Se congelan dos cosas distintas:
+//
+//  - PERFT, que vigila el GENERADOR DE JUGADAS: cuántas secuencias legales de
+//    d jugadas salen de cada posición (la inicial a profundidad 3: 23.489).
+//    Un solo número que resume miles de casos, y que se mueve si se rompe el
+//    enroque, la captura al paso, la coronación o la detección de jaque.
+//  - DORADOS DE BÚSQUEDA, que vigilan el MOTOR: por posición y configuración,
+//    la puntuación de la mejor jugada raíz y el CONJUNTO de jugadas dentro de
+//    PLAY_TOLERANCE. Se guarda el conjunto y no la jugada elegida porque el
+//    motor sortea dentro de esa banda: la elegida cambia entre ejecuciones, la
+//    banda no. Con opts.analyze la ventana se abre del todo, así que esas
+//    puntuaciones son exactas y estables.
 'use strict';
 const fs = require('fs');
 const path = require('path');
