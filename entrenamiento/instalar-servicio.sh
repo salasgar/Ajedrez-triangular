@@ -67,7 +67,7 @@ case "${1:-instalar}" in
     for ronda in $RONDAS; do
       [ -d "$CASA/$ronda" ] || continue
       echo "########## $ronda: $DESC_RONDA[$ronda] ##########"
-      for rival in n23 n34 n45 n56 e23 e34 e45 e56 d3 d4 mov2 mov3 mov5; do
+      for rival in n23 n34 n45 n56 n25 e23 e34 e45 e56 d3 d4 mov2 mov3 mov5; do
         # con y sin sufijo de semilla: las rondas 9-11 parten cada rama en
         # varios procesos (mov2-0.log), la 12 usa uno solo (e23.log)
         archivos=("$CASA"/$ronda/$rival-*.log(N) "$CASA"/$ronda/$rival.log(N))

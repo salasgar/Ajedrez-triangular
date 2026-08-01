@@ -49,12 +49,18 @@ lanzar() {
     node arena.js >> r12/$nombre.err 2>&1
 }
 
-lanzar e23 "$N2" "$N3" nivel2 nivel3 &
-lanzar e34 "$N3" "$N4" nivel3 nivel4 &
-lanzar e45 "$N4" "$N5" nivel4 nivel5 &
-lanzar e56 "$N5" "$N6" nivel5 nivel6 &
-wait
-echo "RONDA 12 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r12/estado.txt
+# RONDA 12 CERRADA. Median los niveles POR PROFUNDIDAD, que ya no existen: sus
+# resultados son los que motivaron sustituirlos, y ahi se quedan como
+# constancia. No se relanza —terminar el ultimo escalon seria gastar la
+# maquina en medir algo que hemos borrado—. Los logs siguen en r12/.
+#
+#   nivel 2 -> 3: -1040 elo   (400 partidas)
+#   nivel 3 -> 4:  -849       (400)
+#   nivel 4 -> 5:  -198       (400)
+#   nivel 5 -> 6:  -193       (368)
+#
+# Dos escalones insalvables abajo y dos razonables arriba: el principiante no
+# podia pasar del nivel 2 y el resto de la escalera estaba desaprovechada.
 
 # ---------------------------------------------------------------------------
 # RONDA 13: CALIBRAR EL PRESUPUESTO DE NODOS
@@ -110,5 +116,11 @@ escalon n23 "$L2" "$L3" nivel2 nivel3 &
 escalon n34 "$L3" "$L4" nivel3 nivel4 &
 escalon n45 "$L4" "$L5" nivel4 nivel5 &
 escalon n56 "$L5" "$L6" nivel5 nivel6 &
+# PAR NO CONTIGUO, para comprobar que la escalera es UNA SOLA ESCALA. Encadenar
+# escalones supone transitividad, y no tiene por que cumplirse: un estilo puede
+# irle mejor a un rival que a otro, y la tasa de tablas cambia con la fuerza.
+# Si el 2 contra el 5 no cuadra con la suma de n23+n34+n45, el elo acumulado es
+# orientativo y no una escala.
+escalon n25 "$L2" "$L5" nivel2 nivel5 &
 wait
 echo "RONDA 13 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r13/estado.txt
