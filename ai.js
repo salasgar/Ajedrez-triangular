@@ -1008,8 +1008,20 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   const [rh1, rh2] = computeHash(board);
   sx.h1 = rh1; sx.h2 = rh2;
   if (!TT) ttInit();
+  // La firma incluye `nodes` y `temperature` aunque NO cambien lo que vale una
+  // posición. El motivo no es la evaluación, es la INDEPENDENCIA: cuando dos
+  // configuraciones se alternan en el mismo proceso (la arena, y el modo
+  // ordenador contra ordenador), una firma común significa una sola tabla
+  // compartida, y entonces el que piensa poco se encuentra hechas las cuentas
+  // que hizo el que piensa mucho.
+  //
+  // No es hipotético: la primera medición de la escalera por presupuesto dio
+  // 20 elo entre el nivel 5 y el 6 —con casi cuatro veces más presupuesto—
+  // porque compartían tabla. La firma tiene que identificar al JUGADOR, no
+  // solo a la evaluación.
   const cfgSig = JSON.stringify([cfg.pieceValues || null, cfg.positionWeights || null,
-    cfg.mobilityWeight ?? 4, !!cfg.mobility, !!cfg.quiesce]);
+    cfg.mobilityWeight ?? 4, !!cfg.mobility, !!cfg.quiesce,
+    cfg.nodes || 0, cfg.temperature || 0, cfg.depth || 0]);
   if (cfgSig !== ttCfgSig) { ttCfgSig = cfgSig; ttGen++; }
   ttAge++;
 
