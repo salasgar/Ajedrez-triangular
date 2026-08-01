@@ -108,17 +108,38 @@ cuando el ordenador no está pensando (pausa la partida si hace falta).
 
 ## Niveles del ordenador
 
-| Nivel | Motor |
-|---|---|
-| 1 | Jugadas al azar |
-| 2 | Codicioso (material inmediato, profundidad 1) |
-| 3 | Minimax con poda alfa-beta, profundidad 2 |
-| 4–7 | + ordenación de jugadas, movilidad y búsqueda de quietud, profundidad 3 a 6 |
-| 8 | Ranura experimental (hoy igual que el 4; los valores ajustados que probaba son ya el estándar) |
+Los niveles no se distinguen por una profundidad fija, sino por **cuánto se
+le deja pensar**: un presupuesto de nodos. La profundidad sale de ahí, y por
+eso varía con la posición — con pocas piezas el mismo presupuesto llega mucho
+más lejos, que es justo donde hace falta.
 
-A partir del nivel 4 la búsqueda corre en un Web Worker
-([ai-async.js](ai-async.js)) para que la interfaz no se congele mientras el
-ordenador piensa; si el navegador no lo permite, cae al cálculo síncrono.
+| Nivel | Presupuesto | Piensa | Profundidad típica |
+|---|---|---|---|
+| 1 | — | — | juega al azar |
+| 2 | 300 nodos + azar | 5 ms | 1 |
+| 3 | 5.000 nodos + azar | 35 ms | 2 |
+| 4 | 4.500 nodos | 32 ms | 2 |
+| 5 | 16.000 nodos | 86 ms | 3 |
+| 6 | 60.000 nodos | 346 ms | 4 |
+| 7 | 220.000 nodos | 1,1 s | 5 |
+| 8 | 800.000 nodos | 4,5 s | 6 |
+
+Los niveles 2 y 3 llevan además un punto de azar (no siempre juegan la mejor
+jugada, y a veces se equivocan de verdad). Sin él, un motor con búsqueda de
+quietud no cuelga piezas ni pensando poquísimo, y el principiante se queda sin
+rival asequible. Los niveles 4 en adelante juegan siempre lo mejor que ven:
+son más flojos solo porque miran menos lejos.
+
+La búsqueda corre siempre en un Web Worker ([ai-async.js](ai-async.js)) para
+que la interfaz no se congele mientras el ordenador piensa; si el navegador no
+lo permite, cae al cálculo síncrono.
+
+Los presupuestos están puestos para que la escalera suba a pasos parejos
+(cada nivel piensa unas 3,7 veces más que el anterior), pero **el elo de cada
+peldaño está sin medir todavía**: la escalera anterior, la de profundidad
+fija, tenía huecos de 300 a 1000 elo entre niveles contiguos, y esa medición
+es justamente lo que motivó cambiarla. La ronda 13 del banco de entrenamiento
+está midiendo la nueva.
 
 ## Estructura
 

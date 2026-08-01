@@ -49,20 +49,38 @@ function drawScore(board, color, values = PIECE_VALUE) {
 // jugadas al azar) puede haber muchas capturas posibles a la vez, y en los
 // niveles 1-3 (pensados para ser simples y rápidos, no fuertes) el coste no
 // compensa la mejora táctica.
+// NIVELES POR PRESUPUESTO DE NODOS, no por profundidad.
+//
+// La escalera anterior fijaba la profundidad, y eso la hacía a saltos: cada
+// escalón multiplicaba el trabajo por 4-6, y medido en la arena los huecos
+// eran de 300 a 1000 elo entre niveles contiguos. Con un presupuesto de
+// nodos el mando es continuo, así que los peldaños se pueden repartir a
+// gusto (aquí, cada uno ~3,7 veces el anterior).
+//
+// Además reparte el esfuerzo mejor: al bajar el número de piezas baja la
+// ramificación, así que el mismo presupuesto profundiza mucho más en los
+// finales, que es donde hace falta mirar lejos. La profundidad fija hacía lo
+// contrario. Por eso `depth` va aquí como TOPE ALTO (24) que no debe llegar a
+// estorbar: quien manda es `nodes`.
+//
+// Los dos niveles bajos llevan además `temperature`: sin ella, un motor con
+// quietud no cuelga piezas ni pensando poco, y el principiante se queda sin
+// rival asequible. La temperatura hace que se equivoque de verdad, que es lo
+// que distingue a un jugador flojo de uno que solo mira poco.
+const TOPE_PROF = 24;
+const BASE_NIVEL = { depth: TOPE_PROF, mobility: true, order: true, quiesce: true };
 const AI_LEVELS = {
-  1: { random: true },                          // al azar
-  2: { depth: 1 },                              // codicioso (material inmediato)
-  3: { depth: 2 },                              // minimax + alfa-beta
-  4: { depth: 3, mobility: true, order: true, quiesce: true }, // + ordenación, movilidad y quietud
-  5: { depth: 4, mobility: true, order: true, quiesce: true },
-  6: { depth: 5, mobility: true, order: true, quiesce: true },
-  7: { depth: 6, mobility: true, order: true, quiesce: true }, // lento
-  // Ranura experimental. Ya no lleva valores propios: los que probaba
-  // (material ajustado + movilidad) se confirmaron y son ahora el estándar de
-  // todos los niveles, así que hoy juega igual que el 4. Se mantiene definido
-  // para no romper partidas guardadas que apunten al nivel 8, y queda libre
-  // para el siguiente experimento.
-  8: { depth: 3, mobility: true, order: true, quiesce: true },
+  1: { random: true },                                    // al azar
+  2: { ...BASE_NIVEL, nodes: 300, temperature: 150 },
+  // 5.000 y no 1.200: con temperatura la búsqueda va con ventana completa y
+  // cuesta 2-3 veces más, así que con 1.200 no pasaba de profundidad 1 y este
+  // nivel era el 2 con otra temperatura. Con 5.000 llega a profundidad 2.
+  3: { ...BASE_NIVEL, nodes: 5000, temperature: 70 },
+  4: { ...BASE_NIVEL, nodes: 4500 },
+  5: { ...BASE_NIVEL, nodes: 16000 },
+  6: { ...BASE_NIVEL, nodes: 60000 },
+  7: { ...BASE_NIVEL, nodes: 220000 },
+  8: { ...BASE_NIVEL, nodes: 800000 },                    // lento
 };
 
 // Centralidad de una casilla: 1 en el centro del tablero, 0 en el borde.

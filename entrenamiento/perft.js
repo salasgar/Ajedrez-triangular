@@ -167,8 +167,18 @@ function dorado(pos, level) {
 }
 
 // --- modos ---
-const NIVEL_DORADO_TODAS = 3;     // prof. 2, barato: todas las posiciones
-const NIVEL_DORADO_CARO = 4;      // prof. 3 con quiesce+movilidad: subconjunto
+//
+// Las dos configuraciones de los dorados van ESCRITAS AQUI, no tomadas de
+// AI_LEVELS por su numero. Antes eran "el nivel 3" y "el nivel 4", y eso
+// ataba la verificacion al menu de niveles: rediseñarlo invalidaba los
+// dorados de golpe, que es justo la red de seguridad que hace falta mientras
+// se rediseña. Lo que estos dorados vigilan es la BUSQUEDA, no qué nivel
+// ofrece la interfaz. Son las que eran el nivel 3 y el nivel 4 el dia que se
+// congelo perft-esperado.json; no se tocan aunque los niveles cambien.
+AI_LEVELS.DORADO_BARATO = { depth: 2 };
+AI_LEVELS.DORADO_CARO = { depth: 3, mobility: true, order: true, quiesce: true };
+const NIVEL_DORADO_TODAS = 'DORADO_BARATO';   // prof. 2, barato: todas
+const NIVEL_DORADO_CARO = 'DORADO_CARO';      // prof. 3 completo: subconjunto
 const CARO_CADA = 3;              // 1 de cada 3 posiciones al nivel caro
 const PROF_PERFT = { inicial: 3 };  // profundidad de perft por id (resto: 2)
 const PROF_PERFT_DEF = 2;

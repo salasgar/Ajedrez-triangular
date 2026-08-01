@@ -64,12 +64,15 @@ echo "RONDA 12 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r12/estado.txt
 # sigue de largo hasta aquí. Y si un apagón corta a mitad de la 13, al
 # reanudar pasa otra vez de largo por la 12 y retoma donde iba.
 #
-# QUE SE MIDE. El presupuesto de nodos es un mando CONTINUO: en vez de fijar
-# la profundidad, se deja profundizar hasta gastar N nodos y se juega la mejor
-# jugada de la última profundidad terminada. Aquí se enfrenta cada
-# presupuesto a un nivel existente cercano, para saber a qué altura de la
-# escalera cae cada uno y poder colocar niveles intermedios donde hoy hay
-# saltos de 300 a 1000 elo.
+# QUE SE MIDE. Los niveles ya NO son por profundidad: desde el rediseño, cada
+# uno es un presupuesto de nodos (ver AI_LEVELS en ai.js). Esta ronda mide la
+# escalera NUEVA, cada nivel contra el siguiente, igual que la 12 midió la
+# vieja. Si los peldaños salen desiguales, se corrigen moviendo presupuestos,
+# que ahora es un mando continuo y no un salto de 4-6 veces el trabajo.
+#
+# Los escalones altos (6-7 y 7-8) no entran aquí: a 1 y 4,5 segundos por
+# jugada, una partida cuesta demasiado para la misma tanda. Van en su propia
+# ronda cuando esta termine.
 #
 # EL TOPE DE PROFUNDIDAD VA MUY ALTO (24) A PROPOSITO. Con un presupuesto de
 # nodos, el tope no debe llegar a estorbar nunca, y con pocas piezas estorba
@@ -89,18 +92,23 @@ echo "RONDA 12 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r12/estado.txt
 mkdir -p r13
 TOPE='"depth":24,"mobility":true,"order":true,"quiesce":true'
 
-calibrar() {
-  local nombre=$1 nodos=$2 rival=$3 nomRival=$4
+# los niveles nuevos, tal como estan en AI_LEVELS
+L2="$TOPE,\"nodes\":300,\"temperature\":150"
+L3="$TOPE,\"nodes\":5000,\"temperature\":70"
+L4="$TOPE,\"nodes\":4500"
+L5="$TOPE,\"nodes\":16000"
+L6="$TOPE,\"nodes\":60000"
+
+escalon() {
+  local nombre=$1 cfgA=$2 cfgB=$3 nA=$4 nB=$5
   SALIDA=r13/$nombre.log FIRST=1 PAIRS=200 SEED=19000 \
-    CFG_A="{$TOPE,\"nodes\":$nodos}" CFG_B="{$rival}" \
-    NAME_A=$nombre NAME_B=$nomRival \
+    CFG_A="{$cfgA}" CFG_B="{$cfgB}" NAME_A=$nA NAME_B=$nB \
     node arena.js >> r13/$nombre.err 2>&1
 }
 
-# cada presupuesto contra el nivel que por coste se le parece mas
-calibrar b2000     2000 "$N3" nivel3 &
-calibrar b10000   10000 "$N4" nivel4 &
-calibrar b40000   40000 "$N5" nivel5 &
-calibrar b150000 150000 "$N6" nivel6 &
+escalon n23 "$L2" "$L3" nivel2 nivel3 &
+escalon n34 "$L3" "$L4" nivel3 nivel4 &
+escalon n45 "$L4" "$L5" nivel4 nivel5 &
+escalon n56 "$L5" "$L6" nivel5 nivel6 &
 wait
 echo "RONDA 13 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r13/estado.txt
