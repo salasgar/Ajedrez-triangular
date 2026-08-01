@@ -124,3 +124,76 @@ escalon n56 "$L5" "$L6" nivel5 nivel6 &
 escalon n25 "$L2" "$L5" nivel2 nivel5 &
 wait
 echo "RONDA 13 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r13/estado.txt
+
+# ---------------------------------------------------------------------------
+# RONDA 14: LA CURVA DE LA TEMPERATURA
+#
+# QUE ENSEÑO LA RONDA 13. Los escalones de arriba —los que solo cambian el
+# presupuesto de nodos— salieron parejos y en la zona jugable:
+#
+#   n45  4.500 -> 16.000 nodos  (x3,6)   158 elo   [118, 203]
+#   n56 16.000 -> 60.000 nodos  (x3,75)  213 elo   [136, 314]
+#
+# O sea, unos 100 elo por cada vez que se dobla el presupuesto. Como los
+# niveles 4 a 8 van multiplicando por 3,6-3,75, esa parte de la escalera ya
+# está bien y no hay que tocarla.
+#
+# Los escalones de abajo, en cambio, son un muro: 433 y 798 elo. Y el de 798
+# tiene una lectura muy limpia, porque enfrenta
+#
+#   nivel 3 = 5.000 nodos, temperatura 70   contra   nivel 4 = 4.500 nodos
+#
+# es decir, el que pierde 99 de cada 100 partidas es el que MAS presupuesto
+# tiene. El presupuesto no explica nada ahí: los 798 elo los paga enteros la
+# temperatura 70. (Robusto: 742 elo con margen de adjudicación 500.)
+#
+# PERO LOS 798 ELO SON DE DOS COSAS, NO DE UNA. Poner temperatura cambia
+# ademas como se busca: para repartir probabilidad entre las jugadas hacen
+# falta las puntuaciones de TODAS, asi que la raiz va con ventana completa y
+# se pierden las podas (ver `opts.analyze || cfg.temperature` en ai.js). Con
+# el presupuesto congelado, eso solo ya cuesta profundidad. Asi que
+#
+#   798 elo  =  precio de la ventana completa  +  precio del azar
+#
+# y hay que separarlos, porque el primero es un efecto lateral de la
+# implementacion y el segundo es el mando que se quiere graduar.
+#
+# QUE SE MIDE AQUI. Con el presupuesto CONGELADO en 4.500 nodos:
+#
+#   t_poda   sin temperatura -> temperatura 0,0001   (la ventana completa sola:
+#            0,0001 no cambia ninguna jugada —exp(-100/0,0001) es 0— pero pasa
+#            por el mismo camino de codigo, asi que la unica diferencia es la
+#            perdida de podas)
+#
+#   t00_10   0,0001 -> 10      t25_45  25 -> 45
+#   t10_25   10 -> 25          t45_70  45 -> 70
+#
+# y t70_150 por debajo, para saber que compra la temperatura alta: es la que
+# usa hoy el nivel 2, y hace falta saber si el suelo esta donde debe.
+#
+# COMPROBACION INCLUIDA: t_poda + t00_10 + t10_25 + t25_45 + t45_70 tiene que
+# dar los ~798 elo que la ronda 13 midio de un tiron (menos unos 15 elo por
+# los 500 nodos de diferencia). Si no cuadra, algo esta mal medido.
+#
+# PARA QUE SIRVE. Con la curva se pueden repartir los niveles bajos a pasos
+# iguales igual que ya lo estan los altos: si hacen falta tres peldaños de unos
+# 200 elo por debajo del nivel 4, las temperaturas saldran de leer esta curva y
+# no de adivinar. Hasta entonces, las etiquetas del selector siguen sin medir.
+mkdir -p r14
+FIJO='"depth":24,"mobility":true,"order":true,"quiesce":true,"nodes":4500'
+
+grado() {
+  local nombre=$1 cfgA=$2 cfgB=$3 nA=$4 nB=$5
+  SALIDA=r14/$nombre.log FIRST=1 PAIRS=200 SEED=23000 \
+    CFG_A="{$FIJO$cfgA}" CFG_B="{$FIJO$cfgB}" NAME_A=$nA NAME_B=$nB \
+    node arena.js >> r14/$nombre.err 2>&1
+}
+
+grado t_poda  ''                    ',"temperature":0.0001' sin_temp t0 &
+grado t00_10  ',"temperature":0.0001' ',"temperature":10'    t0   t10 &
+grado t10_25  ',"temperature":10'     ',"temperature":25'    t10  t25 &
+grado t25_45  ',"temperature":25'     ',"temperature":45'    t25  t45 &
+grado t45_70  ',"temperature":45'     ',"temperature":70'    t45  t70 &
+grado t70_150 ',"temperature":70'     ',"temperature":150'   t70  t150 &
+wait
+echo "RONDA 14 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r14/estado.txt

@@ -36,8 +36,9 @@ DESC_RONDA=(
   r11 "movilidad 4 contra 2 a profundidades 3 y 4 (la de 5 esta en r10)"
   r12 "escalera de elo: cada nivel contra el siguiente"
   r13 "escalera de elo de los niveles NUEVOS (por presupuesto de nodos)"
+  r14 "curva de la temperatura a presupuesto congelado (4.500 nodos)"
 )
-RONDAS=(r13 r12 r11 r10 r9)
+RONDAS=(r14 r13 r12 r11 r10 r9)
 
 case "${1:-instalar}" in
   estado)

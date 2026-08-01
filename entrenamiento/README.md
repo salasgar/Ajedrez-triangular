@@ -274,32 +274,90 @@ La ronda 9 (profundidad 4, 127 partidas) quedó sin veredicto: movilidad 4
 contra 3 empate (−37 elo, p=0,36) y contra 5 va +70 sin alcanzar
 significación (p=0,064). Sus datos siguen en `r9/`.
 
-## Ronda 12: la escalera de elo de los niveles (en curso)
+## Ronda 12: la escalera de elo de los niveles VIEJOS (cerrada)
 
 El selector prometía "Fácil", "Difícil" o "Experto" sin que nadie hubiera
-medido nunca cuánto se llevan entre sí. Parejas contiguas, mismos topes que
-las rondas anteriores:
+medido nunca cuánto se llevan entre sí. Parejas contiguas, niveles definidos
+entonces por profundidad fija:
 
 | escalón | elo | partidas |
 |---|---|---|
-| nivel 2 → 3 | −1040 | 400 · cerrado |
-| nivel 3 → 4 | −797 | 400 · cerrado |
-| nivel 4 → 5 | −382 | en curso |
-| nivel 5 → 6 | −280 | en curso |
+| nivel 2 → 3 | 1040 | 400 |
+| nivel 3 → 4 | 849 | 400 |
+| nivel 4 → 5 | 198 | 400 |
+| nivel 5 → 6 | 193 | 368 |
 
-Saltos de 300 a 1000 elo. De ahí la ronda 13 y los dos mandos nuevos: hay
-sitio de sobra para niveles intermedios. Ojo con el escalón 3→4, que no es
-comparable con los demás: ahí cambian **cuatro cosas a la vez** (profundidad
-2→3 y se encienden movilidad, ordenación y quietud), lo que por sí solo da
-peldaños intermedios gratis apagándolas por separado.
+Dos muros abajo y dos peldaños cómodos arriba: el principiante no pasaba del
+nivel 2 y la mitad de la escalera estaba desaprovechada. **Esta es la medida
+que motivó tirar los niveles por profundidad**, así que no se relanzó el
+escalón que faltaba. Ojo además con el 3 → 4, que no era comparable con los
+demás: ahí cambiaban cuatro cosas a la vez (profundidad 2→3 y se encendían
+movilidad, ordenación y quietud).
 
-## Ronda 13: calibrar el presupuesto de nodos (en cola)
+## Ronda 13: la escalera de los niveles NUEVOS (por presupuesto de nodos)
 
-Cada presupuesto contra el nivel que por coste se le parece más: 2.000 contra
-el nivel 3, 10.000 contra el 4, 40.000 contra el 5 y 150.000 contra el 6.
-Encadenada detrás de la 12 en el mismo script: cuando la 12 está terminada,
-`arena.js` ve todos sus pares hechos y vuelve enseguida, así que el servicio
-pasa de largo y sigue con la 13 sin intervención.
+Los niveles ya no son profundidades sino presupuestos de nodos. Misma
+pregunta, escalera nueva. Datos con el motor corregido (ver más abajo);
+todavía en curso, los intervalos son al 95 %:
+
+| escalón | presupuesto | elo | IC 95 % | partidas |
+|---|---|---|---|---|
+| n23 | 300 t150 → 5.000 t70 | 433 | [379, 506] | 288 |
+| n34 | 5.000 t70 → 4.500 | 798 | [691, 1121] | 400 |
+| n45 | 4.500 → 16.000 (×3,6) | 158 | [118, 203] | 218 |
+| n56 | 16.000 → 60.000 (×3,75) | 213 | [136, 314] | 55 |
+
+**Lo que sale bien**: la parte de arriba, donde lo único que cambia es el
+presupuesto. Multiplicarlo por 3,6-3,75 vale 158 y 213 elo, o sea **unos 100
+elo por cada vez que se dobla**. Los niveles 4 a 8 van multiplicando por esa
+misma proporción, así que esa mitad de la escalera ya es pareja y no hay que
+tocarla.
+
+**Lo que sale mal**: la parte de abajo, 433 y 798 elo. Y el 798 tiene una
+lectura muy limpia, porque enfrenta el nivel 3 (5.000 nodos, temperatura 70)
+con el nivel 4 (4.500 nodos): el que pierde 99 de cada 100 partidas es el que
+**más** presupuesto tiene. El presupuesto no explica nada ahí — los 798 elo
+los paga enteros la temperatura (742 con margen de adjudicación 500, así que
+no es cosa del margen).
+
+El par no contiguo n25 (nivel 2 contra nivel 5) quedó 400-0. Es **compatible**
+con la suma de sus escalones, pero no la comprueba: a 1.389 elo de distancia,
+cualquier hueco de más de ~700 elo daría el mismo 400-0. La transitividad de
+la escalera sigue sin poner a prueba, y para ponerla hará falta un par no
+contiguo *corto*, de dos peldaños.
+
+### Los primeros datos de la ronda 13 hubo que tirarlos
+
+La primera tanda dio 20 elo para el escalón 5 → 6, con casi cuatro veces más
+presupuesto. Era mentira: los dos rivales **compartían la tabla de
+transposición**. Su firma (`ttCfgSig`) solo incluía lo que afecta a la
+*evaluación*, y estas dos configuraciones se diferencian únicamente en el
+presupuesto, así que el que pensaba poco se encontraba hechas las cuentas del
+que pensaba mucho. Las rondas anteriores se libraron por casualidad, porque
+sus ramas se diferenciaban en `mobilityWeight`, que sí estaba en la firma.
+Arreglado añadiendo `nodes`, `temperature` y `depth`; comprobado contando
+firmas y limpiezas antes y después (1 firma / 1 limpieza en 12 jugadas → 2
+firmas / 12 limpiezas). Los datos malos están en `r13-tt-compartida/`.
+
+## Ronda 14: la curva de la temperatura (en curso)
+
+Si la temperatura 70 cuesta ~800 elo, es un mando demasiado brusco para un
+peldaño, y hay que saber cómo se comporta entre 0 y 70. Presupuesto congelado
+en 4.500 nodos y solo cambia la temperatura: 0 → 10 → 25 → 45 → 70, más
+70 → 150 por debajo.
+
+Con un sexto par aparte, `t_poda`, porque **los 798 elo son de dos cosas y no
+de una**: poner temperatura cambia además *cómo* se busca. Para repartir
+probabilidad entre las jugadas hacen falta las puntuaciones de todas, así que
+la raíz va con ventana completa y se pierden las podas. Con el presupuesto
+congelado eso solo ya cuesta profundidad. `t_poda` enfrenta «sin temperatura»
+con «temperatura 0,0001» —que no cambia ninguna jugada, porque
+exp(−100/0,0001) es 0, pero pasa por el mismo camino de código—, de modo que
+la única diferencia entre los dos es la pérdida de podas. Separa el efecto
+lateral de la implementación del mando que se quiere graduar.
+
+Comprobación incluida: los cinco escalones de 0 a 70 tienen que sumar los
+~798 elo que la ronda 13 midió de un tirón.
 
 ## Ronda 11: ¿baja el peso de movilidad con la profundidad? NO
 
