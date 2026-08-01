@@ -98,11 +98,10 @@ function buildSvg() {
     // pieza que haya encima, porque cambia en cada jugada.
     poly.dataset.key = cell.key;
     poly.setAttribute('role', 'gridcell');
-    poly.setAttribute('tabindex', '0');
+    poly.setAttribute('tabindex', '-1');    // ver focoTablero: solo una parada
     poly.addEventListener('click', () => onCellClick(cell));
-    poly.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCellClick(cell); }
-    });
+    poly.addEventListener('keydown', (e) => teclaEnCasilla(e, cell));
+    poly.addEventListener('focus', () => { focoTablero = cell.key; });
     cellsLayer.appendChild(poly);
     cellPolys.set(cell.key, poly);
   }
@@ -112,6 +111,84 @@ function buildSvg() {
   svg.appendChild(boardGroup);
   boardWrap.appendChild(svg);
   applyBoardTransform();
+}
+
+// --- lo que oye quien no ve la pantalla ----------------------------------
+//
+// Se dice la última jugada en notación y el estado. Solo se escribe cuando el
+// texto CAMBIA: un aria-live vuelve a leerlo todo cada vez que se toca, y
+// render() se llama muchas veces por jugada (al pasar el ratón por el
+// análisis, al repintar el reloj...), así que sin este filtro el lector de
+// pantalla no callaría nunca.
+const anuncioEl = document.getElementById('anuncio');
+let ultimoAnuncio = '';
+
+function anunciar(idx) {
+  const partes = [];
+  if (idx >= 1 && game.history[idx] && game.history[idx].lastMove) {
+    const quien = idx % 2 === 1 ? 'Blancas' : 'Negras';
+    partes.push(quien + ': ' + sheetEntry(idx).texto);
+  }
+  if (turnEl.textContent) partes.push(turnEl.textContent);
+  if (statusEl.textContent) partes.push(statusEl.textContent);
+  const texto = partes.join('. ');
+  if (texto !== ultimoAnuncio) {
+    ultimoAnuncio = texto;
+    anuncioEl.textContent = texto;
+  }
+}
+
+// --- teclado en el tablero -----------------------------------------------
+//
+// UNA SOLA PARADA DE TABULADOR para las 96 casillas, y dentro se anda con las
+// flechas (el patrón "roving tabindex"). La primera versión dejaba las 96
+// casillas tabulables, y eso, más que accesible, era impracticable: para
+// llegar del tablero a los controles había que pulsar Tab casi cien veces.
+//
+// Izquierda y derecha recorren la fila; arriba y abajo saltan de fila
+// buscando la casilla más cercana en horizontal, que es lo que espera
+// cualquiera al mirar el tablero. Con el tablero volteado las direcciones se
+// invierten, porque el dibujo está girado 180°.
+let focoTablero = null;      // key de la casilla que está en el orden de tabulación
+
+function aplicarFocoTablero(key, mover) {
+  if (!cellPolys.has(key)) return;
+  if (focoTablero && cellPolys.has(focoTablero)) {
+    cellPolys.get(focoTablero).setAttribute('tabindex', '-1');
+  }
+  focoTablero = key;
+  const poly = cellPolys.get(key);
+  poly.setAttribute('tabindex', '0');
+  if (mover) poly.focus();
+}
+
+function vecinaEnDireccion(cell, dx, dy) {
+  const fila = rowCells(cell.b);                       // ya viene ordenada por cx
+  if (dx) {
+    const i = fila.findIndex(c => c.key === cell.key);
+    return fila[i + dx] || null;
+  }
+  const otra = rowCells(cell.b + dy);
+  if (!otra.length) return null;
+  return otra.reduce((m, c) =>
+    Math.abs(c.cx - cell.cx) < Math.abs(m.cx - cell.cx) ? c : m);
+}
+
+function teclaEnCasilla(e, cell) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    onCellClick(cell);
+    return;
+  }
+  const s = boardFlipped ? -1 : 1;
+  const dir = {
+    ArrowLeft: [-s, 0], ArrowRight: [s, 0],
+    ArrowUp: [0, s], ArrowDown: [0, -s],
+  }[e.key];
+  if (!dir) return;
+  e.preventDefault();
+  const destino = vecinaEnDireccion(cell, dir[0], dir[1]);
+  if (destino) aplicarFocoTablero(destino.key, true);
 }
 
 function onCellClick(cell) {
@@ -321,6 +398,7 @@ function render() {
     }
     statusEl.textContent = msg;
   }
+  anunciar(idx);
   if (reviewing) {
     turnEl.textContent = 'Revisando historial';
   } else if (gamePaused) {
@@ -1283,6 +1361,9 @@ function buildRuleMinis() {
 }
 
 buildSvg();
+// la parada de tabulador del tablero arranca en su esquina de abajo a la
+// izquierda, que es de donde empieza a leer cualquiera
+aplicarFocoTablero(backRow('w')[0].key, false);
 buildRuleMinis();
 newGame();
 render();

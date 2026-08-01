@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ajedrez Triangular</title>
+    <meta name="description" content="Variante de ajedrez sobre un tablero hexagonal dividido en triangulos, jugable en el navegador.">
+    <meta name="theme-color" content="#1b1b1b">
+    <link rel="icon" href="icono.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icono-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -54,6 +59,11 @@
         <aside id="panel">
             <div id="turn"></div>
             <div id="status"></div>
+            <!-- Region que un lector de pantalla lee sola cuando cambia: de
+                 quien es el turno, si hay jaque y la jugada que acaba de hacer
+                 el ordenador. Sin esto, quien no ve la pantalla no se entera
+                 de nada de lo que pasa en la partida. -->
+            <div id="anuncio" class="sr-only" aria-live="polite" role="status"></div>
             <details id="scoresheet" open>
                 <summary>Jugadas</summary>
                 <div id="scoresheet-body"></div>
@@ -152,5 +162,16 @@
     <script src="ai.js"></script>
     <script src="ai-async.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Service worker: hace que la aplicacion se pueda instalar y jugar sin
+        // conexion. Solo funciona por https (o localhost); abriendo el fichero
+        // a pelo con file:// no se registra nada y la aplicacion va igual.
+        if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .catch(err => console.warn('No se pudo registrar el service worker:', err));
+            });
+        }
+    </script>
 </body>
 </html>

@@ -678,3 +678,15 @@ h1 {
 
 .promo-btn.piece-w { color: #f4f4f4; fill: #f4f4f4; stroke: #222; }
 .promo-btn.piece-b { color: #1d1d1d; fill: #1d1d1d; stroke: #ddd; }
+
+/* Solo para lectores de pantalla: fuera de la vista pero presente en el
+   arbol de accesibilidad (display:none lo ocultaria tambien de ahi). */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

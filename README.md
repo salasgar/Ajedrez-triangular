@@ -103,6 +103,23 @@ Dama capturando que un peón de la franja D.
 - **Copiar jugadas** pone la planilla en el portapapeles como texto, numerada
   en pares y con el resultado al final.
 
+### Teclado y lectores de pantalla
+
+El tablero es **una sola parada de tabulador**; dentro se anda con las flechas
+(izquierda y derecha recorren la fila, arriba y abajo saltan de fila) y se
+selecciona con Enter o espacio. Cada casilla se anuncia con su nombre y lo que
+tiene encima —«N4H: Torre negra»—, y una región aparte va leyendo la jugada que
+se acaba de hacer, el turno y los avisos de jaque o final de partida.
+
+### Sin conexión
+
+La aplicación se puede instalar y jugar sin red: un
+[service worker](sw.js) guarda los nueve ficheros que la componen. Solo
+funciona servida por `https` (o `localhost`); abriendo `index.html` a pelo con
+`file://` no se registra nada y la aplicación va igual. Al publicar un cambio
+hay que subir la constante `VERSION` de `sw.js`, o los navegadores que ya
+tengan la versión anterior seguirán sirviendo los ficheros viejos.
+
 ### Análisis de las jugadas
 
 Al pulsar sobre **«Jugada N de M»** se despliega el panel de análisis. Puede
