@@ -102,6 +102,14 @@ Dama capturando que un peón de la franja D.
   favoritas, y exportar o importar partidas en `.json`.
 - **Copiar jugadas** pone la planilla en el portapapeles como texto, numerada
   en pares y con el resultado al final.
+- **Ver el nombre de las casillas** los escribe sobre el tablero, útil mientras
+  se aprende la notación.
+- **Sonido al mover**, apagado por defecto: un chasquido corto al mover y otro
+  más grave al capturar, sintetizados sin ningún fichero de audio.
+- La pieza que se mueve **llega deslizándose** desde su casilla de origen (se
+  respeta `prefers-reduced-motion`).
+- **Tiempo consumido** por cada bando. No es un control de tiempo: nadie pierde
+  por tiempo, solo se mide lo que se ha pensado.
 
 ### Teclado y lectores de pantalla
 

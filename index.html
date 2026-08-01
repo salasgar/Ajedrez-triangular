@@ -64,6 +64,9 @@
                  el ordenador. Sin esto, quien no ve la pantalla no se entera
                  de nada de lo que pasa en la partida. -->
             <div id="anuncio" class="sr-only" aria-live="polite" role="status"></div>
+            <!-- Tiempo consumido por cada bando. No es un control de tiempo:
+                 nadie pierde por tiempo, solo se mide lo que se ha pensado. -->
+            <div id="reloj" class="reloj"></div>
             <details id="scoresheet" open>
                 <summary>Jugadas</summary>
                 <div id="scoresheet-body"></div>
@@ -115,6 +118,14 @@
                 <label class="opt-row" title="El ordenador busca con ventana completa para puntuar todas las jugadas: piensa entre 2 y 3 veces más despacio">
                     <input type="checkbox" id="opt-analysis">
                     Guardar el análisis de cada jugada del ordenador (más lento)
+                </label>
+                <label class="opt-row" title="Escribe el nombre de cada casilla sobre el tablero (B1A, N4H...)">
+                    <input type="checkbox" id="opt-coords">
+                    Ver el nombre de las casillas
+                </label>
+                <label class="opt-row" title="Un chasquido al mover y otro mas grave al capturar">
+                    <input type="checkbox" id="opt-sound">
+                    Sonido al mover
                 </label>
             </div>
             <button id="new-game">Nueva partida</button>

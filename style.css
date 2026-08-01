@@ -690,3 +690,34 @@ h1 {
   white-space: nowrap;
   border: 0;
 }
+
+/* Nombres de casilla sobre el tablero (interruptor "Ver el nombre de las
+   casillas"). La capa existe siempre y solo se enseña con .visible: crear y
+   destruir 96 textos en cada repintado costaria mas. */
+.coords-layer { display: none; }
+.coords-layer.visible { display: block; }
+.coord-txt {
+  font-size: 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-anchor: middle;
+  fill: #00000073;
+  pointer-events: none;   /* que no estorben al pulsar la casilla */
+  user-select: none;
+}
+
+/* La pieza que acaba de moverse llega deslizandose desde su casilla de
+   origen (ver animarJugada en script.js). Se respeta a quien pide en el
+   sistema que no le animen las cosas. */
+.piece.mueve { transition: transform 180ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .piece.mueve { transition: none; }
+}
+
+/* Tiempo consumido por cada bando. Discreto: informa, no compite con el
+   estado de la partida. */
+.reloj {
+  font-size: 0.82rem;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}

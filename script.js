@@ -9,6 +9,8 @@ const moveCounterEl = document.getElementById('move-counter');
 const analysisBodyEl = document.getElementById('analysis-body');
 const scoresheetBodyEl = document.getElementById('scoresheet-body');
 const optAnalysisEl = document.getElementById('opt-analysis');
+const optCoordsEl = document.getElementById('opt-coords');
+const optSoundEl = document.getElementById('opt-sound');
 const capWEl = document.getElementById('cap-w');
 const capBEl = document.getElementById('cap-b');
 const btnStart = document.getElementById('btn-start');
@@ -35,6 +37,106 @@ const btnImport = document.getElementById('btn-import');
 const fileImport = document.getElementById('file-import');
 
 const cellPolys = new Map();  // key de casilla → <polygon>
+const coordTexts = new Map(); // key de casilla → <text> con su nombre
+let coordsLayer = null;       // capa de nombres, se enseña con .visible
+// {from, to} de la jugada que hay que animar en el próximo repintado, o null.
+// Lo pone marcarParaAnimar() justo después de cada makeMove de la partida
+// viva; navegar por el historial NO anima, porque saltar diez jugadas atrás
+// con una pieza deslizándose no significaría nada.
+let animarJugada = null;
+function marcarParaAnimar() {
+  const m = game.lastMove;
+  // en el enroque, lastMove.to ya es la casilla de llegada del rey
+  animarJugada = m ? { from: m.from, to: m.to } : null;
+  const antes = game.history[game.histIndex - 1];
+  const captura = !!antes &&
+    (game.capturedBy.w.length + game.capturedBy.b.length) >
+    (antes.capturedBy.w.length + antes.capturedBy.b.length);
+  sonar(captura);
+}
+
+// --- sonido ---------------------------------------------------------------
+//
+// Sintetizado con WebAudio, sin ningún fichero de audio: un chasquido corto
+// al mover y otro más grave al capturar. Viene APAGADO: una página que empieza
+// a sonar sola sin que nadie se lo haya pedido molesta más de lo que aporta.
+let audioCtx = null;
+function sonar(captura) {
+  if (!optSoundEl || !optSoundEl.checked) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const vol = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(captura ? 170 : 330, t);
+    osc.frequency.exponentialRampToValueAtTime(captura ? 90 : 220, t + 0.09);
+    vol.gain.setValueAtTime(0.0001, t);
+    vol.gain.exponentialRampToValueAtTime(captura ? 0.20 : 0.12, t + 0.008);
+    vol.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    osc.connect(vol).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.13);
+  } catch { /* el navegador no deja sonar todavia: no pasa nada */ }
+}
+
+// --- reloj ----------------------------------------------------------------
+//
+// Cuenta lo que ha pensado cada bando. NO es un control de tiempo: nadie
+// pierde por tiempo, solo se mide. Corre mientras la partida está viva, no
+// está en pausa y no se está revisando el historial.
+const relojEl = document.getElementById('reloj');
+const consumido = { w: 0, b: 0 };
+let relojDesde = null;   // cuándo empezó el intervalo que está corriendo
+let relojLado = null;    // Y DE QUIÉN ES ese intervalo
+
+// Guardar el lado no es redundante con game.turn. Al parar el reloj hay dos
+// situaciones distintas: si se acaba de mover, el turno YA ha cambiado y el
+// tiempo es del rival del que mueve ahora; si se pausa o se entra a revisar
+// el historial, el turno NO ha cambiado y el tiempo es de quien está
+// pensando. Deducirlo de game.turn acertaba en un caso y fallaba en el otro,
+// y el tiempo de las blancas llegaba a BAJAR al pausar.
+function pararReloj() {
+  if (relojDesde !== null && relojLado) {
+    consumido[relojLado] += Date.now() - relojDesde;
+  }
+  relojDesde = null;
+  relojLado = null;
+}
+
+function reiniciarReloj() {
+  consumido.w = 0; consumido.b = 0;
+  relojDesde = null; relojLado = null;
+  pintarReloj();
+}
+
+function mmss(ms) {
+  const s = Math.floor(ms / 1000);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+function pintarReloj() {
+  const corriendo = relojDesde !== null ? Date.now() - relojDesde : 0;
+  const w = consumido.w + (relojLado === 'w' ? corriendo : 0);
+  const b = consumido.b + (relojLado === 'b' ? corriendo : 0);
+  relojEl.textContent = 'Tiempo — blancas ' + mmss(w) + ' · negras ' + mmss(b);
+}
+
+// El reloj corre mientras la partida está viva, en marcha y sin revisar. Al
+// cambiar el turno se cierra el intervalo del anterior y se abre el del
+// siguiente, así que no hace falta pararlo a mano en cada jugada.
+function ajustarReloj() {
+  const corre = !gameEnded() && !gamePaused && reviewIndex === null;
+  if (corre && relojLado !== game.turn) {
+    pararReloj();
+    relojDesde = Date.now();
+    relojLado = game.turn;
+  } else if (!corre && relojDesde !== null) {
+    pararReloj();
+  }
+  pintarReloj();
+}
+setInterval(pintarReloj, 500);
 let piecesLayer = null;
 let boardGroup = null;        // <g> con todo el dibujo, para poder voltearlo
 let selected = null;          // key de la casilla seleccionada
@@ -71,6 +173,12 @@ let boardFlipped = false;
 function applyBoardTransform() {
   const cx = BBOX.x + BBOX.w / 2, cy = BBOX.y + BBOX.h / 2;
   boardGroup.setAttribute('transform', boardFlipped ? `rotate(180 ${cx} ${cy})` : '');
+  // el grupo entero va girado 180°, así que los nombres saldrían del revés:
+  // cada uno se gira otros 180° sobre sí mismo para volver a leerse
+  for (const [key, t] of coordTexts) {
+    const c = CELL_MAP.get(key);
+    t.setAttribute('transform', boardFlipped ? `rotate(180 ${c.cx} ${c.cy})` : '');
+  }
 }
 
 function setFlip(v) {
@@ -106,7 +214,25 @@ function buildSvg() {
     cellPolys.set(cell.key, poly);
   }
   piecesLayer = document.createElementNS(SVG_NS, 'g');
+  // capa de nombres de casilla: se dibuja una sola vez y se enseña o se
+  // esconde con una clase, que sale más barato que crear y destruir 96 textos
+  // cada vez que se repinta el tablero
+  coordsLayer = document.createElementNS(SVG_NS, 'g');
+  coordsLayer.setAttribute('class', 'coords-layer');
+  for (const cell of CELLS) {
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', cell.cx);
+    // los triángulos que apuntan hacia arriba tienen el hueco abajo y al revés
+    t.setAttribute('y', cell.cy + (cell.up ? 9 : -4));
+    t.setAttribute('class', 'coord-txt');
+    t.textContent = cellName(cell);
+    coordsLayer.appendChild(t);
+    coordTexts.set(cell.key, t);
+  }
   boardGroup.appendChild(cellsLayer);
+  // los nombres van DEBAJO de las piezas: encima las tapaban y el tablero se
+  // volvia ilegible justo donde hay algo que mirar
+  boardGroup.appendChild(coordsLayer);
   boardGroup.appendChild(piecesLayer);
   svg.appendChild(boardGroup);
   boardWrap.appendChild(svg);
@@ -205,6 +331,7 @@ function onCellClick(cell) {
     if (isPromotion(game.board, from, to)) {
       askPromotion(game.board.get(from).color, (tipo) => {
         makeMove(from, to, tipo);
+        marcarParaAnimar();
         gamePaused = false;
         render();
         scheduleAi();
@@ -213,6 +340,7 @@ function onCellClick(cell) {
       return;
     }
     makeMove(from, to);
+    marcarParaAnimar();
     // el humano mueve: si estaba en pausa, la partida se reanuda sola
     gamePaused = false;
     render();
@@ -341,10 +469,31 @@ function drawBoard() {
   }
 
   piecesLayer.innerHTML = '';
+  // Animación de la jugada recién hecha: la pieza se dibuja en su destino,
+  // pero se ARRANCA desplazada hasta el origen y se deja que la transición de
+  // CSS la lleve a su sitio. Así no hace falta conservar los nodos entre
+  // repintados (se recrean todos), que era el motivo de que esto no
+  // existiera. Solo se anima la posición viva, no la revisión del historial.
+  const animar = animarJugada;
+  animarJugada = null;
   for (const [key, p] of board) {
     const cell = CELL_MAP.get(key);
     const node = makePieceNode(p.type, p.color, cell.cx, cell.cy);
-    if (boardFlipped) node.setAttribute('transform', `rotate(180 ${cell.cx} ${cell.cy})`);
+    const giro = boardFlipped ? `rotate(180 ${cell.cx} ${cell.cy})` : '';
+    if (animar && animar.to === key) {
+      const org = CELL_MAP.get(animar.from);
+      node.setAttribute('transform',
+        `translate(${org.cx - cell.cx} ${org.cy - cell.cy}) ${giro}`);
+      node.classList.add('mueve');
+      // en el fotograma siguiente se quita el desplazamiento y la transición
+      // hace el resto; sin el doble rAF el navegador junta los dos estados y
+      // no se ve nada
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        node.setAttribute('transform', giro);
+      }));
+    } else if (giro) {
+      node.setAttribute('transform', giro);
+    }
     piecesLayer.appendChild(node);
   }
   updateCellLabels(board);
@@ -399,6 +548,7 @@ function render() {
     statusEl.textContent = msg;
   }
   anunciar(idx);
+  ajustarReloj();
   if (reviewing) {
     turnEl.textContent = 'Revisando historial';
   } else if (gamePaused) {
@@ -668,6 +818,7 @@ function applyListMove(from, to) {
   analysisHover = null;
   clearSelection();
   makeMove(from, to);
+  marcarParaAnimar();
   liveAnalysis = null;
 }
 
@@ -1050,6 +1201,7 @@ function scheduleAi() {
       if (token !== aiToken || !isAiTurn() || !atHistoryEnd()) return;
       if (!mv) return;
       makeMove(mv.from, mv.to);
+      marcarParaAnimar();
       // el análisis se guarda en la instantánea que acaba de crear makeMove,
       // la de la posición resultante (ver el panel de análisis); el nivel 1
       // juega al azar y no puntúa nada, de ahí la marca 'random'
@@ -1159,6 +1311,7 @@ document.getElementById('new-game').addEventListener('click', () => {
   resetAiWorker();   // partida nueva = otra oportunidad para el worker caído
   newGame();
   liveAnalysis = null;
+  reiniciarReloj();
   gamePaused = !alreadyFreshAndPaused;   // si no, arranca en pausa: da tiempo a elegir modalidad/nivel
   clearSelection();
   render();
@@ -1285,6 +1438,10 @@ function movesAsText() {
   }
   return lineas.join('\n');
 }
+
+optCoordsEl.addEventListener('change', () => {
+  coordsLayer.classList.toggle('visible', optCoordsEl.checked);
+});
 
 document.getElementById('btn-copy-moves').addEventListener('click', async (e) => {
   const boton = e.currentTarget;
