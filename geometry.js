@@ -13,11 +13,12 @@
 //
 // SOBRE LOS DOS TABLEROS
 //
-// La misma retícula sirve para las dos formas que usan las modalidades; lo
+// La misma retícula sirve para las tres formas que usan las modalidades; lo
 // único que cambia es qué casillas pertenecen al tablero:
 //
-//   hex4  hexágono de lado 4:   1−4 ≤ a, b, c ≤ 4      → 96 casillas
-//   tri9  triángulo de lado 9:  a, b, c ≥ −2           → 81 casillas
+//   hex4   hexágono de lado 4:   1−4 ≤ a, b, c ≤ 4      → 96 casillas
+//   tri9   triángulo de lado 9:  a, b, c ≥ −2           → 81 casillas
+//   rect8  rectángulo de 8×8:    hex4 sin los dos picos → 64 casillas
 //
 // Que el triángulo salga de una sola desigualdad no es casualidad: acotar las
 // tres coordenadas por abajo recorta un triángulo grande de la retícula, y con
@@ -67,6 +68,10 @@ const KNIGHT_DELTAS = (() => {
 // `size`     parámetro de forma (lado del hexágono / lado del triángulo)
 // `has`      ¿pertenece (a,b,c) al tablero?
 // `rotate`   cuartos de vuelta en sentido antihorario al dibujar
+// `rowRanks` ¿las filas de la retícula (b constante) hacen de filas de ajedrez?
+//            Si sí, los dos ejércitos ocupan la fila de arriba y la de abajo y
+//            el peón corona al llegar a la del rival; si no (Trigonal), corona
+//            al llegar al final de su propio carril. Lo consulta variants.js.
 // `name`     nombre legible de una casilla
 // `parse`    nombre legible → coordenadas (o null)
 const BOARDS = {
@@ -88,6 +93,7 @@ const BOARDS = {
   hex4: {
     size: 4,
     rotate: 0,
+    rowRanks: true,
     has(a, b, c) {
       const N = 4;
       return a >= 1 - N && a <= N && b >= 1 - N && b <= N && c >= 1 - N && c <= N;
@@ -104,6 +110,48 @@ const BOARDS = {
       const b = Number(m[2]) - 1 + (1 - N);
       const c = N - 'ABCDEFGH'.indexOf(m[3].toUpperCase());
       return [(up ? 2 : 1) - b - c, b, c];
+    },
+  },
+
+  // Rectángulo de 8×8: el tablero de Salas 1998 (Original).
+  //
+  // Es el hexágono de arriba con los dos picos laterales cortados: se quedan
+  // sus 8 filas, recortadas todas a 8 casillas, y salen 64 triángulos. Los
+  // bordes de la izquierda y de la derecha van en zigzag, porque la casilla
+  // del extremo de cada fila apunta hacia arriba o hacia abajo alternándose.
+  //
+  // La COLUMNA de una casilla es a − c: su centro está en x = EDGE·(a − c)/2,
+  // apunte hacia arriba o hacia abajo, así que cada paso a la derecha dentro
+  // de una fila la sube en 1. Acotarla a [−4, 3] deja 8 columnas, y las cotas
+  // del hexágono (−3 ≤ a, c ≤ 4) se cumplen entonces solas.
+  //
+  // Nombre de casilla: a1, e4, h8 — el del ajedrez de siempre, y por una vez
+  // sin letra de color, porque aquí (columna, fila) ya identifica UNA casilla:
+  // dentro de una columna las filas van alternando ▲ y ▽, de modo que la
+  // orientación sale de la paridad de b + (a − c). Las blancas ocupan las
+  // filas 1 y 2, las negras la 7 y la 8.
+  rect8: {
+    size: 4,
+    rotate: 0,
+    rowRanks: true,
+    has(a, b, c) {
+      const N = 4;
+      return b >= 1 - N && b <= N && a - c >= -N && a - c <= N - 1;
+    },
+    name(cell) {
+      const N = 4;
+      return 'abcdefgh'[cell.a - cell.c + N] + (cell.b - (1 - N) + 1);
+    },
+    parse(str) {
+      const N = 4;
+      const m = /^([a-h])([1-8])$/i.exec(str);
+      if (!m) return null;
+      const col = 'abcdefgh'.indexOf(m[1].toLowerCase()) - N;
+      const b = Number(m[2]) - 1 + (1 - N);
+      // & 1 y no % 2: la paridad de un número negativo (b + col puede serlo)
+      const sum = ((b + col) & 1) === 0 ? 2 : 1;
+      const a = (sum - b + col) / 2;
+      return [a, b, sum - a - b];
     },
   },
 

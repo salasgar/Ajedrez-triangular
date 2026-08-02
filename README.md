@@ -21,8 +21,9 @@ triangular de Salas.
 
 | Modalidad | Tablero | Piezas por bando |
 |---|---|---|
-| **Salas (2026)** | hexágono, 96 triángulos | 9 de fondo (con elefante) + 11 peones |
-| **Salas (2026, original)** | hexágono, 96 triángulos | igual, sin coronación de flanco |
+| **Salas 2026 v2** | hexágono, 96 triángulos | 9 de fondo (con elefante) + 11 peones |
+| **Salas 2026 v1** | hexágono, 96 triángulos | igual, sin coronación de flanco |
+| **Salas 1998 (Original)** | rectángulo 8×8, 64 triángulos | juego de ajedrez normal, 16 piezas |
 | **Dekle (1986)** | hexágono, 96 triángulos | 9 de fondo (con unicornio) + 11 peones |
 | **Trigonal (Koval, 2023)** | triángulo, 81 casillas | juego de ajedrez normal, 16 piezas |
 
@@ -31,10 +32,55 @@ cada pieza, las reglas del peón y los valores con los que evalúa el motor. El
 resto del programa no conoce ninguna pieza en concreto; pregunta a la modalidad
 activa.
 
-Que las tres quepan en el mismo programa no es casualidad: **los dos tableros
-son la misma retícula triangular con otro recorte**. El hexágono son las
-casillas con `1−N ≤ a,b,c ≤ N`; el triángulo de Koval, las que cumplen
-`a,b,c ≥ −2`, que resultan ser exactamente 45 ▲ + 36 ▽ = 81.
+Que todas quepan en el mismo programa no es casualidad: **los tres tableros son
+la misma retícula triangular con otro recorte**. El hexágono son las casillas
+con `1−N ≤ a,b,c ≤ N`; el triángulo de Koval, las que cumplen `a,b,c ≥ −2`, que
+resultan ser exactamente 45 ▲ + 36 ▽ = 81; y el rectángulo de 1998, el hexágono
+acotando además su columna `a − c`.
+
+> Los nombres visibles y los identificadores internos son cosas distintas. El
+> `id` de cada modalidad —`salas` para la v2 de 2026, `salas-2026` para la v1 y
+> `salas-1998` para la original— va dentro de las partidas guardadas, de los
+> libros de aperturas y del corpus de entrenamiento, así que no cambia aunque
+> cambie el nombre que se lee en el selector.
+
+### Salas 1998 (Original)
+
+La primera versión, de 1998, y el antepasado directo de las de 2026: **mismo
+alfil, mismo caballo y mismo peón**, pero sobre un tablero de 8×8 y con el
+ejército del ajedrez de siempre.
+
+Su tablero es el hexágono con **los dos picos laterales cortados**: quedan sus 8
+filas, recortadas todas a 8 casillas, y salen 64 triángulos. Los bordes de la
+izquierda y de la derecha van en zigzag, porque la casilla del extremo de cada
+fila apunta hacia arriba o hacia abajo alternándose. Las casillas se llaman
+`a1`…`h8`, como en el ajedrez de siempre y sin letra de color: aquí (columna,
+fila) ya identifica una sola casilla, porque dentro de una columna las filas van
+alternando ▲ y ▽.
+
+La colocación es la tradicional —torre, caballo, alfil, rey, dama, alfil,
+caballo y torre, con los ocho peones delante—, con rey contra rey en `d1`/`d8` y
+dama contra dama en `e1`/`e8`. Hay **enroque** tradicional: el rey se aparta dos
+casillas hacia la torre y esta salta al otro lado (`d1→b1` con `a1→c1`, o
+`d1→f1` con `h1→e1`).
+
+Lo que cambió de 1998 a 2026 fueron las piezas de línea:
+
+| 1998 | 2026 |
+|---|---|
+| **Torre ♜**: 6 rayos perpendiculares a los lados, alternando aristas y vértices | esa misma pieza, rebautizada **elefante 🐘**; la torre pasó a ser la de los tres carriles |
+| **Dama ♛**: alfil + torre de 1998 | alfil ya no: **torre nueva + elefante** |
+| **Rey ♚**: la dama a un solo paso | igual (un paso a cualquier casilla que toque la suya) |
+
+Que el rey salga igual en las dos no es una coincidencia buscada: los 6 primeros
+pasos del alfil y los 6 del elefante son **disjuntos** y suman exactamente las 12
+casillas que tocan la suya, de modo que «la dama de 1998 a un paso» y «un paso a
+cualquier vecina» son la misma pieza. Está comprobado casilla a casilla en
+[entrenamiento/prueba-humo.js](entrenamiento/prueba-humo.js).
+
+Aquí **no hace falta la coronación de flanco**: al recortar el hexágono a un
+rectángulo, las 8 columnas llegan enteras de la fila 1 a la 8, así que ningún
+peón se queda nunca sin casilla de avance.
 
 ### Dekle (1986)
 
@@ -100,8 +146,8 @@ casilla de captura**, así que la regla añade un movimiento y nunca una elecci�
 Con ella no queda ni una casilla del tablero desde la que un peón no pueda
 coronar.
 
-La modalidad **Salas (2026, original)** conserva el reglamento sin esa regla,
-para poder comparar las dos.
+La modalidad **Salas 2026 v1** conserva el reglamento sin esa regla, para poder
+comparar las dos.
 
 ## El tablero (modalidad de Salas)
 
@@ -289,14 +335,17 @@ lo permite, cae al cálculo síncrono.
 
 ### La fuerza del motor por modalidad
 
-La escalera de niveles es la misma en las cuatro modalidades, pero **los valores
-de las piezas solo están ajustados para el ajedrez de Salas**. Los de Dekle y
-Trigonal (`engine.pieceValues` en [variants.js](variants.js)) son una estimación
-a ojo: el unicornio puesto entre caballo y torre, y para Koval los valores
-clásicos del ajedrez, aun sabiendo que su alfil en zigzag alcanza mucho más que
-el de siempre y casi seguro vale más de lo que dice esa tabla.
+La escalera de niveles es la misma en todas las modalidades, pero **los valores
+de las piezas solo están ajustados para el ajedrez de Salas de 2026**. Los de
+Salas 1998, Dekle y Trigonal (`engine.pieceValues` en [variants.js](variants.js))
+son una estimación a ojo: el unicornio puesto entre caballo y torre; para Koval
+los valores clásicos del ajedrez, aun sabiendo que su alfil en zigzag alcanza
+mucho más que el de siempre y casi seguro vale más de lo que dice esa tabla; y
+para 1998, los del alfil, el caballo y el peón copiados de 2026 (son las mismas
+piezas), la torre valorada como el elefante de 2026 (que es la misma pieza) y la
+dama estimada con la proporción que allí guarda con sus dos mitades.
 
-O sea: en esas dos modalidades el motor juega **correctamente** —la generación
+O sea: en esas tres modalidades el motor juega **correctamente** —la generación
 de jugadas está verificada contra la implementación genérica, ver más abajo—,
 pero todavía no se puede decir que juegue **bien**. Falta pasarlas por
 `tune-values.js --variant=…` y confirmarlas en la arena, igual que se hizo con
@@ -313,7 +362,7 @@ está midiendo la nueva.
 
 | Archivo | Contenido |
 |---|---|
-| [geometry.js](geometry.js) | Retícula triangular, los dos tableros, vecindades y coordenadas de pantalla. |
+| [geometry.js](geometry.js) | Retícula triangular, los tres tableros, vecindades y coordenadas de pantalla. |
 | [variants.js](variants.js) | Las modalidades: dotación, movimiento de cada pieza, reglas del peón y parámetros del motor. |
 | [rules.js](rules.js) | Movimientos legales, jaque, mate, tablas y estado de la partida. |
 | [ai.js](ai.js) | Evaluación, negamax con alfa-beta, quiescence y niveles. |
@@ -327,7 +376,7 @@ está midiendo la nueva.
 
 Añadir tableros y juegos de piezas nuevos toca las partes más delicadas del
 motor, así que la corrección se comprueba por **diferencia contra la
-implementación lenta y evidente**, en las cuatro modalidades:
+implementación lenta y evidente**, en las cinco modalidades:
 
 - `genMoves` (que se salta la comprobación de legalidad usando clavadas) contra
   `movesForSide` (que copia el tablero y prueba jugada a jugada).
@@ -337,7 +386,7 @@ implementación lenta y evidente**, en las cuatro modalidades:
   coincidan **jugada a jugada** con la versión anterior al refactor.
 
 ```sh
-node entrenamiento/modalidades.js     # las cuatro modalidades, por diferencia
+node entrenamiento/modalidades.js     # las cinco modalidades, por diferencia
 node entrenamiento/prueba-humo.js     # circuito completo sin navegador
 node entrenamiento/perft.js           # perft con dorados, ajedrez de Salas
 ```

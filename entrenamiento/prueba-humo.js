@@ -75,6 +75,39 @@ comprueba('sin la regla, ese mismo peón no tiene ninguna jugada: ' + (sinRegla.
   sinRegla.length === 0);
 setVariant('salas');
 
+// 5bis. SALAS 1998: el tablero rectangular y la colocación tradicional.
+setVariant('salas-1998');
+comprueba('el rectángulo de 1998 son 64 triángulos en 8 filas de 8',
+  CELLS.length === 64 &&
+  [...new Set(CELLS.map(c => c.b))].every(b => rowCells(b).length === 8));
+comprueba('sus casillas se llaman a1..h8 y el nombre identifica una sola',
+  new Set(CELLS.map(cellName)).size === 64 &&
+  CELLS.every(c => cellFromName(cellName(c)) === c));
+// El rey de 1998 es "la dama, pero una casilla cada vez". Que eso coincida con
+// las 12 vecinas no es evidente: sale de que los 6 primeros pasos del alfil y
+// los 6 del elefante son disjuntos y suman justo la vecindad del rey.
+comprueba('el rey llega exactamente a un paso de dama, desde las 64 casillas',
+  CELLS.every(cell => {
+    const unPaso = new Set(cell.rays.Q.map(r => r[0]));
+    return unPaso.size === cell.leaps.K.length &&
+      cell.leaps.K.every(t => unPaso.has(t));
+  }));
+newGame();
+const filaFondo = color => 'abcdefgh'.split('')
+  .map(l => game.board.get(cellFromName(l + (color === 'w' ? 1 : 8)).key))
+  .map(p => p && p.color === color ? p.type : '?').join('');
+comprueba('coloca TCARDACT en las dos filas del fondo (' + filaFondo('w') + ')',
+  filaFondo('w') === 'RNBKQBNR' && filaFondo('b') === 'RNBKQBNR');
+comprueba('32 piezas y 21 jugadas de salida', game.board.size === 32 &&
+  movesForSide(game.board, 'w', null).length === 21);
+// Sin coronación de flanco, y sin necesitarla: aquí las 8 columnas llegan
+// enteras de la fila 1 a la 8.
+comprueba('las 8 columnas llegan enteras de la fila 1 a la 8',
+  'abcdefgh'.split('').every(l =>
+    [1, 2, 3, 4, 5, 6, 7].every(n =>
+      cellFromName(l + n).pawnAdv.w[0] === cellFromName(l + (n + 1)))));
+setVariant('salas');
+
 // 5c. las otras modalidades arrancan y generan jugadas
 for (const id of ['dekle', 'trigonal']) {
   setVariant(id);

@@ -164,7 +164,9 @@
                 <ul id="help-pieces"></ul>
                 <ul>
                     <li><b>Captura al paso</b>: si un peón avanza dos casillas en su primer movimiento, un peón rival que ataque la casilla intermedia puede capturarlo justo en la jugada siguiente, ocupando esa casilla.</li>
-                    <li id="help-castling"><b>Enroque</b>: si el rey y una de sus torres no se han movido y entre ambos no queda ninguna pieza, pueden enrocarse. Por el lado corto el rey se desplaza dos casillas hacia la torre y esta salta al otro lado; por el lado largo el rey se desplaza tres. No vale si el rey está en jaque ni si alguna de las casillas que recorre está atacada. <b>Para enrocarte, selecciona el rey y pulsa la casilla de tu torre</b> (se ilumina en morado): así no se confunde con un movimiento normal del rey.</li>
+                    <!-- El trecho que recorre el rey depende de la modalidad;
+                         lo rellena script.js a partir de V.castling. -->
+                    <li id="help-castling"><b>Enroque</b>: si el rey y una de sus torres no se han movido y entre ambos no queda ninguna pieza, pueden enrocarse. <span id="help-castling-how"></span> No vale si el rey está en jaque ni si alguna de las casillas que recorre está atacada. <b>Para enrocarte, selecciona el rey y pulsa la casilla de tu torre</b> (se ilumina en morado): así no se confunde con un movimiento normal del rey.</li>
                     <li>Jaque, jaque mate y ahogado funcionan como en el ajedrez clásico.</li>
                     <li><b>Tablas</b>: además del ahogado, la partida acaba en tablas si la misma posición aparece por tercera vez o tras 50 jugadas de cada bando sin capturas ni movimientos de peón.</li>
                 </ul>

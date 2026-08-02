@@ -197,6 +197,13 @@ function buildSvg() {
   coordTexts.clear();
   focoTablero = null;
 
+  // La proporción del tablero activo, para que el CSS pueda limitar la columna
+  // también por el alto: el hexágono es apaisado, pero el rectángulo de 1998
+  // es bastante más alto que ancho y sin esto se sale de la ventana por abajo
+  // (ver #board-col en style.css).
+  document.documentElement.style.setProperty(
+    '--board-aspect', (BBOX.w / BBOX.h).toFixed(4));
+
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', `${BBOX.x} ${BBOX.y} ${BBOX.w} ${BBOX.h}`);
   svg.setAttribute('role', 'grid');
@@ -1584,6 +1591,25 @@ function centralCell(up, dx = 0) {
   return mejor;
 }
 
+// Cuánto se aparta el rey al enrocarse no es igual en todas las modalidades:
+// en el hexágono son dos casillas por el lado corto y tres por el largo, y en
+// el rectángulo de 1998 son dos por los dos lados. Así que la frase se compone
+// a partir de V.castling en vez de estar escrita en el HTML.
+const NUMERO = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco'];
+function textoEnroque() {
+  const casillas = n => n === 1 ? 'una casilla' : NUMERO[n] + ' casillas';
+  // el lado corto es aquel en el que la torre está más cerca del rey
+  const reglas = V.castling
+    .map(c => ({ lado: Math.abs(c.rook - c.king), pasos: Math.abs(c.kingTo - c.king) }))
+    .sort((x, y) => x.lado - y.lado);
+  const salta = ' hacia la torre y esta salta al otro lado';
+  if (reglas.every(r => r.pasos === reglas[0].pasos)) {
+    return 'El rey se desplaza ' + casillas(reglas[0].pasos) + salta + '.';
+  }
+  return 'Por el lado corto el rey se desplaza ' + casillas(reglas[0].pasos) +
+    salta + '; por el lado largo, ' + casillas(reglas[1].pasos) + '.';
+}
+
 // Rellena el panel de reglas con la modalidad activa: la cabecera, la lista de
 // piezas (de V.help) y una miniatura por pieza mostrando a dónde llega desde
 // una casilla central. Se rehace entera al cambiar de modalidad.
@@ -1592,6 +1618,8 @@ function buildRuleMinis() {
     '<b>' + V.full + '</b>. ' + (V.note || '');
   // el enroque no existe en todas las modalidades
   document.getElementById('help-castling').classList.toggle('hidden', !V.castling);
+  document.getElementById('help-castling-how').textContent =
+    V.castling ? textoEnroque() : '';
 
   const ul = document.getElementById('help-pieces');
   ul.innerHTML = '';

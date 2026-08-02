@@ -146,18 +146,24 @@ function setTrigonalPawns() {
 // Conjuntos de tipos que atacan por cada haz de rayos, como constantes para no
 // crear arrays nuevos dentro de la búsqueda.
 const SALAS_R = ['R', 'Q'], SALAS_E = ['E', 'Q'], SALAS_B = ['B'];
+const S98_R = ['R', 'Q'], S98_B = ['B', 'Q'];
 const DEKLE_R = ['R', 'Q'], DEKLE_B = ['B', 'Q'];
 const KOVAL_R = ['R', 'Q'], KOVAL_B = ['B', 'Q'];
 
+// OJO CON LOS NOMBRES. El `id` de cada modalidad es su identificador
+// PERMANENTE: viaja dentro de las partidas guardadas, de los libros de
+// aperturas y del corpus de entrenamiento, así que no se toca aunque cambie el
+// nombre visible. Por eso la que se enseña como «Salas 2026 v2» sigue siendo
+// `salas` por dentro, y la v1, `salas-2026`.
 const VARIANTS = {
 
   // =========================================================================
-  // Ajedrez triangular de Salas (2026) — la modalidad de casa.
+  // Salas 2026 v2 — la modalidad de casa.
   // =========================================================================
   salas: {
     id: 'salas',
-    name: 'Salas (2026)',
-    full: 'Ajedrez triangular de Salas (2026)',
+    name: 'Salas 2026 v2',
+    full: 'Ajedrez triangular de Salas 2026 v2',
     board: 'hex4',
     // La fila del borde completa (9 casillas), de izquierda a derecha para las
     // blancas. Los índices pares son ▽ y los impares ▲. Las negras usan la
@@ -217,13 +223,13 @@ const VARIANTS = {
   },
 
   // =========================================================================
-  // Ajedrez triangular de Salas, reglamento original de 2026 (sin la regla de
-  // coronación de flanco). Se conserva para poder comparar las dos.
+  // Salas 2026 v1 — el reglamento de 2026 tal como se publicó, sin la regla de
+  // coronación de flanco. Se conserva para poder comparar las dos.
   // =========================================================================
   'salas-2026': {
     id: 'salas-2026',
-    name: 'Salas (2026, original)',
-    full: 'Ajedrez triangular de Salas (2026), sin coronación de flanco',
+    name: 'Salas 2026 v1',
+    full: 'Ajedrez triangular de Salas 2026 v1, sin coronación de flanco',
     board: 'hex4',
     inherits: 'salas',
     edgePromotion: false,
@@ -232,6 +238,87 @@ const VARIANTS = {
       'fila y se quedan ahí para siempre, salvo que puedan capturar.',
     // Igual que el de Salas salvo el peón, que aquí no tiene la regla nueva.
     help: null,
+  },
+
+  // =========================================================================
+  // Salas 1998 (Original) — la primera versión, la de 1998.
+  //
+  // Es el antepasado de las de 2026: mismo alfil, mismo caballo y mismo peón,
+  // pero sobre un tablero de 8×8 y con el ejército del ajedrez de siempre.
+  //
+  // La pieza que aquí se llama TORRE es la que en 2026 pasó a llamarse
+  // elefante 🐘 (los 6 rayos perpendiculares a los lados, alternando aristas y
+  // vértices); en 2026 se le añadió al juego una torre nueva —la de los tres
+  // carriles— y la dama se rehizo con ella. Aquí la dama es alfil + torre de
+  // 1998, o sea alfil + elefante, y el rey es esa misma dama a un solo paso,
+  // que en esta retícula resulta ser justo las 12 casillas que tocan la suya:
+  // los 6 primeros pasos del alfil y los 6 del elefante son disjuntos y suman
+  // exactamente la vecindad del rey (comprobado casilla a casilla).
+  // =========================================================================
+  'salas-1998': {
+    id: 'salas-1998',
+    name: 'Salas 1998 (Original)',
+    full: 'Ajedrez triangular de Salas 1998 (Original)',
+    board: 'rect8',
+    // La colocación del ajedrez tradicional, en el orden que le dio el autor:
+    // torre, caballo, alfil, REY, DAMA, alfil, caballo y torre. Ojo, que el rey
+    // va a la izquierda de la dama, al revés que en el ajedrez moderno: está
+    // puesto así a propósito, no es una errata.
+    // Las negras usan la misma lista y las mismas columnas, de modo que quedan
+    // rey contra rey (d1/d8) y dama contra dama (e1/e8).
+    backLayout: ['R', 'N', 'B', 'K', 'Q', 'B', 'N', 'R'],
+    promotionChoices: ['Q', 'R', 'B', 'N'],
+    // Enroque tradicional: el rey se aparta dos casillas hacia la torre y esta
+    // salta al otro lado. Por el lado corto (columnas d→b, torre a→c) y por el
+    // largo (d→f, torre h→e).
+    castling: [
+      { king: 3, rook: 0, kingTo: 1, rookTo: 2 },   // corto
+      { king: 3, rook: 7, kingTo: 5, rookTo: 4 },   // largo
+    ],
+    // Aquí no hace falta la coronación de flanco: al recortar el hexágono a un
+    // rectángulo, las 8 columnas llegan enteras de la fila 1 a la 8, así que
+    // ningún peón se queda sin casilla de avance por mucho que ande.
+    edgePromotion: false,
+    setup() {
+      return {
+        wBack: rowCells(1 - N), wPawns: rowCells(2 - N),
+        bBack: rowCells(N), bPawns: rowCells(N - 1),
+      };
+    },
+    build() { setRowPawns(); },
+    pieces: {
+      R: { rays: c => c.elephantRays },
+      B: { rays: c => c.bishopRays },
+      Q: { rays: c => c.elephantRays.concat(c.bishopRays) },
+      N: { leaps: c => c.knightTargets },
+      K: { leaps: c => c.kingNbrs },
+      P: { pawn: true },
+    },
+    slideGroups: () => [
+      { rays: c => c.elephantRays, typeAt: () => S98_R },
+      { rays: c => c.bishopRays, typeAt: () => S98_B },
+    ],
+    note: 'La primera versión, de 1998. Rectángulo de 8×8 = 64 triángulos —el ' +
+      'hexágono con los dos picos laterales cortados, de ahí el zigzag de los ' +
+      'bordes— con el ejército del ajedrez de siempre, su colocación y sus ' +
+      'coordenadas a1…h8. Su torre es la pieza que en 2026 pasó a llamarse ' +
+      'elefante.',
+    help: [
+      ['R', '<b>Torre ♜</b>: se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas. Es la que en la versión de 2026 se llama elefante 🐘.'],
+      ['B', '<b>Alfil ♝</b>: se desliza en las 6 direcciones diagonales, de vértice a vértice, siempre por triángulos de su misma orientación. El mismo que en 2026.'],
+      ['Q', '<b>Dama ♛</b>: combina torre y alfil, las 12 direcciones.'],
+      ['N', '<b>Caballo ♞</b>: salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas. El mismo que en 2026.'],
+      ['K', '<b>Rey ♚</b>: la dama, pero una sola casilla cada vez; en esta retícula eso son justo las 12 casillas que tocan la suya, por arista o por vértice.'],
+      ['P', '<b>Peón ♟</b>: avanza sin capturar a la casilla que tiene justo enfrente (azul) y captura en las dos casillas frontales diagonales (rojo). Puede avanzar dos veces en su primer movimiento y corona al llegar a la última fila. Aquí no hay coronación de flanco, y no hace falta: en este tablero las 8 columnas llegan enteras hasta la fila del rival.'],
+    ],
+    engine: {
+      // Sin ajustar todavía. El alfil, el caballo y el peón se copian de la
+      // modalidad de casa; la torre de 1998 es su elefante; y la dama se
+      // estima con la misma proporción que allí guarda con sus dos mitades.
+      // Pendiente de tune-values.js.
+      pieceValues: { P: 100, N: 265, B: 335, R: 358, Q: 810, K: 0 },
+      mobility: 4,
+    },
   },
 
   // =========================================================================
@@ -451,21 +538,24 @@ function setVariant(id) {
   // Todo lo del peón que depende de la modalidad se precalcula aquí y se
   // cuelga de la casilla. Son consultas del camino caliente de la búsqueda:
   // resolverlas con un `if` por modalidad en cada nodo costaría de verdad.
-  const hex = v.board === 'hex4';
+  // `porFilas`: los dos ejércitos se enfrentan fila contra fila (hexágono y
+  // rectángulo) en vez de carril contra carril (Trigonal). Lo dice el tablero,
+  // no la modalidad, ver BOARDS en geometry.js.
+  const porFilas = BOARD.rowRanks;
   for (const cell of CELLS) {
     cell.promoFor = {};
     cell.pawnProg = {};
     cell.pawnPush = {};
     for (const color of ['w', 'b']) {
-      // ¿corona aquí? En el hexágono, al llegar a la fila del borde rival.
-      // En Trigonal, donde los dos ejércitos ocupan los dos extremos de la
-      // base, al llegar al final del propio carril.
-      cell.promoFor[color] = hex
+      // ¿corona aquí? Por filas, al llegar a la fila del borde rival. En
+      // Trigonal, donde los dos ejércitos ocupan los dos extremos de la base,
+      // al llegar al final del propio carril.
+      cell.promoFor[color] = porFilas
         ? (color === 'w' ? cell.b === N : cell.b === 1 - N)
         : cell.pawnAdv[color].length === 0;
 
       // Avance hacia la coronación: 0 al salir, 1 al coronar.
-      if (hex) {
+      if (porFilas) {
         const span = 2 * N - 1;
         cell.pawnProg[color] = color === 'w'
           ? (cell.b - (1 - N)) / span
@@ -491,7 +581,7 @@ function setVariant(id) {
   // la casilla a la que lleva, porque la condición no es la misma en todas las
   // modalidades y el destino tampoco se reconoce igual:
   //
-  //   hexágono   desde la fila de peones (equivale a «el peón no se ha movido»,
+  //   por filas  desde la fila de peones (equivale a «el peón no se ha movido»,
   //              porque un peón nunca puede volver a su casilla de salida) y el
   //              destino queda dos filas más allá
   //   Trigonal   desde la 3ª posición de la fila, que es lo que dice Koval; los
@@ -505,7 +595,7 @@ function setVariant(id) {
       const uno = cell.pawnAdv[color][0] || null;
       const dos = uno ? (uno.pawnAdv[color][0] || null) : null;
       cell.pawnTwo[color] = dos;
-      if (hex) {
+      if (porFilas) {
         cell.pawnDoubleOk[color] = color === 'w' ? cell.b === 2 - N : cell.b === N - 1;
       } else {
         const fila = rowCells(cell.b);
