@@ -20,7 +20,7 @@ const N_APERTURAS = Number(process.env.N_APERTURAS || 400);
 const OPENING_PLIES = Number(process.env.OPENING_PLIES || 6);
 
 const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
@@ -36,7 +36,7 @@ Math.random = function () {
 
 function materialBalanceW(board) {
   let m = 0;
-  for (const [, p] of board) m += (p.color === 'w' ? 1 : -1) * PIECE_VALUE[p.type];
+  for (const [, p] of board) m += (p.color === 'w' ? 1 : -1) * PV()[p.type];
   return m;
 }
 

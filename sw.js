@@ -11,13 +11,14 @@
 // PARA PUBLICAR UN CAMBIO HAY QUE SUBIR VERSION. Si no, los navegadores que ya
 // tengan la versión anterior seguirán sirviendo los ficheros viejos de su
 // caché y no verán la actualización.
-const VERSION = 'ajedrez-triangular-v1';
+const VERSION = 'ajedrez-triangular-v2';
 
 const FICHEROS = [
   './',
   './index.html',
   './style.css',
   './geometry.js',
+  './variants.js',
   './rules.js',
   './ai.js',
   './ai-async.js',

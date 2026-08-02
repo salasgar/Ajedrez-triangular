@@ -1,4 +1,5 @@
-// tune-values.js — Ajusta los valores de las piezas (PIECE_VALUE en ai.js)
+// tune-values.js — Ajusta los valores de las piezas (engine.pieceValues de
+// cada modalidad, en variants.js; se elige con --variant=ID)
 // aprendiendo de partidas de autojuego, con el método tipo Texel: en vez de
 // hacer competir "individuos" (algoritmo genético, muy lento porque cada
 // partida entera solo da un bit de señal), se genera un corpus de posiciones
@@ -42,6 +43,9 @@ function argValue(name, def) {
 }
 const CLI_LEVEL = argValue('level', null);
 const CLI_MINUTES = argValue('minutes', null);
+// --variant=ID : qué modalidad se ajusta (salas por defecto). Cada una tiene su
+// juego de piezas, así que sus valores se ajustan por separado.
+const CLI_VARIANT = argValue('variant', 'salas');
 const FIFTY_LIMIT_TRAINING = Number(argValue('fifty', 30));
 const SAVE_GAMES_DIR = argValue('guardar-partidas', null);
 
@@ -86,7 +90,10 @@ const ITERATIONS = 800;
 // sobre todo con N_GAMES pequeño); más alto = se queda más cerca de hoy.
 const REGULARIZATION = 0.02;
 
-const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];  // el rey no se ajusta (vale 0)
+// Piezas que se ajustan: las de la modalidad menos el rey (que vale 0). No se
+// puede fijar aquí porque la modalidad aún no está cargada: se rellena justo
+// después del eval de más abajo.
+let PIECES = [];
 
 // --- cargar geometry.js + rules.js + ai.js en un único ámbito compartido ---
 // Estos tres ficheros son scripts clásicos (const/let de nivel superior, sin
@@ -94,7 +101,7 @@ const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];  // el rey no se ajusta (vale 0)
 // el navegador. Un solo eval() sobre el código concatenado hace visibles sus
 // declaraciones al código añadido a continuación, sin tocar los ficheros.
 const dir = __dirname;
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
@@ -110,14 +117,19 @@ function materialDiff(board) {
   return diff;
 }
 
-// Vector de características de cada posición sampleada: 6 de material + 6
-// de centralidad (una por tipo de pieza, mismo orden que PIECES) + 1 de
+// Vector de características de cada posición sampleada: una de material por
+// tipo de pieza + una de centralidad por tipo (mismo orden que PIECES) + 1 de
 // avance de peones + 1 de movilidad total. positionalDiff()/mobilityDiff()
 // se definen dentro de driverSrc (más abajo) porque necesitan
 // centrality()/pawnAdvance()/pseudoMoves()/CELL_MAP, que solo existen
 // dentro del eval de gameSrc; aquí solo se documenta el orden del vector.
-const FEATURE_NAMES = [...PIECES, ...PIECES.map(p => p + '(centralidad)'),
-  'peones(avance)', 'movilidad'];
+//
+// Es una función y no una constante porque PIECES depende de la modalidad y
+// no se conoce hasta después de cargar variants.js.
+function featureNames() {
+  return [...PIECES, ...PIECES.map(p => p + '(centralidad)'),
+    'peones(avance)', 'movilidad'];
+}
 
 function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
 
@@ -192,7 +204,7 @@ function report(w, centralityBase, advanceBase, mobBase) {
   const displayValues = [...material, ...centralityW, advanceW,
     mobilityW / MOBILITY_SCALE];
   console.log('Valores ajustados (en bruto):');
-  FEATURE_NAMES.forEach((name, i) => console.log(`  ${name}: ${displayValues[i].toFixed(2)}`));
+  featureNames().forEach((name, i) => console.log(`  ${name}: ${displayValues[i].toFixed(2)}`));
 
   // Son SUGERENCIAS, no un cambio listo para producción: la regresión
   // minimiza el error de predecir el resultado, no la fuerza de juego. Antes
@@ -201,11 +213,12 @@ function report(w, centralityBase, advanceBase, mobBase) {
   // vigentes (ver arena.js/analiza.js en el historial). Así se descubrió que
   // los pesos posicionales de abajo eran ruido y que la movilidad la aprendía
   // en el sentido contrario.
-  console.log('\nRedondeados (candidato para PIECE_VALUE en ai.js, a confirmar):');
+  console.log('\nRedondeados (candidato para engine.pieceValues de la modalidad' +
+    ' «' + V.id + '» en variants.js, a confirmar):');
   const rounded = {};
   PIECES.forEach((p, i) => { rounded[p] = Math.round(material[i]); });
-  const line = `const PIECE_VALUE = { P: ${rounded.P}, N: ${rounded.N}, B: ${rounded.B}, ` +
-    `E: ${rounded.E}, R: ${rounded.R}, Q: ${rounded.Q}, K: 0 };`;
+  const line = 'pieceValues: { ' +
+    PIECES.map(p => `${p}: ${rounded[p]}`).join(', ') + ', K: 0 },';
   console.log('  ' + line);
 
   console.log('\nPesos posicionales sugeridos (centralidad/avance; ojo: en la' +
@@ -449,7 +462,7 @@ function run() {
     row.diff[mobIdx] = centered / MOBILITY_SCALE;
   }
 
-  const initial = [...PIECES.map(p => PIECE_VALUE[p] * K), ...PIECES.map(() => 0), 0,
+  const initial = [...PIECES.map(p => PV()[p] * K), ...PIECES.map(() => 0), 0,
     MOBILITY_DEFAULT * MOBILITY_SCALE * K];
   const values = fitValues(dataset, initial);
   report(values, CENTRALITY_BASE, ADVANCE_BASE, mobBase);
@@ -457,4 +470,17 @@ function run() {
 run();
 `;
 
-eval(gameSrc + '\n' + driverSrc);
+// La modalidad se elige ANTES del driver: fija el tablero, el juego de piezas
+// y los valores de partida del ajuste. PIECES se rellena aquí porque hasta
+// este punto no existe la lista de piezas de la modalidad.
+const prepSrc = `
+if (!VARIANTS[${JSON.stringify(CLI_VARIANT)}]) {
+  console.error('Modalidad desconocida: ${CLI_VARIANT}. Hay: ' + Object.keys(VARIANTS).join(', '));
+  process.exit(1);
+}
+setVariant(${JSON.stringify(CLI_VARIANT)});
+PIECES = V.pieceTypes.filter(t => t !== 'K');
+console.log('Modalidad: ' + V.full);
+`;
+
+eval(gameSrc + '\n' + prepSrc + '\n' + driverSrc);

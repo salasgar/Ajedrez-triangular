@@ -44,7 +44,7 @@ const SAMPLE_STRIDE = Number(process.env.SAMPLE_STRIDE || 8);
 const ADJ_MARGIN = Number(process.env.ADJ_MARGIN || 0);
 
 const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
@@ -111,7 +111,7 @@ function mobilityDiff(board) {
 // ventaja de +300 cp es ventaja con cualquier tabla de piezas razonable.
 function materialBalanceW(board) {
   let m = 0;
-  for (const [, p] of board) m += (p.color === 'w' ? 1 : -1) * PIECE_VALUE[p.type];
+  for (const [, p] of board) m += (p.color === 'w' ? 1 : -1) * PV()[p.type];
   return m;
 }
 

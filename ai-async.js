@@ -15,7 +15,7 @@ const AI_WORKER_FNS = [
   positionKey, slideMoves, pseudoMoves, attacks, findKing, isAttacked, rival,
   legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
-  drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
+  PV, drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
   genMoves, isAttackedFast, scanPins, findPins, needsProbe,
   initZobrist, zIndex, computeHash, hashKey, zxor,
   ttInit, packMove, orderSearchMoves, centrality, pawnAdvance, evaluate,
@@ -23,12 +23,28 @@ const AI_WORKER_FNS = [
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
   pickSoftmax, chooseAiMove,
 ];
+// Constantes que no dependen de la modalidad. Las que sí (N, los valores de
+// las piezas, el enroque…) viajan dentro de V, en el mensaje inicial.
 const AI_WORKER_CONSTS = {
-  N, PIECE_VALUE, MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,
-  BOARD_MAX_DIST, FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE, CASTLING,
+  MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,
+  FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE,
   MOVED_MATTERS, ZOBRIST_SEED, TT_BITS, TT_SIZE, TT_MASK, Z_CODE, Z_UNMOVED,
   Z_PER_CELL,
 };
+
+// La modalidad, recortada a lo que el worker necesita y a lo que sobrevive al
+// clonado estructurado (datos, no funciones). Todo lo demás —cómo se mueve
+// cada pieza, qué ataca cada casilla, las reglas del peón— viaja ya resuelto
+// dentro del propio grafo de casillas, en las tablas que monta variants.js.
+// `rows` son referencias a casillas: se manda en el MISMO mensaje que
+// CELL_MAP para que el clonado conserve la identidad de los objetos.
+function variantForWorker() {
+  return {
+    id: V.id, board: V.board, edgePromotion: V.edgePromotion,
+    promotionChoices: V.promotionChoices, castling: V.castling || null,
+    pieceTypes: V.pieceTypes, engine: V.engine, rows: V.rows || null,
+  };
+}
 
 let aiWorker = null;        // worker vivo (se crea bajo demanda)
 let aiWorkerBroken = false; // si algo falla, cálculo síncrono en adelante
@@ -57,11 +73,17 @@ function aiWorkerSource() {
     'let ttAge = 0;',
     'let ttCfgSig = null;',
     'let ZOBRIST = null;',
+    // la modalidad activa y su parámetro de forma, que aquí llegan clonados
+    'let V = null;',
+    'let N = 0;',
     'onmessage = (e) => {',
     '  if (e.data.cells) {',
     '    CELL_MAP = e.data.cells;',
     '    CELLS = [...CELL_MAP.values()];',
+    '    V = e.data.variant;',
+    '    N = e.data.boardSize;',
     '    ZOBRIST = initZobrist();',
+    '    TT = null;',
     '    return;',
     '  }',
     '  postMessage(chooseAiMove(e.data.level, e.data.state, e.data.opts));',
@@ -74,7 +96,7 @@ function startAiWorker() {
     new Blob([aiWorkerSource()], { type: 'text/javascript' }));
   try {
     const w = new Worker(url);
-    w.postMessage({ cells: CELL_MAP });
+    w.postMessage({ cells: CELL_MAP, variant: variantForWorker(), boardSize: N });
     w.onmessage = (e) => {
       const req = aiPending;
       aiPending = null;
@@ -136,6 +158,14 @@ function aiBusy() { return aiPending !== null; }
 function resetAiWorker() {
   if (aiPending) return;              // no tocar una búsqueda en curso
   aiWorkerBroken = false;
+}
+
+// El worker se queda con una copia del grafo de casillas y de la modalidad del
+// momento en que se creó, así que al cambiar de modalidad hay que tirarlo: la
+// siguiente petición lo reconstruye con el tablero y las tablas nuevas.
+function aiWorkerReload() {
+  abortAiSearch();
+  if (aiWorker) { aiWorker.terminate(); aiWorker = null; }
 }
 
 // Descarta la búsqueda en curso, si la hay. Matar el worker es la única forma

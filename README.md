@@ -1,7 +1,7 @@
 # Ajedrez Triangular
 
-Variante de ajedrez sobre un tablero **hexagonal dividido en triángulos**, jugable
-en el navegador. Sin dependencias, sin compilación: basta abrir `index.html`.
+Ajedrez sobre **tableros divididos en triángulos**, jugable en el navegador.
+Sin dependencias, sin compilación: basta abrir `index.html`.
 
 ## Cómo jugar
 
@@ -10,10 +10,100 @@ en el navegador. Sin dependencias, sin compilación: basta abrir `index.html`.
 También puedes abrir [index.html](index.html) en cualquier navegador moderno
 (funciona desde `file://`, sin servidor).
 
-Modalidades: humano contra humano, humano contra ordenador (con cualquiera de
-los dos colores) y ordenador contra ordenador.
+Se puede jugar humano contra humano, humano contra ordenador (con cualquiera de
+los dos colores) u ordenador contra ordenador.
 
-## El tablero
+## Modalidades
+
+El selector **Modalidad** cambia el reglamento entero: el tablero, las piezas,
+la posición inicial y los parámetros del motor. Sale por defecto el ajedrez
+triangular de Salas.
+
+| Modalidad | Tablero | Piezas por bando |
+|---|---|---|
+| **Salas (2026)** | hexágono, 96 triángulos | 9 de fondo (con elefante) + 11 peones |
+| **Salas (2026, original)** | hexágono, 96 triángulos | igual, sin coronación de flanco |
+| **Dekle (1986)** | hexágono, 96 triángulos | 9 de fondo (con unicornio) + 11 peones |
+| **Trigonal (Koval, 2023)** | triángulo, 81 casillas | juego de ajedrez normal, 16 piezas |
+
+Cada modalidad vive en [variants.js](variants.js): su dotación, cómo se mueve
+cada pieza, las reglas del peón y los valores con los que evalúa el motor. El
+resto del programa no conoce ninguna pieza en concreto; pregunta a la modalidad
+activa.
+
+Que las tres quepan en el mismo programa no es casualidad: **los dos tableros
+son la misma retícula triangular con otro recorte**. El hexágono son las
+casillas con `1−N ≤ a,b,c ≤ N`; el triángulo de Koval, las que cumplen
+`a,b,c ≥ −2`, que resultan ser exactamente 45 ▲ + 36 ▽ = 81.
+
+### Dekle (1986)
+
+Triangular Chess, de George R. Dekle Sr., publicado en *World Game Review* nº 10
+y recogido en la *Encyclopedia of Chess Variants* de Pritchard (1994).
+
+Su tablero es **el mismo hexágono de 96 casillas** que el de Salas, y su
+dotación —juego completo más tres peones y un unicornio— da 9 piezas de fondo y
+11 peones, que es justo lo que miden esas dos filas. Sus deslizantes son el
+elefante de Salas partido en dos: la **torre** son los 3 rayos que arrancan
+cruzando una arista, el **alfil** los 3 que arrancan por un vértice, y la
+**dama** los 6. Su alfil, por tanto, no está atado al color de la casilla.
+
+> **Es una reconstrucción.** El tablero, la dotación y los deslizantes están
+> bien asentados. El caballo, el unicornio y el orden de la fila de fondo se han
+> reconstruido a partir de descripciones secundarias, que en esos tres puntos son
+> ambiguas; contrastarlos con la fuente original (Keller, Pritchard, o
+> *Variations on the Theme of Chess* del propio Dekle, 2023) está pendiente.
+
+### Trigonal Chess (Koval, 2023)
+
+De Max Koval, publicado en [The Chess Variant
+Pages](https://www.chessvariants.com/rules/trigonalchess). Tablero triangular de
+81 casillas y juego de ajedrez normal, sin piezas de fantasía: el autor buscaba
+una traducción directa del ajedrez a la retícula triangular.
+
+Las filas van de la `a` (el vértice, 1 casilla) a la `i` (la base, 17), y dentro
+de cada una las casillas se numeran de 1 a 2k−1; así, `h2`, `d3`, `i17`. Los dos
+ejércitos ocupan **los dos extremos de la base**, y el peón corona al llegar al
+final de su carril.
+
+Su **torre** —«siempre por el lado más lejano»— resulta ser exactamente la torre
+de Salas: el mismo deslizamiento en zigzag por el carril. El **alfil** alternante
+está reconstruido como el análogo de esa torre: zigzag entre dos direcciones
+diagonales a 120°, cuya deriva neta va en línea recta.
+
+> Esa reconstrucción del alfil no es certeza. Lo que sí está comprobado es la
+> familia de direcciones: el autor afirma que en su «variación dura» el alfil
+> cubre todas las casillas de su color en un tablero vacío, y con estas
+> direcciones diagonales eso se cumple **exactamente** desde las 81 casillas —ni
+> una casilla de más ni una de menos—. También encaja su advertencia de que el
+> doble paso del peón se solapa con una de sus capturas, que aquí sale sola.
+>
+> **No hay enroque**: el autor dice que lo hay, pero no publica sobre qué
+> casillas, y en este tablero no se deduce. Preferimos que falte a inventarlo.
+
+### Coronación de flanco
+
+En el hexágono, un peón que sube en línea recta se topa con el borde superior
+izquierdo o el derecho **antes de llegar a la fila de coronación**. Medido sobre
+la geometría: los dos peones de los extremos, `N2A` y `N2F`, recorren
+`N2A → B3A → N4B → B5B → N6C → B7C` y ahí se quedan para siempre. Dos de los
+once peones de cada bando no pueden coronar nunca por sí solos.
+
+Dekle resolvió ese mismo problema en el mismo tablero con una regla que el
+ajedrez de Salas adopta desde 2026: **cuando el peón se queda sin casilla de
+avance, avanza en diagonal** —por su casilla de captura, haya o no pieza que
+capturar— para poder seguir hacia la coronación.
+
+Es una regla barata: hay exactamente 6 casillas por bando sin avance (`B5A`,
+`B6B`, `B7C`, `B5H`, `B6H`, `B7H` para las blancas), y **cada una tiene una sola
+casilla de captura**, así que la regla añade un movimiento y nunca una elección.
+Con ella no queda ni una casilla del tablero desde la que un peón no pueda
+coronar.
+
+La modalidad **Salas (2026, original)** conserva el reglamento sin esa regla,
+para poder comparar las dos.
+
+## El tablero (modalidad de Salas)
 
 Cada casilla es un triángulo equilátero identificado por tres coordenadas de
 carril `(a, b, c)`:
@@ -35,7 +125,7 @@ el tablero, abre [coordenadas.html](coordenadas.html).
 | Caballo ♞ | Salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas. |
 | Elefante 🐘 | Se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas. |
 | Rey ♚ | Un paso a cualquier casilla que toque la suya, por arista o por vértice. |
-| Peón ♟ | Avanza sin capturar a la casilla de enfrente y captura en las dos frontales diagonales. Doble paso inicial y coronación en la última fila, con elección de pieza (el ordenador siempre corona a dama). |
+| Peón ♟ | Avanza sin capturar a la casilla de enfrente y captura en las dos frontales diagonales. Doble paso inicial y coronación en la última fila, con elección de pieza (el ordenador siempre corona a dama). Contra el borde, sin casilla de avance, avanza en diagonal: ver [Coronación de flanco](#coronación-de-flanco). |
 
 También hay captura al paso. Jaque, jaque mate y ahogado funcionan como en el
 ajedrez clásico; además son tablas por triple repetición, por la regla de las
@@ -197,6 +287,21 @@ La búsqueda corre siempre en un Web Worker ([ai-async.js](ai-async.js)) para
 que la interfaz no se congele mientras el ordenador piensa; si el navegador no
 lo permite, cae al cálculo síncrono.
 
+### La fuerza del motor por modalidad
+
+La escalera de niveles es la misma en las cuatro modalidades, pero **los valores
+de las piezas solo están ajustados para el ajedrez de Salas**. Los de Dekle y
+Trigonal (`engine.pieceValues` en [variants.js](variants.js)) son una estimación
+a ojo: el unicornio puesto entre caballo y torre, y para Koval los valores
+clásicos del ajedrez, aun sabiendo que su alfil en zigzag alcanza mucho más que
+el de siempre y casi seguro vale más de lo que dice esa tabla.
+
+O sea: en esas dos modalidades el motor juega **correctamente** —la generación
+de jugadas está verificada contra la implementación genérica, ver más abajo—,
+pero todavía no se puede decir que juegue **bien**. Falta pasarlas por
+`tune-values.js --variant=…` y confirmarlas en la arena, igual que se hizo con
+las de Salas.
+
 Los presupuestos están puestos para que la escalera suba a pasos parejos
 (cada nivel piensa unas 3,7 veces más que el anterior), pero **el elo de cada
 peldaño está sin medir todavía**: la escalera anterior, la de profundidad
@@ -208,7 +313,8 @@ está midiendo la nueva.
 
 | Archivo | Contenido |
 |---|---|
-| [geometry.js](geometry.js) | Retícula triangular, tablero hexagonal, vecindades y coordenadas de pantalla. |
+| [geometry.js](geometry.js) | Retícula triangular, los dos tableros, vecindades y coordenadas de pantalla. |
+| [variants.js](variants.js) | Las modalidades: dotación, movimiento de cada pieza, reglas del peón y parámetros del motor. |
 | [rules.js](rules.js) | Movimientos legales, jaque, mate, tablas y estado de la partida. |
 | [ai.js](ai.js) | Evaluación, negamax con alfa-beta, quiescence y niveles. |
 | [ai-async.js](ai-async.js) | Ejecuta la búsqueda en un Web Worker construido desde un Blob. |
@@ -217,6 +323,36 @@ está midiendo la nueva.
 | [style.css](style.css) | Estilos. |
 | [tune-values.js](tune-values.js) | Herramienta de desarrollo (Node) para ajustar los valores de las piezas. |
 
+## Cómo se comprueba que cada modalidad es correcta
+
+Añadir tableros y juegos de piezas nuevos toca las partes más delicadas del
+motor, así que la corrección se comprueba por **diferencia contra la
+implementación lenta y evidente**, en las cuatro modalidades:
+
+- `genMoves` (que se salta la comprobación de legalidad usando clavadas) contra
+  `movesForSide` (que copia el tablero y prueba jugada a jugada).
+- `isAttackedFast` (que mira desde la casilla hacia fuera) contra `isAttacked`
+  (que recorre todas las piezas rivales).
+- Y para el ajedrez de Salas, además, que el `perft` y una partida entera
+  coincidan **jugada a jugada** con la versión anterior al refactor.
+
+```sh
+node entrenamiento/modalidades.js     # las cuatro modalidades, por diferencia
+node entrenamiento/prueba-humo.js     # circuito completo sin navegador
+node entrenamiento/perft.js           # perft con dorados, ajedrez de Salas
+```
+
+Esa segunda comprobación es la que importa de verdad en Dekle. `isAttackedFast`
+da por hecho que los rayos se pueden recorrer al revés, y ahí no se puede: como
+su torre y su alfil son las dos mitades de un mismo haz de rayos —partido según
+el primer paso cruce una arista o un vértice— y los pasos de ese rayo van
+alternando arista/vértice, **el tipo de pieza que ataca por un rayo cambia con
+la distancia**: la vecina ataca como torre, la siguiente como alfil, la
+siguiente como torre. Un escaneo ingenuo se dejaría torres sin ver, y el motor
+metería el rey en jaque. Las tablas de ataque se precalculan en
+[variants.js](variants.js) resolviendo el tipo posición a posición, y los saltos
+compuestos se invierten de verdad en vez de suponerlos simétricos.
+
 ## Ajuste de valores (desarrollo)
 
 `tune-values.js` afina los valores de las piezas por el método tipo Texel:
@@ -224,9 +360,10 @@ genera un corpus de posiciones de autojuego etiquetadas con el resultado de su
 partida y ajusta los pesos por descenso de gradiente sobre ese corpus.
 
 ```sh
-node tune-values.js            # imprime los valores sugeridos
-node tune-values.js --level=5  # autojuego con un nivel real concreto
+node tune-values.js               # imprime los valores sugeridos
+node tune-values.js --level=5     # autojuego con un nivel real concreto
 node tune-values.js --minutes=30
+node tune-values.js --variant=dekle   # ajusta otra modalidad
 ```
 
 No modifica `ai.js`: imprime las constantes sugeridas para revisarlas y

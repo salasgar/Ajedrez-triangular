@@ -71,7 +71,7 @@ if (SALIDA && fs.existsSync(SALIDA)) {
 // automático: macOS no deja que un LaunchAgent lea ~/Documents (protección
 // de privacidad), así que trabaja sobre una copia del motor fuera de ahí.
 const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
@@ -100,7 +100,7 @@ let ultimasJugadas = [];
 // configuraciones (juez común, nunca los valores de una de las dos ramas).
 function materialBalance(board, color) {
   let m = 0;
-  for (const [, p] of board) m += (p.color === color ? 1 : -1) * PIECE_VALUE[p.type];
+  for (const [, p] of board) m += (p.color === color ? 1 : -1) * PV()[p.type];
   return m;
 }
 

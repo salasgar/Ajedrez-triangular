@@ -4,7 +4,7 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const REPO = '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const src = ['geometry.js','rules.js','ai.js'].map(f => fs.readFileSync(path.join(REPO,f),'utf8')).join('\n');
+const src = ['geometry.js','variants.js','rules.js','ai.js'].map(f => fs.readFileSync(path.join(REPO,f),'utf8')).join('\n');
 const libro = JSON.parse(fs.readFileSync(REPO + '/entrenamiento/libro.json','utf8')).slice(0, 5);
 const perdidas = [];
 eval(src + `

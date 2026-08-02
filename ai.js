@@ -4,21 +4,30 @@
 // al paso explícito, sin tocar el objeto global `game` salvo para leerlo
 // en chooseAiMove.
 
-// Valor de cada pieza en centipeones. Estos números salieron de una regresión
-// tipo Texel sobre autojuego (ver tune-values.js) y se CONFIRMARON en matches
-// emparejados —colores invertidos, libro de aperturas fijo— contra los valores
-// clásicos { P:100, N:300, B:330, E:350, R:500, Q:900 }: el material ajustado
-// junto con un peso de movilidad 4 (ver evaluate) gana ~+113 elo a prof. 3
-// (p<0,0001, 134 partidas) y ~+89 a prof. 2. Antes vivían aislados en un
-// "nivel 8 experimental"; al quedar confirmados pasan a ser el material de
-// todos los niveles.
+// Valor de cada pieza en centipeones. Vive en la modalidad (variants.js),
+// porque cada una tiene su juego de piezas: el unicornio de Dekle o el alfil
+// en zigzag de Koval no valen lo que las piezas de Salas. PV() devuelve los de
+// la modalidad activa.
 //
-// Lo que NO sobrevivió a la confirmación y por eso no está aquí: las
-// bonificaciones posicionales (centralidad/avance) que aprendió la regresión
-// resultaron ruido (+12 elo, p=0,62), y el peso de movilidad 1,61 que también
-// aprendió iba en el sentido CONTRARIO al que da fuerza (−81 elo); subirlo a 4
-// es lo que gana. Ver la ablación en el historial de commits.
-const PIECE_VALUE = { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 981, K: 0 };
+// SOLO LOS DE SALAS ESTÁN AJUSTADOS. Salieron de una regresión tipo Texel
+// sobre autojuego (ver tune-values.js) y se CONFIRMARON en matches emparejados
+// —colores invertidos, libro de aperturas fijo— contra los valores clásicos
+// { P:100, N:300, B:330, E:350, R:500, Q:900 }: el material ajustado junto con
+// un peso de movilidad 4 (ver evaluate) gana ~+113 elo a prof. 3 (p<0,0001,
+// 134 partidas) y ~+89 a prof. 2. Antes vivían aislados en un "nivel 8
+// experimental"; al quedar confirmados pasan a ser el material de todos los
+// niveles.
+//
+// Lo que NO sobrevivió a la confirmación y por eso no está: las bonificaciones
+// posicionales (centralidad/avance) que aprendió la regresión resultaron ruido
+// (+12 elo, p=0,62), y el peso de movilidad 1,61 que también aprendió iba en
+// el sentido CONTRARIO al que da fuerza (−81 elo); subirlo a 4 es lo que gana.
+// Ver la ablación en el historial de commits.
+//
+// Los de Dekle y Koval son un punto de partida a ojo, a la espera de pasar por
+// tune-values.js y por la arena. Ahí el motor juega correctamente, pero no se
+// puede decir todavía que juegue BIEN.
+function PV() { return V.engine.pieceValues; }
 const MATE = 100000;
 // Tope de capturas encadenadas que explora quiesce() antes de rendirse y
 // devolver la evaluación tal cual. Es un cinturón de seguridad: sin poda
@@ -38,7 +47,7 @@ const DELTA_MARGIN = 200;
 const DRAW_CONTEMPT = 0.3;
 const DRAW_CAP = 500;
 
-function drawScore(board, color, values = PIECE_VALUE) {
+function drawScore(board, color, values = PV()) {
   let m = 0;
   for (const [, p] of board) m += (p.color === color ? 1 : -1) * values[p.type];
   return Math.max(-DRAW_CAP, Math.min(DRAW_CAP, Math.round(-DRAW_CONTEMPT * m)));
@@ -84,17 +93,21 @@ const AI_LEVELS = {
 };
 
 // Centralidad de una casilla: 1 en el centro del tablero, 0 en el borde.
-// Se precalcula una vez, cx/cy ya vienen calculados por geometry.js.
-const BOARD_MAX_DIST = Math.max(...CELLS.map(c => Math.hypot(c.cx, c.cy)));
-function centrality(cell) { return 1 - Math.hypot(cell.cx, cell.cy) / BOARD_MAX_DIST; }
-
-// Avance de un peón hacia su fila de coronación: 0 en su fila de salida
-// (justo tras la de piezas), 1 al coronar. Ver applyMoveSim para la misma
-// condición de coronación (toCell.b === N / 1 - N) expresada como fila.
-function pawnAdvance(cell, color) {
-  const span = 2 * N - 1;
-  return color === 'w' ? (cell.b - (1 - N)) / span : (N - cell.b) / span;
+// cx/cy ya vienen calculados por geometry.js. El máximo depende del tablero,
+// así que se cachea por modalidad en vez de calcularse al cargar el fichero.
+let boardMaxDist = { id: null, d: 1 };
+function centrality(cell) {
+  if (boardMaxDist.id !== V.id) {
+    boardMaxDist = { id: V.id, d: Math.max(...CELLS.map(c => Math.hypot(c.cx, c.cy))) };
+  }
+  return 1 - Math.hypot(cell.cx, cell.cy) / boardMaxDist.d;
 }
+
+// Avance de un peón hacia la coronación: 0 en su casilla de salida, 1 al
+// coronar. Lo precalcula variants.js, que es quien sabe hacia dónde corona
+// cada modalidad (en el hexágono, la fila del borde rival; en Trigonal, el
+// extremo contrario del propio carril).
+function pawnAdvance(cell, color) { return cell.pawnProg[color]; }
 
 // Todas las jugadas legales de un color: [{from, to}], sin repeticiones.
 //
@@ -144,13 +157,9 @@ function applyMoveSim(board, fromKey, toKey, ep) {
   }
   board.delete(fromKey);
   const moved = { ...piece, moved: true };
-  if (moved.type === 'P' &&
-    ((moved.color === 'w' && toCell.b === N) ||
-      (moved.color === 'b' && toCell.b === 1 - N))) {
-    moved.type = 'Q';
-  }
+  if (moved.type === 'P' && toCell.promoFor[moved.color]) moved.type = 'Q';
   board.set(toKey, moved);
-  return (piece.type === 'P' && Math.abs(toCell.b - fromCell.b) === 2)
+  return (piece.type === 'P' && toCell === fromCell.pawnTwo[piece.color])
     ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
     : null;
 }
@@ -175,11 +184,14 @@ const ZOBRIST_SEED = 0x9E3779B9;
 const TT_BITS = 19;
 const TT_SIZE = 1 << TT_BITS;
 const TT_MASK = TT_SIZE - 1;
-// código 0-9 dentro de la casilla+color: tipo, y variante "sin mover" para
-// los tipos donde moved importa
-const Z_CODE = { P: 0, N: 1, B: 2, E: 3, R: 4, Q: 5, K: 6 };
-const Z_UNMOVED = { P: 7, R: 8, K: 9 };
-const Z_PER_CELL = 20;   // 10 códigos × 2 colores
+// Código dentro de la casilla+color: el tipo, más una variante "sin mover"
+// para los tipos donde `moved` importa. La lista cubre las piezas de TODAS las
+// modalidades (el elefante de Salas y el unicornio de Dekle incluidos) en vez
+// de las de la activa: así los códigos no bailan al cambiar de modalidad, y da
+// igual que una modalidad no use alguno.
+const Z_CODE = { P: 0, N: 1, B: 2, E: 3, U: 4, R: 5, Q: 6, K: 7 };
+const Z_UNMOVED = { P: 8, R: 9, K: 10 };
+const Z_PER_CELL = 22;   // 11 códigos × 2 colores
 
 function initZobrist() {
   let s = ZOBRIST_SEED >>> 0;
@@ -200,7 +212,7 @@ function initZobrist() {
 function zIndex(cell, p) {
   const code = (!p.moved && Z_UNMOVED[p.type] !== undefined)
     ? Z_UNMOVED[p.type] : Z_CODE[p.type];
-  return cell.idx * Z_PER_CELL + (p.color === 'b' ? 10 : 0) + code;
+  return cell.idx * Z_PER_CELL + (p.color === 'b' ? Z_PER_CELL / 2 : 0) + code;
 }
 
 // firma (solo piezas) de un tablero entero; acepta un Map o el array de
@@ -271,7 +283,24 @@ let TT = null;
 let ttGen = 0;
 let ttAge = 0;
 let ttCfgSig = null;
-const ZOBRIST = initZobrist();
+let ZOBRIST = initZobrist();
+
+// Cambio de modalidad: las tablas Zobrist se dimensionan con el número de
+// casillas, así que hay que rehacerlas si el tablero cambia de forma, y la TT
+// hay que vaciarla en cualquier caso (una misma firma significa otra cosa con
+// otro reglamento). variants.js llama aquí, si existe, al final de setVariant().
+// La centralidad se recalcula sola, por su caché.
+//
+// Es una expresión de función con `var`, no una declaración, y eso importa:
+// variants.js se carga ANTES que ai.js y hace su primer setVariant() al
+// cargarse. Una declaración estaría ya izada y se ejecutaría en ese momento,
+// tocando constantes de aquí que aún no existen; con `var` el nombre vale
+// `undefined` hasta esta línea, así que esa primera llamada no entra (y no
+// hace falta: justo debajo se inicializa todo por primera vez).
+var onVariantChange = function () {
+  ZOBRIST = initZobrist();
+  ttGen++;
+};
 
 // --- make/unmake: la búsqueda muta UN tablero en sitio y deshace ---
 //
@@ -337,15 +366,11 @@ function makeSim(board, fromKey, toKey, ep, u, kings, sx) {
   piece.moved = true;
   const fromCell = CELL_MAP.get(fromKey);
   const toCell = CELL_MAP.get(toKey);
-  if (piece.type === 'P' &&
-    ((piece.color === 'w' && toCell.b === N) ||
-      (piece.color === 'b' && toCell.b === 1 - N))) {
-    piece.type = 'Q';
-  }
+  if (piece.type === 'P' && toCell.promoFor[piece.color]) piece.type = 'Q';
   board.set(toKey, piece);
   if (sx) zxor(sx, toKey, piece);     // estado nuevo (movida y quizá coronada)
   if (u.prevType === 'K') kings[piece.color] = toKey;
-  return (u.prevType === 'P' && Math.abs(toCell.b - fromCell.b) === 2)
+  return (u.prevType === 'P' && toCell === fromCell.pawnTwo[piece.color])
     ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
     : null;
 }
@@ -388,23 +413,23 @@ function unmakeSim(board, u, kings) {
 // así que el perft y los dorados de búsqueda la verifican sin arena.
 
 // Recorre los rayos que salen del rey buscando el patrón "pieza propia, y
-// detrás un deslizador enemigo del tipo adecuado". `dama` dice si la dama
-// también amenaza por esta familia de rayos: aquí la dama es torre+elefante,
-// NO torre+alfil, así que no clava por los rayos de alfil.
-function scanPins(board, rays, color, foe, tipo, dama, out) {
-  for (const ray of rays) {
+// detrás un deslizador enemigo del tipo adecuado". Qué tipos amenazan por cada
+// rayo, y a qué distancia, lo dice el haz de la modalidad (`tipos`): en Salas
+// la dama clava por los rayos de torre y de elefante pero no por los de alfil,
+// y en Dekle el tipo cambia según la distancia.
+function scanPins(board, haces, color, foe, out) {
+  for (const g of haces) {
+    const ray = g.ray;
     let tapon = null;
-    for (const t of ray) {
-      const o = board.get(t.key);
+    for (let i = 0; i < ray.length; i++) {
+      const o = board.get(ray[i].key);
       if (!o) continue;
       if (tapon === null) {
         if (o.color !== color) break;   // el primero es enemigo: no clava nada
-        tapon = t.key;                  // candidato a clavado
+        tapon = ray[i].key;             // candidato a clavado
         continue;
       }
-      if (o.color === foe && (o.type === tipo || (dama && o.type === 'Q'))) {
-        out.push(tapon);
-      }
+      if (o.color === foe && g.types[i].includes(o.type)) out.push(tapon);
       break;                            // segunda pieza del rayo: se acabó
     }
   }
@@ -414,10 +439,7 @@ function scanPins(board, rays, color, foe, tipo, dama, out) {
 // array pequeño con indexOf sale más barato que un Set.
 function findPins(board, kingCell, color, out) {
   out.length = 0;
-  const foe = rival(color);
-  scanPins(board, kingCell.rookRays, color, foe, 'R', true, out);
-  scanPins(board, kingCell.elephantRays, color, foe, 'E', true, out);
-  scanPins(board, kingCell.bishopRays, color, foe, 'B', false, out);
+  scanPins(board, kingCell.atk, color, rival(color), out);
   return out;
 }
 
@@ -471,7 +493,7 @@ function genMoves(board, color, ep, kings, probe) {
 
 // Material (y movilidad, según nivel) desde el punto de vista de `color`.
 function evaluate(board, color, cfg) {
-  const values = cfg.pieceValues || PIECE_VALUE;
+  const values = cfg.pieceValues || PV();
   const posW = cfg.positionWeights;
   // 4 puntos por jugada disponible. Confirmado a prof. 2-3 que gana fuerza
   // sobre el 2 clásico (~+58 elo el salto de 2 a 4 junto con el material
@@ -508,7 +530,7 @@ function capturedBy(board, m) {
 // no dependa del orden interno del Map del tablero (make/unmake reinserta
 // piezas al final y lo va barajando; sin desempate fijo, el árbol explorado
 // cambiaría de una ejecución a otra)
-function orderMoves(board, moves, values = PIECE_VALUE) {
+function orderMoves(board, moves, values = PV()) {
   const gain = m => {
     const v = capturedBy(board, m);
     return v ? values[v.type] * 1024 - values[board.get(m.from).type] : -1;
@@ -561,31 +583,18 @@ function countSlide(board, piece, rays) {
 // pseudoMoves: sus listas son diminutas y la deduplicación del doble avance
 // es demasiado delicada para duplicarla.
 function countPseudoMoves(board, cell, piece) {
-  switch (piece.type) {
-    case 'R': return countSlide(board, piece, cell.rookRays);
-    case 'B': return countSlide(board, piece, cell.bishopRays);
-    case 'Q': return countSlide(board, piece, cell.rookRays)
-      + countSlide(board, piece, cell.elephantRays);
-    case 'E': return countSlide(board, piece, cell.elephantRays);
-    case 'N': {
-      let n = 0;
-      for (const t of cell.knightTargets) {
-        const o = board.get(t.key);
-        if (!o || o.color !== piece.color) n++;
-      }
-      return n;
+  const rays = cell.rays[piece.type];
+  if (rays) return countSlide(board, piece, rays);
+  const leaps = cell.leaps[piece.type];
+  if (leaps) {
+    let n = 0;
+    for (const t of leaps) {
+      const o = board.get(t.key);
+      if (!o || o.color !== piece.color) n++;
     }
-    case 'K': {
-      let n = 0;
-      for (const t of cell.kingNbrs) {
-        const o = board.get(t.key);
-        if (!o || o.color !== piece.color) n++;
-      }
-      return n;
-    }
-    case 'P': return pseudoMoves(board, cell, piece, null).length;
+    return n;
   }
-  return 0;
+  return pseudoMoves(board, cell, piece, null).length;   // peón
 }
 
 // ¿Ataca `byColor` la casilla `cell`? Como isAttacked (rules.js), pero
@@ -602,40 +611,27 @@ function countPseudoMoves(board, cell, piece) {
 // del OTRO color). Fuera de ese dominio la vieja tiene rarezas heredadas
 // (el peón "ataca" casillas ocupadas por los suyos, el caballo no) que no
 // merece la pena replicar.
+// Los haces de rayos y las tablas inversas de saltos y peones las prepara
+// variants.js (ver buildAttackTables): ahí es donde se resuelve que en Dekle
+// el tipo de pieza que ataca por un rayo cambia con la distancia, y que un
+// salto compuesto no tiene por qué ser simétrico.
 function isAttackedFast(board, cell, byColor) {
-  for (const ray of cell.rookRays) {
-    for (const t of ray) {
-      const o = board.get(t.key);
+  for (const g of cell.atk) {
+    const ray = g.ray;
+    for (let i = 0; i < ray.length; i++) {
+      const o = board.get(ray[i].key);
       if (!o) continue;
-      if (o.color === byColor && (o.type === 'R' || o.type === 'Q')) return true;
+      if (o.color === byColor && g.types[i].includes(o.type)) return true;
       break;
     }
   }
-  for (const ray of cell.elephantRays) {
-    for (const t of ray) {
+  for (const type in cell.leapAttackers) {
+    for (const t of cell.leapAttackers[type]) {
       const o = board.get(t.key);
-      if (!o) continue;
-      if (o.color === byColor && (o.type === 'E' || o.type === 'Q')) return true;
-      break;
+      if (o && o.color === byColor && o.type === type) return true;
     }
   }
-  for (const ray of cell.bishopRays) {
-    for (const t of ray) {
-      const o = board.get(t.key);
-      if (!o) continue;
-      if (o.color === byColor && o.type === 'B') return true;
-      break;
-    }
-  }
-  for (const t of cell.knightTargets) {
-    const o = board.get(t.key);
-    if (o && o.color === byColor && o.type === 'N') return true;
-  }
-  for (const t of cell.kingNbrs) {
-    const o = board.get(t.key);
-    if (o && o.color === byColor && o.type === 'K') return true;
-  }
-  for (const t of cell.pawnCap[rival(byColor)]) {
+  for (const t of cell.pawnAttackers[byColor]) {
     const o = board.get(t.key);
     if (o && o.color === byColor && o.type === 'P') return true;
   }
@@ -679,32 +675,15 @@ function genCaptures(board, color, ep, kings, probe) {
     if (p.color !== color) continue;
     const cell = CELL_MAP.get(key);
     cands.length = 0;
-    switch (p.type) {
-      case 'R': rayCaptures(board, color, cell.rookRays, cands); break;
-      case 'B': rayCaptures(board, color, cell.bishopRays, cands); break;
-      case 'Q':
-        rayCaptures(board, color, cell.rookRays, cands);
-        rayCaptures(board, color, cell.elephantRays, cands);
-        break;
-      case 'E': rayCaptures(board, color, cell.elephantRays, cands); break;
-      case 'N':
-        for (const t of cell.knightTargets) {
-          const o = board.get(t.key);
-          if (o && o.color !== color) cands.push(t);
-        }
-        break;
-      case 'K':
-        for (const t of cell.kingNbrs) {
-          const o = board.get(t.key);
-          if (o && o.color !== color) cands.push(t);
-        }
-        break;
-      case 'P':
-        for (const t of cell.pawnCap[color]) {
-          const o = board.get(t.key);
-          if (o && o.color !== color) cands.push(t);
-        }
-        break;
+    if (cell.rays[p.type]) {
+      rayCaptures(board, color, cell.rays[p.type], cands);
+    } else {
+      // saltadoras y peón: los destinos con pieza rival encima
+      const destinos = cell.leaps[p.type] || cell.pawnCap[color];
+      for (const t of destinos) {
+        const o = board.get(t.key);
+        if (o && o.color !== color) cands.push(t);
+      }
     }
     for (const t of cands) {
       const id = key + '>' + t.key;
@@ -734,7 +713,7 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth, sx, pl
   // cuenta para el presupuesto, pero no corta aquí: la quietud está acotada
   // por qdepth y no puede dispararse, y así el corte vive en un solo sitio
   if (sx.tope) sx.nodos++;
-  const values = cfg.pieceValues || PIECE_VALUE;
+  const values = cfg.pieceValues || PV();
   const standPat = evaluate(board, color, cfg);
   if (standPat >= beta) return beta;
   if (standPat > alpha) alpha = standPat;
@@ -772,7 +751,7 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
     if (sx.agotado) return 0;
     if (++sx.nodos > sx.tope) { sx.agotado = true; return 0; }
   }
-  const values = cfg.pieceValues || PIECE_VALUE;
+  const values = cfg.pieceValues || PV();
   // tablas por la regla de los 50 movimientos (ver FIFTY_MOVE_LIMIT en rules.js)
   if (clock >= FIFTY_MOVE_LIMIT) return drawScore(board, color, values);
 
@@ -999,7 +978,7 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
     const m = moves[Math.floor(Math.random() * moves.length)];
     return opts.analyze ? { ...m, analysis: null } : m;
   }
-  if (cfg.order) orderMoves(board, moves, cfg.pieceValues || PIECE_VALUE);
+  if (cfg.order) orderMoves(board, moves, cfg.pieceValues || PV());
 
   // firma Zobrist de la raíz y TT lista. La tabla PERSISTE entre jugadas
   // mientras la configuración de evaluación no cambie (ver ttCfgSig arriba):

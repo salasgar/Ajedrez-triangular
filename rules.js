@@ -2,28 +2,13 @@
 //
 // El tablero se representa como un Map: key de casilla → {type, color, moved}.
 //   type:  'K' rey, 'Q' dama, 'R' torre, 'B' alfil, 'N' caballo,
-//          'E' elefante, 'P' peón
+//          'E' elefante, 'U' unicornio, 'P' peón
+//          (qué piezas hay depende de la modalidad, ver variants.js)
 //   color: 'w' blancas (abajo), 'b' negras (arriba)
-
-// El selector de variación U+FE0E fuerza la presentación de TEXTO (no emoji):
-// sin él, iOS/Safari pinta el peón ♟ como emoji coloreado de fábrica e ignora
-// el fill del CSS. Es zero-width, no afecta al centrado ni al texto de jugadas.
-// El elefante no aparece aquí como carácter: se dibuja como icono SVG
-// (#piece-elephant), salvo en el texto de las jugadas, donde GLYPH[E] sigue
-// siendo el emoji (ahí el color es indiferente).
-const VS_TEXT = '\uFE0E';
-const GLYPH = {
-  K: '♚' + VS_TEXT, Q: '♛' + VS_TEXT, R: '♜' + VS_TEXT, B: '♝' + VS_TEXT,
-  N: '♞' + VS_TEXT, E: '🐘', P: '♟' + VS_TEXT,
-};
-
-// Disposición inicial: la fila del borde completa (9 casillas), de izquierda
-// a derecha para las blancas. Los índices pares son ▽ y los impares ▲ (los
-// triángulos con la base en el borde). Las negras usan la misma lista y el
-// mismo orden de columnas (misma coordenada x en el tablero), de modo que
-// la reina blanca queda justo enfrente de la reina negra y el rey blanco
-// justo enfrente del rey negro.
-const BACK_LAYOUT = ['R', 'B', 'N', 'K', 'E', 'Q', 'B', 'N', 'R'];
+//
+// Este fichero no conoce ninguna modalidad en concreto: la forma de mover de
+// cada pieza, la posición inicial, el enroque y las reglas del peón salen de
+// la modalidad activa V (variants.js).
 
 // Medias jugadas sin captura ni peón antes de tablas por la regla de los 50
 // movimientos (100 = 50 jugadas completas). `let`, no `const`: tune-values.js
@@ -33,36 +18,24 @@ let FIFTY_MOVE_LIMIT = 100;
 
 let game = null;
 
-function rowCells(b) {
-  return CELLS.filter(c => c.b === b).sort((p, q) => p.cx - q.cx);
-}
-
-// Fila del borde de cada color, de izquierda a derecha: las 9 casillas de
-// BACK_LAYOUT, con el rey en el índice 3 y las torres en el 0 y el 8.
-function backRow(color) {
-  return rowCells(color === 'w' ? 1 - N : N);
-}
-
 // --- enroque ---
-// Índices dentro de la fila del borde. El rey se aleja del centro tres
-// casillas por el lado largo; por el corto solo caben dos, porque la tercera
-// es la de su propia torre. La torre salta al otro lado del rey.
+// Los índices de CASTLING son posiciones dentro de la fila del borde. El rey
+// se aleja del centro tres casillas por el lado largo; por el corto solo caben
+// dos, porque la tercera es la de su propia torre. La torre salta al otro lado.
+//
 // Nótese que por el lado corto el rey acaba en una casilla a la que también
-// llega con un movimiento normal (en esta retícula triangular el rey alcanza
-// dos casillas a cada lado dentro de su fila). No hay ambigüedad porque el
-// enroque se introduce como "rey a la casilla de su propia torre" —una
-// jugada imposible de otro modo—, no como "rey a su casilla de destino".
-const CASTLING = [
-  { king: 3, rook: 0, kingTo: 1, rookTo: 2 },   // corto
-  { king: 3, rook: 8, kingTo: 6, rookTo: 5 },   // largo
-];
+// llega con un movimiento normal (en esta retícula el rey alcanza dos casillas
+// a cada lado dentro de su fila). No hay ambigüedad porque el enroque se
+// introduce como "rey a la casilla de su propia torre" —una jugada imposible
+// de otro modo—, no como "rey a su casilla de destino".
 
 // Casillas de llegada de un enroque, o null si (kingKey, rookKey) no es uno.
 function castlingLanding(color, kingKey, rookKey) {
+  if (!V.castling) return null;
   const row = backRow(color);
   const ki = row.findIndex(c => c.key === kingKey);
   const ri = row.findIndex(c => c.key === rookKey);
-  const c = CASTLING.find(x => x.king === ki && x.rook === ri);
+  const c = V.castling.find(x => x.king === ki && x.rook === ri);
   return c ? { kingTo: row[c.kingTo].key, rookTo: row[c.rookTo].key } : null;
 }
 
@@ -76,10 +49,10 @@ function isCastling(board, fromKey, toKey) {
 }
 
 // Enroques legales del rey que está en kingKey: devuelve las casillas de las
-// torres con las que puede enrocarse (ver CASTLING sobre por qué el destino
-// es la torre y no la casilla de llegada del rey).
+// torres con las que puede enrocarse (ver arriba sobre por qué el destino es
+// la torre y no la casilla de llegada del rey).
 function castleMoves(board, kingKey, piece) {
-  if (piece.moved) return [];
+  if (!V.castling || piece.moved) return [];
   const row = backRow(piece.color);
   const ki = row.findIndex(c => c.key === kingKey);
   if (ki === -1) return [];
@@ -88,7 +61,7 @@ function castleMoves(board, kingKey, piece) {
   if (isAttacked(board, row[ki], foe)) return [];
 
   const out = [];
-  for (const c of CASTLING) {
+  for (const c of V.castling) {
     if (c.king !== ki) continue;
     const rookCell = row[c.rook];
     const rook = board.get(rookCell.key);
@@ -120,12 +93,13 @@ function castleMoves(board, kingKey, piece) {
 function newGame() {
   game = {
     board: new Map(),
+    variant: V.id,                  // con qué reglas se juega
     turn: 'w',
     capturedBy: { w: [], b: [] },   // piezas capturadas POR cada color
     lastMove: null,                 // {from, to} (keys de casilla)
     enPassant: null,                // {targetKey, pawnKey} si cabe captura al paso
     status: 'playing',              // playing | check | checkmate | stalemate
-                                    // | repetition | fifty (tablas)
+                                    // | repetition | fifty | material (tablas)
     winner: null,
     clock: 0,                       // medias jugadas sin captura ni peón (regla de los 50)
     history: [],                    // instantáneas del estado tras cada jugada
@@ -134,14 +108,27 @@ function newGame() {
   const put = (cell, color, type) =>
     game.board.set(cell.key, { type, color, moved: false });
 
-  const wBack = rowCells(1 - N), wPawns = rowCells(2 - N);
-  const bBack = rowCells(N), bPawns = rowCells(N - 1);
-  BACK_LAYOUT.forEach((type, i) => {
-    put(wBack[i], 'w', type);
-    put(bBack[i], 'b', type);
-  });
-  for (const cell of wPawns) put(cell, 'w', 'P');
-  for (const cell of bPawns) put(cell, 'b', 'P');
+  if (V.position) {
+    // Modalidad que da la posición inicial casilla a casilla (Trigonal).
+    for (const color of ['w', 'b']) {
+      for (const [type, casillas] of Object.entries(V.position[color])) {
+        for (const nombre of casillas) {
+          const cell = cellFromName(nombre);
+          if (!cell) throw new Error('casilla inicial desconocida: ' + nombre);
+          put(cell, color, type);
+        }
+      }
+    }
+  } else {
+    // Modalidad de fila de fondo + fila de peones (hexágono).
+    const { wBack, wPawns, bBack, bPawns } = V.rows;
+    V.backLayout.forEach((type, i) => {
+      put(wBack[i], 'w', type);
+      put(bBack[i], 'b', type);
+    });
+    for (const cell of wPawns) put(cell, 'w', 'P');
+    for (const cell of bPawns) put(cell, 'b', 'P');
+  }
   game.history = [snapshot()];
   game.histIndex = 0;
 }
@@ -231,44 +218,49 @@ function slideMoves(board, piece, rays) {
 // Movimientos "pseudolegales": respetan la forma de mover de cada pieza pero
 // aún no comprueban si dejan al propio rey en jaque.
 function pseudoMoves(board, cell, piece, ep = game && game.enPassant) {
-  const free = t => !board.get(t.key);
-  const enemy = t => { const o = board.get(t.key); return o && o.color !== piece.color; };
-  const notOwn = t => { const o = board.get(t.key); return !o || o.color !== piece.color; };
+  // Las tablas por casilla y tipo las prepara variants.js; el peón no tiene
+  // ninguna de las dos y cae al caso de abajo.
+  const rays = cell.rays[piece.type];
+  if (rays) return slideMoves(board, piece, rays);
+  const leaps = cell.leaps[piece.type];
+  if (leaps) {
+    return leaps.filter(t => {
+      const o = board.get(t.key);
+      return !o || o.color !== piece.color;
+    });
+  }
 
-  switch (piece.type) {
-    case 'R': return slideMoves(board, piece, cell.rookRays);
-    case 'B': return slideMoves(board, piece, cell.bishopRays);
-    case 'Q': return slideMoves(board, piece, cell.rookRays)
-      .concat(slideMoves(board, piece, cell.elephantRays));
-    case 'E': return slideMoves(board, piece, cell.elephantRays);
-    case 'N': return cell.knightTargets.filter(notOwn);
-    case 'K': return cell.kingNbrs.filter(notOwn);
-    case 'P': {
-      const out = [];
-      const adv1 = cell.pawnAdv[piece.color].filter(free);
-      out.push(...adv1);
-      if (!piece.moved) {
-        // doble avance en el primer movimiento
-        for (const t1 of adv1) {
-          for (const t2 of t1.pawnAdv[piece.color]) {
-            if (free(t2) && !out.includes(t2)) out.push(t2);
-          }
-        }
-      }
-      out.push(...cell.pawnCap[piece.color].filter(enemy));
-      // captura al paso: la casilla intermedia que un peón rival acaba de saltar
-      if (ep) {
-        const epCell = CELL_MAP.get(ep.targetKey);
-        const victim = board.get(ep.pawnKey);
-        if (cell.pawnCap[piece.color].includes(epCell) && free(epCell) &&
-          victim && victim.color !== piece.color) {
-          out.push(epCell);
-        }
-      }
-      return out;
+  // peón
+  const color = piece.color;
+  const free = t => !board.get(t.key);
+  const out = [];
+  // Avance. pawnPush ya lleva aplicada la coronación de flanco de la
+  // modalidad: cuando el peón se queda sin casilla de enfrente, avanza en
+  // diagonal (sin capturar) para poder seguir hacia la coronación.
+  const adv1 = cell.pawnPush[color].filter(free);
+  out.push(...adv1);
+  // Doble avance inicial: solo desde las casillas que la modalidad permite y
+  // solo si las dos casillas están libres.
+  if (!piece.moved && cell.pawnDoubleOk[color] && cell.pawnTwo[color]) {
+    const paso = cell.pawnAdv[color][0];
+    const dos = cell.pawnTwo[color];
+    if (paso && free(paso) && free(dos) && !out.includes(dos)) out.push(dos);
+  }
+  // Capturas
+  for (const t of cell.pawnCap[color]) {
+    const o = board.get(t.key);
+    if (o && o.color !== color && !out.includes(t)) out.push(t);
+  }
+  // Captura al paso: la casilla intermedia que un peón rival acaba de saltar.
+  if (ep) {
+    const epCell = CELL_MAP.get(ep.targetKey);
+    const victim = board.get(ep.pawnKey);
+    if (cell.pawnCap[color].includes(epCell) && free(epCell) &&
+      victim && victim.color !== color && !out.includes(epCell)) {
+      out.push(epCell);
     }
   }
-  return [];
+  return out;
 }
 
 // Casillas que la pieza amenaza (para detectar jaques): como pseudoMoves,
@@ -323,18 +315,12 @@ function sideHasMoves(board, color, ep = game && game.enPassant) {
   return false;
 }
 
-// Piezas a las que puede coronar un peón. La dama es la primera: es la
-// opción por defecto y la que juega siempre el ordenador (subcoronar es
-// rarísimo y ensancharía la búsqueda por cuatro).
-const PROMOTION_CHOICES = ['Q', 'R', 'E', 'B', 'N'];
-
 // ¿Esta jugada corona? (la comprobación vive aquí para que la interfaz no
 // tenga que repetir la condición de la fila de coronación)
 function isPromotion(board, fromKey, toKey) {
   const p = board.get(fromKey);
   if (!p || p.type !== 'P') return false;
-  const b = CELL_MAP.get(toKey).b;
-  return (p.color === 'w' && b === N) || (p.color === 'b' && b === 1 - N);
+  return CELL_MAP.get(toKey).promoFor[p.color];
 }
 
 // `promo` es el tipo elegido al coronar; si no se pasa, dama (comportamiento
@@ -345,8 +331,8 @@ function makeMove(fromKey, toKey, promo) {
   const fromCell = CELL_MAP.get(fromKey);
   const toCell = CELL_MAP.get(toKey);
 
-  // Enroque: toKey es la casilla de la torre propia, no el destino del rey
-  // (ver CASTLING). Ni captura, ni promoción, ni captura al paso posible.
+  // Enroque: toKey es la casilla de la torre propia, no el destino del rey.
+  // Ni captura, ni promoción, ni captura al paso posible.
   const castle = isCastling(game.board, fromKey, toKey)
     ? castlingLanding(piece.color, fromKey, toKey) : null;
   if (castle) {
@@ -375,18 +361,18 @@ function makeMove(fromKey, toKey, promo) {
 
   game.board.delete(fromKey);
   const moved = { ...piece, moved: true };
-  // Promoción: el peón que alcanza la fila del borde rival se convierte en la
-  // pieza elegida (dama si no se eligió ninguna)
+  // Promoción: el peón que alcanza la coronación se convierte en la pieza
+  // elegida (dama si no se eligió ninguna)
   let promoted = null;
-  if (moved.type === 'P' &&
-    ((moved.color === 'w' && toCell.b === N) ||
-      (moved.color === 'b' && toCell.b === 1 - N))) {
-    promoted = PROMOTION_CHOICES.includes(promo) ? promo : 'Q';
+  if (moved.type === 'P' && toCell.promoFor[moved.color]) {
+    promoted = V.promotionChoices.includes(promo) ? promo : 'Q';
     moved.type = promoted;
   }
   game.board.set(toKey, moved);
-  // un doble avance de peón deja al rival la opción de capturar al paso
-  game.enPassant = (piece.type === 'P' && Math.abs(toCell.b - fromCell.b) === 2)
+  // Un doble avance de peón deja al rival la opción de capturar al paso. Se
+  // reconoce por la casilla de destino y no por las filas recorridas: en
+  // Trigonal Chess el doble paso no cambia de fila.
+  game.enPassant = (piece.type === 'P' && toCell === fromCell.pawnTwo[piece.color])
     ? { targetKey: fromCell.pawnAdv[piece.color][0].key, pawnKey: toKey }
     : null;
   game.lastMove = { from: fromKey, to: toKey, ...(promoted ? { promo: promoted } : {}) };
@@ -396,12 +382,16 @@ function makeMove(fromKey, toKey, promo) {
 // Posición muerta: con este material ya no puede darse mate de ninguna
 // manera, así que la partida son tablas.
 //
-// Aquí la regla es MUCHO más corta que en el ajedrez clásico, y se ha
-// comprobado por fuerza bruta, no copiado: en esta retícula triangular el rey
-// se acorrala contra el borde del hexágono con muy poco, y K+N contra K o
-// K+B contra K —tablas muertas en el ajedrez de siempre— SÍ tienen posiciones
-// de mate. Lo mismo el elefante, la torre, la dama y hasta el peón (que
-// además corona). El único final sin mate posible es rey contra rey.
+// En el hexágono de Salas la regla es MUCHO más corta que en el ajedrez
+// clásico, y se ha comprobado por fuerza bruta, no copiado: en esta retícula
+// el rey se acorrala contra el borde con muy poco, y K+N contra K o K+B
+// contra K —tablas muertas en el ajedrez de siempre— SÍ tienen posiciones de
+// mate. Lo mismo el elefante, la torre, la dama y hasta el peón (que además
+// corona). El único final sin mate posible es rey contra rey.
+//
+// Para las demás modalidades no se ha hecho esa comprobación, así que se
+// aplica la misma condición mínima, que es la única segura en cualquier caso:
+// dos reyes solos nunca dan mate en ninguna geometría.
 function deadPosition(board) {
   return board.size === 2;   // los dos reyes y nada más
 }

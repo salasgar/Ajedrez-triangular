@@ -11,8 +11,12 @@
 // jugada): ~3 KB por partida frente a los ~300 KB que ocuparían los
 // snapshots de cada posición. Aquí se rejuegan sobre el motor real para
 // regenerar el historial completo que espera saveload.js. El resultado pasa
-// validateSave() tal cual: sobre versión 1, modo 'cc' (ordenador contra
+// validateSave() tal cual: sobre versión 2, modo 'cc' (ordenador contra
 // ordenador) e historial desde la posición inicial.
+//
+// Con --variant=ID se rejuega con otra modalidad; por defecto, la de Salas.
+// Tiene que ser la MISMA con la que se generó el .jsonl, o las jugadas no
+// serán legales al rejugarlas.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -45,11 +49,21 @@ if (!cual) {
 // compartir ámbito global vía <script>, así que un solo eval los hace
 // visibles al código de abajo, igual que hace tune-values.js ---
 const dir = __dirname;
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
+// la modalidad con la que rejugar, antes que nada: fija el tablero
+const argVariante = process.argv.find(a => a.startsWith('--variant='));
+const VARIANTE = argVariante ? argVariante.slice('--variant='.length) : 'salas';
+
 const driverSrc = `
+if (!VARIANTS[${JSON.stringify(VARIANTE)}]) {
+  console.error('Modalidad desconocida: ${VARIANTE}. Hay: ' + Object.keys(VARIANTS).join(', '));
+  process.exit(1);
+}
+setVariant(${JSON.stringify(VARIANTE)});
+
 const elegidas = ${JSON.stringify(cual)} === '--todas' ? partidas
   : partidas.filter(p => String(p.n !== undefined ? p.n : p.par) === ${JSON.stringify(cual)});
 
@@ -68,9 +82,10 @@ for (const p of elegidas) {
     makeMove(from, to);
   }
   const sobre = {
-    version: 1,
+    version: 2,
     app: 'ajedrez-triangular',
     savedAt: new Date().toISOString(),
+    variant: V.id,                               // con qué reglamento se jugó
     mode: 'cc',                                  // ordenador contra ordenador
     levelW: p.nivel !== undefined ? p.nivel : p.white,
     levelB: p.nivel !== undefined ? p.nivel : (p.white === 4 ? 8 : 4),

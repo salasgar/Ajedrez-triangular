@@ -188,6 +188,15 @@ function setFlip(v) {
 }
 
 function buildSvg() {
+  // Se puede llamar más de una vez: al cambiar de modalidad el tablero es
+  // otro (puede pasar de 96 casillas a 81), así que primero fuera lo viejo.
+  // cellPolys y coordTexts guardan nodos del SVG anterior y hay que vaciarlos,
+  // o quedarían apuntando a elementos ya desconectados del documento.
+  boardWrap.innerHTML = '';
+  cellPolys.clear();
+  coordTexts.clear();
+  focoTablero = null;
+
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', `${BBOX.x} ${BBOX.y} ${BBOX.w} ${BBOX.h}`);
   svg.setAttribute('role', 'grid');
@@ -382,13 +391,13 @@ function renderCaptured(el, color, turn, capturedBy) {
   capturedBy[color].forEach((p, i) => {
     const span = document.createElement('span');
     span.className = 'cap-piece' + (i === recentLen - 1 ? ' recent' : '');
-    if (p.type === 'E') {
-      // icono vectorial en línea (el emoji 🐘 no distingue color en iOS)
+    if (ICON_PIECES[p.type]) {
+      // icono vectorial en línea (los emoji 🐘 y 🦄 no distinguen color en iOS)
       const svg = document.createElementNS(SVG_NS, 'svg');
       svg.setAttribute('viewBox', '0 0 24 24');
       const use = document.createElementNS(SVG_NS, 'use');
-      use.setAttribute('href', '#piece-elephant');
-      use.setAttribute('class', `piece-E piece-${p.color === 'w' ? 'w' : 'b'}`);
+      use.setAttribute('href', ICON_PIECES[p.type]);
+      use.setAttribute('class', `piece-${p.type} piece-${p.color === 'w' ? 'w' : 'b'}`);
       svg.appendChild(use);
       span.appendChild(svg);
     } else {
@@ -398,17 +407,21 @@ function renderCaptured(el, color, turn, capturedBy) {
   });
 }
 
+// Piezas que no tienen glifo Unicode recoloreable y van como símbolo SVG: el
+// elefante del ajedrez de Salas y el unicornio de Dekle. Los emoji 🐘 y 🦄
+// vienen con color de fábrica y iOS ignora el fill del CSS.
+const ICON_PIECES = { E: '#piece-elephant', U: '#piece-unicorn' };
+
 // Un nodo SVG para una pieza en (cx, cy): texto Unicode para las piezas de
-// ajedrez, o el icono vectorial #piece-elephant para el elefante (el emoji 🐘
-// no se puede recolorear en iOS). En ambos casos con la clase de color, que
-// aporta el fill/stroke.
+// ajedrez, o el icono vectorial para las de ICON_PIECES. En ambos casos con la
+// clase de color, que aporta el fill/stroke.
 function makePieceNode(type, color, cx, cy) {
   const cls = `piece piece-${type} ` + (color === 'w' ? 'piece-w' : 'piece-b');
   let node;
-  if (type === 'E') {
+  if (ICON_PIECES[type]) {
     const s = 22;                       // lado del icono en unidades del tablero
     node = document.createElementNS(SVG_NS, 'use');
-    node.setAttribute('href', '#piece-elephant');
+    node.setAttribute('href', ICON_PIECES[type]);
     node.setAttribute('x', cx - s / 2);
     node.setAttribute('y', cy - s / 2);
     node.setAttribute('width', s);
@@ -586,7 +599,7 @@ function clearSelection() {
 // El diálogo se monta sobre el tablero y no deja seguir hasta elegir; con
 // Escape se toma la dama, que es lo que se querrá en la práctica.
 const PIECE_NAMES = { P: 'Peón', N: 'Caballo', B: 'Alfil', E: 'Elefante',
-  R: 'Torre', Q: 'Dama', K: 'Rey' };
+  U: 'Unicornio', R: 'Torre', Q: 'Dama', K: 'Rey' };
 // torre y dama son femeninas: "torre blanca", pero "peón blanco"
 const PIECE_FEM = new Set(['R', 'Q']);
 const colorAdj = (tipo, color) => PIECE_FEM.has(tipo)
@@ -615,16 +628,15 @@ function askPromotion(color, onPick) {
 
   const fila = document.createElement('div');
   fila.className = 'promo-row';
-  for (const tipo of PROMOTION_CHOICES) {
+  for (const tipo of V.promotionChoices) {
     const b = document.createElement('button');
     b.className = 'promo-btn piece-' + (color === 'w' ? 'w' : 'b');
     b.title = PROMOTION_NAMES[tipo];
-    if (tipo === 'E') {
-      // el elefante no tiene glifo Unicode recoloreable: va como símbolo SVG
+    if (ICON_PIECES[tipo]) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 24 24');
       const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-      use.setAttribute('href', '#piece-elephant');
+      use.setAttribute('href', ICON_PIECES[tipo]);
       svg.appendChild(use);
       b.appendChild(svg);
     } else {
@@ -724,7 +736,7 @@ function nextAnalysis(idx) {
 // que no hay quien lo lea. Con el origen delante y un separador en medio no
 // hay ambigüedad posible, y de paso sobra toda la lógica de desambiguar, que
 // es una fuente de fallos menos.
-const LETRA_PIEZA = { K: 'R', Q: 'D', R: 'T', B: 'A', N: 'C', E: 'E', P: '' };
+const LETRA_PIEZA = { K: 'R', Q: 'D', R: 'T', B: 'A', N: 'C', E: 'E', U: 'U', P: '' };
 
 // '+' si la jugada dio jaque, '#' si fue mate. Solo se sabe de las jugadas ya
 // hechas (el estado viene del snapshot siguiente); las jugadas propuestas del
@@ -1302,6 +1314,52 @@ btnPause.addEventListener('click', () => {
   if (!gamePaused) scheduleAi();
 });
 
+// --- selector de modalidad ---
+//
+// Cambiar de modalidad cambia el tablero entero, así que hay que rehacerlo
+// todo: la geometría (que puede pasar de 96 a 81 casillas), el SVG, las
+// miniaturas del panel de reglas y el worker de la IA, que se quedó con una
+// copia del tablero viejo. Y se empieza partida nueva, claro: una posición de
+// una modalidad no significa nada en otra.
+const variantSelect = document.getElementById('variant');
+const variantNote = document.getElementById('variant-note');
+
+function fillVariantSelect() {
+  for (const { id, name } of variantList()) {
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = name;
+    if (id === V.id) o.selected = true;
+    variantSelect.appendChild(o);
+  }
+}
+
+// Aplica la modalidad y reconstruye todo lo que depende del tablero. Se usa
+// tanto desde el selector como al cargar una partida guardada.
+function applyVariant(id, empezarPartida = true) {
+  if (V.id !== id) {
+    cancelAi();
+    abortAiSearch();
+    setVariant(id);
+    aiWorkerReload();
+    buildSvg();
+    buildRuleMinis();
+    aplicarFocoTablero(casillaInicialFoco().key, false);
+  }
+  variantNote.textContent = V.note || '';
+  variantSelect.value = V.id;
+  if (!empezarPartida) return;
+  exitReview();
+  newGame();
+  liveAnalysis = null;
+  reiniciarReloj();
+  gamePaused = true;          // en pausa: da tiempo a mirar el tablero nuevo
+  clearSelection();
+  render();
+}
+
+variantSelect.addEventListener('change', () => applyVariant(variantSelect.value));
+
 document.getElementById('new-game').addEventListener('click', () => {
   // Si ya estaba en pausa sin ninguna jugada hecha, pulsar "Nueva partida"
   // no reinicia nada nuevo: se interpreta como que el usuario quiere arrancar.
@@ -1348,6 +1406,10 @@ function currentEnvelope() {
 function loadEnvelope(data) {
   exitReview();
   cancelAi();
+  // Primero la modalidad —puede cambiar el tablero entero— y solo después el
+  // historial, que se interpreta sobre ese tablero. `false` porque la partida
+  // no se empieza de cero: la pone applySave.
+  applyVariant(data.variant, false);
   applySave(data);
   liveAnalysis = null;
   modeEl.value = data.mode;
@@ -1492,35 +1554,77 @@ function makeMini(pieces, blueKeys, capKeys) {
   return svg;
 }
 
-function buildRuleMinis() {
-  const c = getCell(1, 0, 1);  // ▲ central, con tablero vacío alrededor
-  const flat = rays => rays.flat().map(t => t.key);
-  const sets = {
-    R: flat(c.rookRays),
-    B: flat(c.bishopRays),
-    Q: flat(c.rookRays).concat(flat(c.elephantRays)),
-    N: c.knightTargets.map(t => t.key),
-    E: flat(c.elephantRays),
-    K: c.kingNbrs.map(t => t.key),
-  };
-  for (const [type, keys] of Object.entries(sets)) {
-    const li = document.querySelector(`#help li[data-piece="${type}"]`);
-    li.appendChild(makeMini([[c.key, type, 'w']], new Set(keys)));
+// Casilla por la que empieza el recorrido con el tabulador: la de más abajo a
+// la izquierda del dibujo, que es por donde empieza a leer cualquiera. Se
+// calcula sobre las coordenadas de pantalla y no sobre la fila del borde,
+// porque no todas las modalidades tienen fila de borde (Trigonal no).
+function casillaInicialFoco() {
+  let mejor = null;
+  for (const cell of CELLS) {
+    if (!mejor || cell.cy > mejor.cy + 1 ||
+      (Math.abs(cell.cy - mejor.cy) <= 1 && cell.cx < mejor.cx)) {
+      mejor = cell;
+    }
   }
-  // Peón: uno de cada orientación, con peones negros en sus capturas
-  const pUp = getCell(-1, 0, 3), pDown = getCell(2, 0, -1);
-  const adv = new Set([...pUp.pawnAdv.w, ...pDown.pawnAdv.w].map(t => t.key));
-  const cap = new Set([...pUp.pawnCap.w, ...pDown.pawnCap.w].map(t => t.key));
-  const pieces = [[pUp.key, 'P', 'w'], [pDown.key, 'P', 'w']];
-  for (const key of cap) pieces.push([key, 'P', 'b']);
-  const liP = document.querySelector('#help li[data-piece="P"]');
-  liP.appendChild(makeMini(pieces, adv, cap));
+  return mejor;
 }
 
+// La casilla de la orientación pedida más cercana al centro del tablero,
+// opcionalmente desplazado. Antes era una constante (el ▲ central del
+// hexágono); ahora se busca, porque cada tablero tiene el centro en un sitio
+// distinto y el triángulo de Koval no lo tiene en el origen.
+function centralCell(up, dx = 0) {
+  const cx = BBOX.x + BBOX.w / 2 + dx * BBOX.w, cy = BBOX.y + BBOX.h / 2;
+  let mejor = null, d = Infinity;
+  for (const cell of CELLS) {
+    if (cell.up !== up) continue;
+    const dist = Math.hypot(cell.cx - cx, cell.cy - cy);
+    if (dist < d) { d = dist; mejor = cell; }
+  }
+  return mejor;
+}
+
+// Rellena el panel de reglas con la modalidad activa: la cabecera, la lista de
+// piezas (de V.help) y una miniatura por pieza mostrando a dónde llega desde
+// una casilla central. Se rehace entera al cambiar de modalidad.
+function buildRuleMinis() {
+  document.getElementById('help-variant').innerHTML =
+    '<b>' + V.full + '</b>. ' + (V.note || '');
+  // el enroque no existe en todas las modalidades
+  document.getElementById('help-castling').classList.toggle('hidden', !V.castling);
+
+  const ul = document.getElementById('help-pieces');
+  ul.innerHTML = '';
+  const c = centralCell(true);
+  for (const [type, texto] of V.help) {
+    const li = document.createElement('li');
+    li.innerHTML = texto;
+    ul.appendChild(li);
+    if (type === 'P') continue;   // el peón lleva su propia miniatura, abajo
+    const rays = c.rays[type], leaps = c.leaps[type];
+    const keys = rays ? rays.flat().map(t => t.key) : leaps.map(t => t.key);
+    li.appendChild(makeMini([[c.key, type, 'w']], new Set(keys)));
+  }
+  // Peón: uno de cada orientación, con peones negros en sus capturas, para que
+  // se vea que el avance depende de hacia dónde apunta el triángulo.
+  const liP = [...ul.children][V.help.findIndex(([t]) => t === 'P')];
+  if (liP) {
+    // uno a cada lado del centro, para que sus casillas no se pisen
+    const pUp = centralCell(true, -0.15), pDown = centralCell(false, 0.15);
+    const adv = new Set([...pUp.pawnPush.w, ...pDown.pawnPush.w].map(t => t.key));
+    const cap = new Set([...pUp.pawnCap.w, ...pDown.pawnCap.w].map(t => t.key));
+    const pieces = [[pUp.key, 'P', 'w'], [pDown.key, 'P', 'w']];
+    for (const key of cap) pieces.push([key, 'P', 'b']);
+    liP.appendChild(makeMini(pieces, adv, cap));
+  }
+}
+
+fillVariantSelect();
+variantNote.textContent = V.note || '';
 buildSvg();
 // la parada de tabulador del tablero arranca en su esquina de abajo a la
 // izquierda, que es de donde empieza a leer cualquiera
-aplicarFocoTablero(backRow('w')[0].key, false);
+aplicarFocoTablero(casillaInicialFoco().key, false);
 buildRuleMinis();
 newGame();
 render();

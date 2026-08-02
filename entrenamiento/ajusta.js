@@ -44,12 +44,12 @@ const K = 1 / 400;
 
 // --- CENTRALITY_BASE sale de la geometría, hay que cargarla ---
 const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(dir + '/' + f, 'utf8')).join('\n');
 let CENTRALITY_BASE, PIECE_VALUE_REF;
 eval(gameSrc + `
 CENTRALITY_BASE = CELLS.reduce((s, c) => s + centrality(c), 0) / CELLS.length;
-PIECE_VALUE_REF = PIECE_VALUE;
+PIECE_VALUE_REF = PV();
 `);
 const ADVANCE_BASE = 0.5;
 

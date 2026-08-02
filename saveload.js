@@ -5,7 +5,11 @@
 // configuración de modalidad y niveles del ordenador.
 
 const SAVE_PREFIX = 'ajedrez-triangular:save:';
-const SAVE_VERSION = 1;
+// v2: el sobre guarda con qué MODALIDAD se jugó la partida. Las de v1 ya no se
+// cargan: no dicen su modalidad, y aunque todas fueran del ajedrez de Salas,
+// desde la versión 2 ese reglamento incluye la coronación de flanco, así que
+// tampoco se reproducirían con las reglas con las que se jugaron.
+const SAVE_VERSION = 2;
 
 // El análisis de una jugada puede tener 80 entradas, y una partida entera
 // 200 jugadas: guardarlo entero multiplicaría por varias veces el tamaño del
@@ -26,6 +30,7 @@ function serializeGame(mode, levelW, levelB) {
     version: SAVE_VERSION,
     app: 'ajedrez-triangular',
     savedAt: new Date().toISOString(),
+    variant: game.variant,
     mode,
     levelW,
     levelB,
@@ -38,14 +43,28 @@ function serializeGame(mode, levelW, levelB) {
   };
 }
 
-const SAVE_PIECES = new Set(['P', 'N', 'B', 'E', 'R', 'Q', 'K']);
-
+// Se valida contra la modalidad DEL SOBRE, no contra la que esté activa: si no,
+// cargar una partida de Trigonal con el hexágono puesto la rechazaría por
+// casillas inexistentes. Y sin cambiar de modalidad por el camino, que un
+// validador no debe tener efectos secundarios: basta consultar la forma del
+// tablero y el juego de piezas que declara esa modalidad.
 function validateSave(data) {
   if (!data || data.version !== SAVE_VERSION) return false;
   if (!Array.isArray(data.history) || data.history.length === 0) return false;
   if (!Number.isInteger(data.histIndex) ||
       data.histIndex < 0 || data.histIndex >= data.history.length) return false;
   if (!['hh', 'hc', 'ch', 'cc'].includes(data.mode)) return false;
+  const modalidad = VARIANTS[data.variant];
+  if (!modalidad) return false;
+  const forma = BOARDS[modalidad.board];
+  const piezas = new Set(Object.keys(
+    modalidad.pieces || VARIANTS[modalidad.inherits].pieces));
+  const enTablero = (key) => {
+    const co = String(key).split(',').map(Number);
+    if (co.length !== 3 || co.some(n => !Number.isInteger(n))) return false;
+    const suma = co[0] + co[1] + co[2];
+    return (suma === 1 || suma === 2) && forma.has(co[0], co[1], co[2]);
+  };
   // Se valida CADA snapshot, no solo el primero y el actual: los datos entran
   // directos al motor (applySave no clona) y la interfaz los desestructura
   // sin red (renderScoresheet lee lastMove.from de todas las filas). Un .json
@@ -57,8 +76,8 @@ function validateSave(data) {
     for (const ent of s.board) {
       if (!Array.isArray(ent) || ent.length !== 2) return false;
       const [key, p] = ent;
-      if (!CELL_MAP.has(key)) return false;
-      if (!p || !SAVE_PIECES.has(p.type) ||
+      if (!enTablero(key)) return false;
+      if (!p || !piezas.has(p.type) ||
           (p.color !== 'w' && p.color !== 'b')) return false;
       if (p.type === 'K') reyes++;
     }
@@ -70,6 +89,9 @@ function validateSave(data) {
   });
 }
 
+// Ojo: la modalidad del sobre debe estar ya puesta antes de llamar aquí (lo
+// hace loadEnvelope en script.js). newGame() reparte la posición inicial de la
+// modalidad activa, y luego se pisa con el historial guardado.
 function applySave(data) {
   newGame();   // garantiza la estructura base de `game`
   game.history = data.history;

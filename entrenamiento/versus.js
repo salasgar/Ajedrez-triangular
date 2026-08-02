@@ -33,7 +33,7 @@ const DIR_B = process.env.NUEVO;   // B = nuevo
 if (!DIR_A || !DIR_B) { console.error('faltan VIEJO= y NUEVO='); process.exit(2); }
 
 function motor(dir, nombre) {
-  const src = ['geometry.js', 'rules.js', 'ai.js']
+  const src = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
     .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
   const ctx = vm.createContext({});
   vm.runInContext(src, ctx, { filename: nombre });
@@ -55,7 +55,7 @@ function motor(dir, nombre) {
       winner: game.winner || null, fin: gameEnded() }); }
     function __balanceW() {
       let m = 0;
-      for (const [, p] of game.board) m += (p.color === 'w' ? 1 : -1) * PIECE_VALUE[p.type];
+      for (const [, p] of game.board) m += (p.color === 'w' ? 1 : -1) * PV()[p.type];
       return m;
     }
   `, ctx);

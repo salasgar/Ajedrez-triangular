@@ -12,12 +12,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Silueta del elefante, referenciada con <use href="#piece-elephant">.
-         El path no fija fill/stroke: los hereda de .piece-w/.piece-b como el
-         resto de piezas. (El emoji 🐘 no se puede recolorear en iOS.) -->
+    <!-- Siluetas del elefante (Salas) y el unicornio (Dekle), referenciadas
+         con <use href="#piece-elephant"> / <use href="#piece-unicorn">.
+         Los path no fijan fill/stroke: los heredan de .piece-w/.piece-b como
+         el resto de piezas. (Los emoji 🐘 y 🦄 no se recolorean en iOS.) -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
         <symbol id="piece-elephant" viewBox="0 0 24 24">
             <path fill-rule="evenodd" d="M14.03 3.08L12.75 3.2L10.9 3.89L9.05 4.24L8 5.05L5.34 4.93L4.06 5.86L2.5 7.66L2.5 19.01L4.76 20.8L5.45 20.69L6.21 20.05L6.79 19.47L6.79 18.78L6.27 18.26L5.92 18.26L5.22 18.95L4.59 18.55L4.59 14.61L8.23 11.65L8.58 13.04L10.09 13.16L10.55 12.93L14.2 9.74L14.2 3.25ZM8.41 20.63L8.7 20.92L11.59 20.92L11.88 20.52L12.23 17.85L12.75 16.98L16.81 16.87L17.79 18.31L17.97 20.46L19.24 20.92L21.21 20.92L21.5 20.63L21.38 9.86L16.69 5.51L14.95 5.4L14.66 5.69L14.66 9.62L10.67 13.27L10.32 13.51L8.7 13.51L8.41 13.8ZM4.62 8.62Q5.55 8.84 5.98 7.98Q5.05 7.76 4.62 8.62Z"/>
+        </symbol>
+        <symbol id="piece-unicorn" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M17.4 2.1L15.1 6.4L12.9 5.9L10.2 6.5L7.6 8.3L6.1 10.8L3.1 12.6L2.6 13.7L4.4 13.4L3.5 15.1L5.6 14.2L5.1 16.2L6.9 14.6L7.4 16.6L8.6 14.9L10.1 16.1L10.6 21.6L12.4 21.6L12.1 16.9L13.9 18.1L14.4 21.6L16.2 21.6L15.7 17.4L17.9 15.2L19.4 11.6L19.1 8.4L17.2 6.6ZM15.6 8.9Q16.4 8.9 16.4 9.7Q16.4 10.5 15.6 10.5Q14.8 10.5 14.8 9.7Q14.8 8.9 15.6 8.9Z"/>
         </symbol>
     </defs></svg>
     <h1>Ajedrez Triangular</h1>
@@ -84,7 +88,10 @@
                 <div id="cap-b" class="cap-list"></div>
             </div>
             <div id="mode-box">
-                <label for="mode">Modalidad</label>
+                <label for="variant">Modalidad de ajedrez triangular</label>
+                <select id="variant"></select>
+                <p id="variant-note" class="variant-note"></p>
+                <label for="mode">Jugadores</label>
                 <select id="mode">
                     <option value="hh" selected>Humano vs humano</option>
                     <option value="hc">Humano (blancas) vs ordenador</option>
@@ -151,16 +158,13 @@
             </div>
             <details id="help">
                 <summary>Reglas</summary>
+                <!-- La cabecera y la lista de piezas las rellena script.js a
+                     partir de la modalidad activa (ver variants.js). -->
+                <p id="help-variant"></p>
+                <ul id="help-pieces"></ul>
                 <ul>
-                    <li data-piece="R"><b>Torre ♜</b>: se desliza por los tres carriles de casillas que pasan por ella, cruzando aristas.</li>
-                    <li data-piece="B"><b>Alfil ♝</b>: se desliza en las 6 direcciones diagonales, de vértice a vértice, siempre por triángulos de su misma orientación.</li>
-                    <li data-piece="Q"><b>Dama ♛</b>: combina torre y elefante.</li>
-                    <li data-piece="N"><b>Caballo ♞</b>: salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas.</li>
-                    <li data-piece="E"><b>Elefante 🐘</b>: se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas.</li>
-                    <li data-piece="K"><b>Rey ♚</b>: un paso a cualquier casilla que toque la suya (por arista o por vértice).</li>
-                    <li data-piece="P"><b>Peón ♟</b>: avanza sin capturar a la casilla que tiene justo enfrente (azul) y captura en las dos casillas frontales diagonales (rojo). Puede avanzar dos veces en su primer movimiento y corona como dama al llegar a la última fila.</li>
                     <li><b>Captura al paso</b>: si un peón avanza dos casillas en su primer movimiento, un peón rival que ataque la casilla intermedia puede capturarlo justo en la jugada siguiente, ocupando esa casilla.</li>
-                    <li><b>Enroque</b>: si el rey y una de sus torres no se han movido y entre ambos no queda ninguna pieza, pueden enrocarse. Por el lado corto el rey se desplaza dos casillas hacia la torre y esta salta al otro lado; por el lado largo el rey se desplaza tres. No vale si el rey está en jaque ni si alguna de las casillas que recorre está atacada. <b>Para enrocarte, selecciona el rey y pulsa la casilla de tu torre</b> (se ilumina en morado): así no se confunde con un movimiento normal del rey.</li>
+                    <li id="help-castling"><b>Enroque</b>: si el rey y una de sus torres no se han movido y entre ambos no queda ninguna pieza, pueden enrocarse. Por el lado corto el rey se desplaza dos casillas hacia la torre y esta salta al otro lado; por el lado largo el rey se desplaza tres. No vale si el rey está en jaque ni si alguna de las casillas que recorre está atacada. <b>Para enrocarte, selecciona el rey y pulsa la casilla de tu torre</b> (se ilumina en morado): así no se confunde con un movimiento normal del rey.</li>
                     <li>Jaque, jaque mate y ahogado funcionan como en el ajedrez clásico.</li>
                     <li><b>Tablas</b>: además del ahogado, la partida acaba en tablas si la misma posición aparece por tercera vez o tras 50 jugadas de cada bando sin capturas ni movimientos de peón.</li>
                 </ul>
@@ -168,6 +172,7 @@
         </aside>
     </div>
     <script src="geometry.js"></script>
+    <script src="variants.js"></script>
     <script src="rules.js"></script>
     <script src="saveload.js"></script>
     <script src="ai.js"></script>

@@ -1,0 +1,612 @@
+// variants.js — Modalidades de ajedrez triangular.
+//
+// Una modalidad reúne: qué tablero usa (geometry.js), qué piezas hay, cómo se
+// mueve cada una, la posición inicial, las reglas del peón y del enroque, y
+// los parámetros con los que juega el motor.
+//
+// La modalidad activa vive en la variable global V. setVariant() la cambia:
+// pone el tablero en geometry.js y cuelga de cada casilla las tablas
+// precalculadas que esa modalidad necesita. rules.js y ai.js no conocen
+// ninguna pieza en concreto: preguntan a V.
+//
+// CÓMO SE DESCRIBE UNA PIEZA
+//
+// Toda pieza que no sea el peón es de uno de estos dos tipos:
+//   { rays: cell => [[casilla, …], …] }   deslizante: recorre rayos y se para
+//                                         al chocar (captura si es rival)
+//   { leaps: cell => [casilla, …] }       saltadora: llega directamente
+// El peón lleva `pawn: true` y usa cell.pawnAdv / cell.pawnCap.
+//
+// Gracias a eso la generación de jugadas y la búsqueda son las mismas para
+// todas las modalidades; lo único que cambia son las tablas.
+
+// El selector de variación U+FE0E fuerza la presentación de TEXTO (no emoji):
+// sin él, iOS/Safari pinta el peón ♟ como emoji coloreado de fábrica e ignora
+// el fill del CSS. Es zero-width, no afecta al centrado ni al texto de jugadas.
+// El elefante y el unicornio no aparecen aquí como carácter: se dibujan como
+// icono SVG, salvo en el texto de las jugadas, donde el emoji sirve (ahí el
+// color es indiferente).
+const VS_TEXT = '︎';
+const GLYPH = {
+  K: '♚' + VS_TEXT, Q: '♛' + VS_TEXT, R: '♜' + VS_TEXT, B: '♝' + VS_TEXT,
+  N: '♞' + VS_TEXT, E: '🐘', U: '🦄', P: '♟' + VS_TEXT,
+};
+
+// --- utilidades de construcción -------------------------------------------
+
+// Reparte los 6 rayos de elefante de una casilla en dos mitades según el
+// primer paso: los que empiezan cruzando una ARISTA y los que empiezan
+// atravesando un VÉRTICE. Es la base de la torre y el alfil de Dekle.
+function splitElephantRays(cell) {
+  const porArista = [], porVertice = [];
+  for (const ray of cell.elephantRays) {
+    if (!ray.length) continue;
+    (cell.edgeNbrs.includes(ray[0]) ? porArista : porVertice).push(ray);
+  }
+  return { porArista, porVertice };
+}
+
+// Rayo en zigzag: alterna dos direcciones de alfil, empezando por la primera.
+// Se corta al salir del tablero (y por si acaso al repetir casilla, que con
+// direcciones opuestas sería un vaivén infinito).
+function zigzagBishopRay(cell, i, j) {
+  const ray = [];
+  const visto = new Set([cell.key]);
+  let cur = cell, k = 0;
+  while (true) {
+    const nx = bishopStep(cur, BISHOP_DIRS[k % 2 ? j : i]);
+    if (!nx || visto.has(nx.key)) break;
+    visto.add(nx.key);
+    ray.push(nx);
+    cur = nx;
+    k++;
+  }
+  return ray;
+}
+
+// Saltos compuestos: `n` pasos seguidos por un rayo de `raysA` y luego UN paso
+// por un rayo de `raysB` que se desvíe, ni siguiendo recto ni volviéndose.
+// Salta por encima de lo que haya, como el caballo. Devuelve casillas únicas.
+//
+// «Desviarse» se comprueba por casillas, no por índices de dirección: se
+// descartan la casilla anterior al pivote (volverse) y la siguiente del mismo
+// rayo (seguir recto). Los índices no valdrían, porque en los bordes del
+// tablero una casilla tiene menos rayos y el orden deja de ser comparable.
+function compoundLeaps(cell, n, raysA, raysB) {
+  const out = new Set();
+  for (const rayA of raysA) {
+    if (rayA.length < n) continue;
+    const pivote = rayA[n - 1];
+    const atras = n >= 2 ? rayA[n - 2] : cell;   // de dónde se viene
+    const recto = rayA[n];                        // seguir en línea recta
+    for (const rayB of raysB(pivote)) {
+      const t = rayB[0];
+      if (!t || t === atras || t === recto || t === cell) continue;
+      out.add(t);
+    }
+  }
+  return [...out];
+}
+
+// --- peones ----------------------------------------------------------------
+
+// Peón "de fila": avanza a la casilla que tiene justo enfrente y captura en
+// las dos frontales diagonales. Es el peón del ajedrez de Salas y (en esta
+// reconstrucción) el de Dekle. Las blancas van hacia b creciente.
+function setRowPawns() {
+  for (const cell of CELLS) {
+    const { a, b, c } = cell;
+    cell.pawnAdv = { w: [], b: [] };
+    cell.pawnCap = { w: [], b: [] };
+    const add = (arr, a2, b2, c2) => { const t = getCell(a2, b2, c2); if (t) arr.push(t); };
+    if (cell.up) {
+      add(cell.pawnAdv.w, a - 1, b + 1, c - 1);  // justo encima (por el vértice)
+      add(cell.pawnCap.w, a - 1, b + 1, c);      // diagonal arriba-izquierda
+      add(cell.pawnCap.w, a, b + 1, c - 1);      // diagonal arriba-derecha
+      add(cell.pawnAdv.b, a, b - 1, c);          // justo debajo (por la arista)
+      add(cell.pawnCap.b, a, b - 1, c + 1);      // diagonal abajo-izquierda
+      add(cell.pawnCap.b, a + 1, b - 1, c);      // diagonal abajo-derecha
+    } else {
+      add(cell.pawnAdv.w, a, b + 1, c);          // justo encima (por la arista)
+      add(cell.pawnCap.w, a - 1, b + 1, c);      // diagonal arriba-izquierda
+      add(cell.pawnCap.w, a, b + 1, c - 1);      // diagonal arriba-derecha
+      add(cell.pawnAdv.b, a + 1, b - 1, c + 1);  // justo debajo (por el vértice)
+      add(cell.pawnCap.b, a, b - 1, c + 1);      // diagonal abajo-izquierda
+      add(cell.pawnCap.b, a + 1, b - 1, c);      // diagonal abajo-derecha
+    }
+  }
+}
+
+// Peón de Trigonal Chess: avanza UN paso por su fila hacia el rival (las
+// blancas hacia la derecha de la retícula) y ataca en las tres diagonales
+// de delante. En este tablero las filas son las columnas de la pantalla,
+// porque se dibuja girado.
+const TRI_FWD = { w: [0, 2], b: [2, 0] };   // direcciones de torre dentro de la fila
+function setTrigonalPawns() {
+  for (const cell of CELLS) {
+    cell.pawnAdv = { w: [], b: [] };
+    cell.pawnCap = { w: [], b: [] };
+    for (const color of ['w', 'b']) {
+      const adelante = rookStep(cell, TRI_FWD[color]);
+      if (adelante) cell.pawnAdv[color].push(adelante);
+      // Las tres diagonales de delante: de las 6 direcciones de alfil, las que
+      // avanzan hacia el rival (la coordenada que mide el avance aumenta).
+      const signo = color === 'w' ? 1 : -1;
+      for (const d of BISHOP_DIRS) {
+        if (signo * (d[0] - d[2]) <= 0) continue;
+        const t = bishopStep(cell, d);
+        if (t) cell.pawnCap[color].push(t);
+      }
+    }
+  }
+}
+
+// --- el registro de modalidades -------------------------------------------
+
+// Conjuntos de tipos que atacan por cada haz de rayos, como constantes para no
+// crear arrays nuevos dentro de la búsqueda.
+const SALAS_R = ['R', 'Q'], SALAS_E = ['E', 'Q'], SALAS_B = ['B'];
+const DEKLE_R = ['R', 'Q'], DEKLE_B = ['B', 'Q'];
+const KOVAL_R = ['R', 'Q'], KOVAL_B = ['B', 'Q'];
+
+const VARIANTS = {
+
+  // =========================================================================
+  // Ajedrez triangular de Salas (2026) — la modalidad de casa.
+  // =========================================================================
+  salas: {
+    id: 'salas',
+    name: 'Salas (2026)',
+    full: 'Ajedrez triangular de Salas (2026)',
+    board: 'hex4',
+    // La fila del borde completa (9 casillas), de izquierda a derecha para las
+    // blancas. Los índices pares son ▽ y los impares ▲. Las negras usan la
+    // misma lista y el mismo orden de columnas, de modo que la reina blanca
+    // queda justo enfrente de la reina negra y el rey blanco enfrente del rey
+    // negro.
+    backLayout: ['R', 'B', 'N', 'K', 'E', 'Q', 'B', 'N', 'R'],
+    promotionChoices: ['Q', 'R', 'E', 'B', 'N'],
+    // Por el lado corto el rey se desplaza dos casillas hacia la torre y esta
+    // salta al otro lado; por el lado largo, tres.
+    castling: [
+      { king: 3, rook: 0, kingTo: 1, rookTo: 2 },   // corto
+      { king: 3, rook: 8, kingTo: 6, rookTo: 5 },   // largo
+    ],
+    // Coronación de flanco (regla tomada de Dekle 1986, ver README): el peón
+    // que se queda sin casilla de avance puede seguir hacia la coronación por
+    // su casilla de captura, haya o no pieza que capturar. Sin ella, dos de
+    // los once peones de cada bando no pueden coronar nunca.
+    edgePromotion: true,
+    setup() {
+      const filas = {
+        wBack: rowCells(1 - N), wPawns: rowCells(2 - N),
+        bBack: rowCells(N), bPawns: rowCells(N - 1),
+      };
+      return filas;
+    },
+    build() { setRowPawns(); },
+    pieces: {
+      R: { rays: c => c.rookRays },
+      B: { rays: c => c.bishopRays },
+      Q: { rays: c => c.rookRays.concat(c.elephantRays) },
+      E: { rays: c => c.elephantRays },
+      N: { leaps: c => c.knightTargets },
+      K: { leaps: c => c.kingNbrs },
+      P: { pawn: true },
+    },
+    slideGroups: () => [
+      { rays: c => c.rookRays, typeAt: () => SALAS_R },
+      { rays: c => c.elephantRays, typeAt: () => SALAS_E },
+      { rays: c => c.bishopRays, typeAt: () => SALAS_B },
+    ],
+    note: 'Hexágono de 96 triángulos. La modalidad de casa, y la única con los ' +
+      'valores del motor ajustados y confirmados en la arena.',
+    help: [
+      ['R', '<b>Torre ♜</b>: se desliza por los tres carriles de casillas que pasan por ella, cruzando aristas.'],
+      ['B', '<b>Alfil ♝</b>: se desliza en las 6 direcciones diagonales, de vértice a vértice, siempre por triángulos de su misma orientación.'],
+      ['Q', '<b>Dama ♛</b>: combina torre y elefante.'],
+      ['N', '<b>Caballo ♞</b>: salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas.'],
+      ['E', '<b>Elefante 🐘</b>: se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas.'],
+      ['K', '<b>Rey ♚</b>: un paso a cualquier casilla que toque la suya (por arista o por vértice).'],
+      ['P', '<b>Peón ♟</b>: avanza sin capturar a la casilla que tiene justo enfrente (azul) y captura en las dos casillas frontales diagonales (rojo). Puede avanzar dos veces en su primer movimiento y corona al llegar a la última fila. <b>Coronación de flanco</b>: si se queda sin casilla de enfrente, contra el borde del tablero, avanza en diagonal —sin capturar— para poder seguir coronando. Sin esa regla, los dos peones de los extremos no coronarían nunca.'],
+    ],
+    engine: {
+      pieceValues: { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 981, K: 0 },
+      mobility: 4,
+    },
+  },
+
+  // =========================================================================
+  // Ajedrez triangular de Salas, reglamento original de 2026 (sin la regla de
+  // coronación de flanco). Se conserva para poder comparar las dos.
+  // =========================================================================
+  'salas-2026': {
+    id: 'salas-2026',
+    name: 'Salas (2026, original)',
+    full: 'Ajedrez triangular de Salas (2026), sin coronación de flanco',
+    board: 'hex4',
+    inherits: 'salas',
+    edgePromotion: false,
+    note: 'El reglamento tal como se publicó, sin la coronación de flanco. Aquí ' +
+      'los dos peones de los extremos no pueden coronar: llegan a la penúltima ' +
+      'fila y se quedan ahí para siempre, salvo que puedan capturar.',
+    // Igual que el de Salas salvo el peón, que aquí no tiene la regla nueva.
+    help: null,
+  },
+
+  // =========================================================================
+  // Triangular Chess (George R. Dekle Sr., 1986)
+  //
+  // RECONSTRUCCIÓN. El tablero, la dotación y los deslizantes están bien
+  // asentados; el caballo, el unicornio y el orden de la fila de fondo se han
+  // reconstruido a partir de descripciones secundarias. Ver el README.
+  //
+  // Su tablero es EL MISMO hexágono de 96 casillas, y su dotación (juego
+  // completo + 3 peones + un unicornio) da 9 piezas de fondo y 11 peones, que
+  // es justo lo que miden estas dos filas.
+  //
+  // Sus deslizantes son el elefante de Salas partido en dos: la torre son los
+  // 3 rayos que arrancan cruzando una arista, el alfil los 3 que arrancan por
+  // un vértice, y la dama los 6. Su alfil, por tanto, NO está atado al color.
+  // =========================================================================
+  dekle: {
+    id: 'dekle',
+    name: 'Dekle (1986)',
+    full: 'Triangular Chess (George R. Dekle Sr., 1986)',
+    board: 'hex4',
+    backLayout: ['R', 'B', 'N', 'K', 'U', 'Q', 'B', 'N', 'R'],
+    promotionChoices: ['Q', 'R', 'U', 'B', 'N'],
+    castling: [
+      { king: 3, rook: 0, kingTo: 1, rookTo: 2 },
+      { king: 3, rook: 8, kingTo: 6, rookTo: 5 },
+    ],
+    edgePromotion: true,      // la regla es suya
+    setup() {
+      return {
+        wBack: rowCells(1 - N), wPawns: rowCells(2 - N),
+        bBack: rowCells(N), bPawns: rowCells(N - 1),
+      };
+    },
+    build() {
+      setRowPawns();
+      for (const cell of CELLS) {
+        const { porArista, porVertice } = splitElephantRays(cell);
+        cell.dekleRook = porArista;
+        cell.dekleBishop = porVertice;
+        // Rey: un paso como la dama, o sea la primera casilla de cada uno de
+        // los 6 rayos (3 por arista y 3 por vértice), no las 12 que toca.
+        cell.dekleKing = cell.elephantRays.filter(r => r.length).map(r => r[0]);
+      }
+      // Compuestas: se calculan aparte porque necesitan los rayos ya puestos.
+      for (const cell of CELLS) {
+        cell.dekleKnight = compoundLeaps(cell, 2, cell.dekleBishop, c => c.dekleRook);
+        cell.dekleUnicorn = compoundLeaps(cell, 2, cell.dekleRook, c => c.dekleRook);
+      }
+    },
+    pieces: {
+      R: { rays: c => c.dekleRook },
+      B: { rays: c => c.dekleBishop },
+      Q: { rays: c => c.elephantRays },
+      U: { leaps: c => c.dekleUnicorn },
+      N: { leaps: c => c.dekleKnight },
+      K: { leaps: c => c.dekleKing },
+      P: { pawn: true },
+    },
+    // Un solo haz —los 6 rayos de elefante—, pero con el tipo alternando:
+    // desde la casilla atacada, si el rayo arranca cruzando una ARISTA, la
+    // vecina ataca como torre, la siguiente como alfil, y así; si arranca por
+    // un VÉRTICE, al revés. La dama ataca desde cualquier posición.
+    slideGroups: () => [{
+      rays: c => c.elephantRays,
+      typeAt: (ray, i, desde) => {
+        const arista = desde.edgeNbrs.includes(ray[0]);
+        return ((i % 2 === 0) === arista) ? DEKLE_R : DEKLE_B;
+      },
+    }],
+    note: 'Mismo hexágono de 96 triángulos que el de Salas. RECONSTRUCCIÓN a ' +
+      'partir de descripciones secundarias: el caballo, el unicornio y el orden ' +
+      'de la fila de fondo son una interpretación razonada, no la fuente original.',
+    help: [
+      ['R', '<b>Torre ♜</b>: se desliza en línea recta en las 3 direcciones que arrancan cruzando una arista.'],
+      ['B', '<b>Alfil ♝</b>: se desliza en línea recta en las 3 direcciones que arrancan atravesando un vértice. A diferencia del alfil de Salas, no está atado al color de la casilla.'],
+      ['Q', '<b>Dama ♛</b>: torre y alfil juntos, las 6 direcciones.'],
+      ['N', '<b>Caballo ♞</b>: dos pasos de alfil y luego uno de torre que se desvíe; salta por encima de lo que haya.'],
+      ['U', '<b>Unicornio 🦄</b>: dos pasos de torre y luego uno de torre que se desvíe; también salta.'],
+      ['K', '<b>Rey ♚</b>: un paso como la dama, o sea a las 6 casillas que tiene en línea, no a las 12 que le tocan.'],
+      ['P', '<b>Peón ♟</b>: como el de Salas, con la <b>coronación de flanco</b> —que es regla suya, y de donde la toma prestada el ajedrez de Salas—: al quedarse sin casilla de enfrente contra el borde, avanza en diagonal aunque no haya nada que capturar.'],
+    ],
+    engine: {
+      // Punto de partida, sin ajustar: se copian los de Salas y el unicornio
+      // se estima entre caballo y torre. Pendiente de tune-values.js.
+      pieceValues: { P: 100, N: 300, B: 320, U: 400, R: 400, Q: 800, K: 0 },
+      mobility: 4,
+    },
+  },
+
+  // =========================================================================
+  // Trigonal Chess (Max Koval, 2023)
+  //
+  // Tablero triangular de 81 casillas, juego de ajedrez normal sin piezas de
+  // fantasía. Posición inicial y coordenadas son las publicadas por el autor.
+  //
+  // RECONSTRUCCIÓN PARCIAL: su torre ("siempre por el lado más lejano") es
+  // exactamente la torre de Salas, comprobado contra su diagrama. Su alfil
+  // alternante se ha reconstruido como el análogo de esa torre —zigzag entre
+  // dos direcciones diagonales a 120°, cuya deriva neta va por una diagonal—.
+  // Ver el README.
+  // =========================================================================
+  trigonal: {
+    id: 'trigonal',
+    name: 'Trigonal (Koval, 2023)',
+    full: 'Trigonal Chess (Max Koval, 2023)',
+    board: 'tri9',
+    promotionChoices: ['Q', 'R', 'B', 'N'],
+    edgePromotion: false,
+    // Posición inicial publicada por el autor. La única corrección es el
+    // caballo negro: aparece como «i15», que ya está ocupada por un peón; el
+    // reflejo exacto de la posición blanca (posición p de una fila de L pasa a
+    // L+1−p) lo sitúa en i16, y así queda simétrica, que es lo que él busca.
+    position: {
+      w: { K: ['h2'], Q: ['g1'], B: ['g2', 'h1'], N: ['f1', 'i2'], R: ['f2', 'i1'],
+           P: ['f3', 'f4', 'g3', 'g4', 'h3', 'h4', 'i3', 'i4'] },
+      b: { K: ['h14'], Q: ['g13'], B: ['g12', 'h15'], N: ['f11', 'i16'], R: ['f10', 'i17'],
+           P: ['f8', 'f9', 'g10', 'g11', 'h12', 'h13', 'i14', 'i15'] },
+    },
+    build() {
+      setTrigonalPawns();
+      for (const cell of CELLS) {
+        // Alfil: 12 rayos en zigzag (6 direcciones de deriva × 2 fases).
+        const rays = [];
+        for (let i = 0; i < 6; i++) {
+          rays.push(zigzagBishopRay(cell, i, (i + 2) % 6));
+          rays.push(zigzagBishopRay(cell, i, (i + 4) % 6));
+        }
+        cell.kovalBishop = rays.filter(r => r.length);
+        // Caballo: un paso ortogonal y luego uno diagonal hacia fuera.
+        const saltos = new Set();
+        for (const dir of ROOK_DIRS) {
+          const p = rookStep(cell, dir);
+          if (!p) continue;
+          for (const d of BISHOP_DIRS) {
+            const t = bishopStep(p, d);
+            if (t && t !== cell && dist(t, cell) > dist(p, cell)) saltos.add(t);
+          }
+        }
+        cell.kovalKnight = [...saltos];
+      }
+    },
+    pieces: {
+      R: { rays: c => c.rookRays },
+      B: { rays: c => c.kovalBishop },
+      Q: { rays: c => c.rookRays.concat(c.kovalBishop) },
+      N: { leaps: c => c.kovalKnight },
+      K: { leaps: c => c.kingNbrs },
+      P: { pawn: true },
+    },
+    slideGroups: () => [
+      { rays: c => c.rookRays, typeAt: () => KOVAL_R },
+      { rays: c => c.kovalBishop, typeAt: () => KOVAL_B },
+    ],
+    note: 'Triángulo de 81 casillas, juego de ajedrez normal sin piezas de ' +
+      'fantasía. Los dos ejércitos ocupan los dos extremos de la base y el peón ' +
+      'corona al llegar al final de su carril. Sin enroque: el autor dice que lo ' +
+      'hay, pero no publica sobre qué casillas, así que aquí no se inventa.',
+    help: [
+      ['R', '<b>Torre ♜</b>: se desliza por los tres carriles que pasan por ella, cruzando aristas. Es exactamente la torre del ajedrez de Salas.'],
+      ['B', '<b>Alfil ♝</b>: se desliza en diagonal, pero en zigzag: alterna dos direcciones diagonales de modo que la deriva neta va en línea recta. Atado al color de la casilla, y llega mucho más lejos que el alfil de Salas.'],
+      ['Q', '<b>Dama ♛</b>: torre y alfil juntos.'],
+      ['N', '<b>Caballo ♞</b>: un paso ortogonal y luego uno en diagonal hacia fuera; salta por encima de lo que haya.'],
+      ['K', '<b>Rey ♚</b>: un paso a cualquier casilla que toque la suya.'],
+      ['P', '<b>Peón ♟</b>: avanza un paso por su carril hacia el rival y captura en las tres diagonales de delante. Desde la tercera posición puede avanzar dos (que, como advierte el autor, se solapa con una de sus capturas).'],
+    ],
+    engine: {
+      // Sin ajustar todavía: valores clásicos como punto de partida. El alfil
+      // en zigzag alcanza mucho más que el de ajedrez, así que casi seguro
+      // está infravalorado aquí. Pendiente de tune-values.js.
+      pieceValues: { P: 100, N: 300, B: 400, R: 500, Q: 900, K: 0 },
+      mobility: 4,
+    },
+  },
+};
+
+// Distancia en la retícula (mitad de la suma de diferencias absolutas).
+function dist(p, q) {
+  return (Math.abs(p.a - q.a) + Math.abs(p.b - q.b) + Math.abs(p.c - q.c)) / 2;
+}
+
+// --- modalidad activa ------------------------------------------------------
+
+const DEFAULT_VARIANT = 'salas';
+let V = null;
+
+function variantList() {
+  return Object.keys(VARIANTS).map(id => ({ id, name: VARIANTS[id].name }));
+}
+
+function setVariant(id) {
+  const base = VARIANTS[id];
+  if (!base) throw new Error('modalidad desconocida: ' + id);
+  // Una modalidad puede heredar de otra y cambiar solo lo que la distingue
+  // (así «Salas original» es «Salas» con edgePromotion en false).
+  const v = base.inherits ? { ...VARIANTS[base.inherits], ...base } : base;
+  // La lista de reglas de una modalidad heredada sale de la madre, cambiando
+  // solo lo que la distingue.
+  if (base.inherits && base.help === null) {
+    v.help = VARIANTS[base.inherits].help.map(([t, texto]) => t !== 'P' ? [t, texto] : [t,
+      '<b>Peón ♟</b>: avanza sin capturar a la casilla que tiene justo enfrente ' +
+      '(azul) y captura en las dos casillas frontales diagonales (rojo). Puede ' +
+      'avanzar dos veces en su primer movimiento y corona al llegar a la última ' +
+      'fila. Los dos peones de los extremos no llegan: se quedan contra el borde ' +
+      'sin casilla de avance, y solo salen de ahí capturando.']);
+  }
+  V = v;
+  setGeometry(v.board);
+  v.build();
+
+  // Filas del borde y de peones, ya resueltas, para no recalcularlas.
+  V.rows = v.setup ? v.setup() : null;
+  // Índice de tipos de pieza presentes, en orden estable (Zobrist, valores).
+  V.pieceTypes = Object.keys(v.pieces);
+
+  // Todo lo del peón que depende de la modalidad se precalcula aquí y se
+  // cuelga de la casilla. Son consultas del camino caliente de la búsqueda:
+  // resolverlas con un `if` por modalidad en cada nodo costaría de verdad.
+  const hex = v.board === 'hex4';
+  for (const cell of CELLS) {
+    cell.promoFor = {};
+    cell.pawnProg = {};
+    cell.pawnPush = {};
+    for (const color of ['w', 'b']) {
+      // ¿corona aquí? En el hexágono, al llegar a la fila del borde rival.
+      // En Trigonal, donde los dos ejércitos ocupan los dos extremos de la
+      // base, al llegar al final del propio carril.
+      cell.promoFor[color] = hex
+        ? (color === 'w' ? cell.b === N : cell.b === 1 - N)
+        : cell.pawnAdv[color].length === 0;
+
+      // Avance hacia la coronación: 0 al salir, 1 al coronar.
+      if (hex) {
+        const span = 2 * N - 1;
+        cell.pawnProg[color] = color === 'w'
+          ? (cell.b - (1 - N)) / span
+          : (N - cell.b) / span;
+      } else {
+        const fila = rowCells(cell.b);
+        const i = fila.indexOf(cell);
+        const span = Math.max(1, fila.length - 1);
+        cell.pawnProg[color] = color === 'w' ? i / span : (span - i) / span;
+      }
+
+      // Casillas a las que puede AVANZAR sin capturar, ya con la regla de
+      // coronación de flanco aplicada: cuando el peón se queda sin casilla de
+      // enfrente, sus casillas de captura pasan a valer también como avance
+      // (haya o no pieza que capturar), que es lo que le deja seguir hacia la
+      // coronación pegado al borde del tablero.
+      const adv = cell.pawnAdv[color];
+      cell.pawnPush[color] = (adv.length || !v.edgePromotion) ? adv : cell.pawnCap[color];
+    }
+  }
+
+  // Doble paso inicial. Se precalculan las casillas desde las que se permite y
+  // la casilla a la que lleva, porque la condición no es la misma en todas las
+  // modalidades y el destino tampoco se reconoce igual:
+  //
+  //   hexágono   desde la fila de peones (equivale a «el peón no se ha movido»,
+  //              porque un peón nunca puede volver a su casilla de salida) y el
+  //              destino queda dos filas más allá
+  //   Trigonal   desde la 3ª posición de la fila, que es lo que dice Koval; los
+  //              peones que empiezan en la 4ª no lo tienen. Aquí el doble paso
+  //              NO cambia de fila, así que mirar la fila de llegada no serviría
+  //              para reconocerlo: por eso se guarda la casilla concreta.
+  for (const cell of CELLS) {
+    cell.pawnTwo = {};        // casilla del doble paso, o null
+    cell.pawnDoubleOk = {};   // ¿se permite desde aquí?
+    for (const color of ['w', 'b']) {
+      const uno = cell.pawnAdv[color][0] || null;
+      const dos = uno ? (uno.pawnAdv[color][0] || null) : null;
+      cell.pawnTwo[color] = dos;
+      if (hex) {
+        cell.pawnDoubleOk[color] = color === 'w' ? cell.b === 2 - N : cell.b === N - 1;
+      } else {
+        const fila = rowCells(cell.b);
+        const i = fila.indexOf(cell);
+        cell.pawnDoubleOk[color] = color === 'w' ? i === 2 : i === fila.length - 3;
+      }
+    }
+  }
+
+  buildMoveTables(v);
+  buildAttackTables(v);
+  // ai.js se engancha aquí para rehacer las tablas Zobrist y vaciar la tabla
+  // de transposición. Se comprueba que exista porque variants.js se carga
+  // antes que ai.js, y también se usa sin motor en las pruebas.
+  if (typeof onVariantChange === 'function') onVariantChange();
+  return V;
+}
+
+// --- tablas de movimiento por casilla --------------------------------------
+//
+// Cada casilla acaba con `rays` y `leaps` indexados por tipo de pieza, ya
+// resueltos para esta modalidad. Hay dos razones para dejarlo en datos y no en
+// funciones:
+//
+//   · La búsqueda no vuelve a componer nada: la dama no concatena sus dos
+//     familias de rayos en cada nodo, están concatenadas de antemano.
+//   · El worker de la IA (ai-async.js) recibe el grafo de casillas por
+//     clonado estructurado, que copia datos pero NO funciones. Con accesores
+//     en forma de closure, dentro del worker no habría forma de mover.
+function buildMoveTables(v) {
+  for (const cell of CELLS) {
+    cell.rays = {};
+    cell.leaps = {};
+    for (const t of V.pieceTypes) {
+      const spec = v.pieces[t];
+      if (spec.rays) cell.rays[t] = spec.rays(cell).filter(r => r.length);
+      else if (spec.leaps) cell.leaps[t] = spec.leaps(cell);
+    }
+  }
+}
+
+// --- tablas inversas de ataque --------------------------------------------
+//
+// La búsqueda pregunta miles de veces «¿está atacada esta casilla?», y la
+// respuesta rápida consiste en mirar DESDE la casilla hacia fuera en vez de
+// recorrer todas las piezas rivales. Eso solo es correcto si las tablas de
+// movimiento se pueden recorrer al revés, y no siempre se puede dar por hecho:
+//
+//   · Saltadoras. Que A salte a B no obliga a que B salte a A. El caballo de
+//     Salas sí es simétrico, pero las piezas compuestas de Dekle no tienen por
+//     qué serlo. Aquí se invierte la tabla de verdad, casilla por casilla, así
+//     que la simetría deja de importar.
+//
+//   · Peones. Igual: se invierte la tabla de capturas en lugar de suponer que
+//     la del color contrario sirve de espejo.
+//
+//   · Deslizantes. El rayo sí se recorre al revés (todas las familias de
+//     rayos que usamos son reversibles), pero OJO con el tipo de pieza: en
+//     Dekle la torre y el alfil son las dos mitades de un mismo haz de rayos,
+//     partido según el primer paso cruce una arista o un vértice. Como los
+//     pasos de ese rayo van alternando arista/vértice, el tipo de pieza que
+//     ataca desde el rayo VA CAMBIANDO con la distancia: la vecina ataca como
+//     torre, la siguiente como alfil, la siguiente como torre… Por eso el haz
+//     de Dekle lleva `alterna: true` y se anota qué tipo corresponde a cada
+//     paso, en vez de un tipo fijo para todo el rayo.
+function buildAttackTables(v) {
+  // Saltadoras y peones: inversión directa.
+  const saltadoras = V.pieceTypes.filter(t => v.pieces[t].leaps);
+  for (const cell of CELLS) {
+    cell.leapAttackers = {};
+    for (const t of saltadoras) cell.leapAttackers[t] = [];
+    cell.pawnAttackers = { w: [], b: [] };
+  }
+  for (const origen of CELLS) {
+    for (const t of saltadoras) {
+      for (const destino of v.pieces[t].leaps(origen)) destino.leapAttackers[t].push(origen);
+    }
+    for (const color of ['w', 'b']) {
+      for (const destino of origen.pawnCap[color]) destino.pawnAttackers[color].push(origen);
+    }
+  }
+
+  // Deslizantes: cada modalidad declara sus haces en `slideGroups`, y aquí se
+  // aplanan a una lista por casilla, `cell.atk`, con los tipos ya resueltos
+  // posición a posición. Igual que las tablas de movimiento, queda en datos
+  // puros para que el worker pueda usarla tras el clonado.
+  for (const cell of CELLS) cell.atk = [];
+  for (const g of v.slideGroups()) {
+    for (const cell of CELLS) {
+      for (const ray of g.rays(cell)) {
+        if (!ray.length) continue;
+        cell.atk.push({ ray, types: ray.map((_, i) => g.typeAt(ray, i, cell)) });
+      }
+    }
+  }
+}
+
+// Fila del borde de un color, de izquierda a derecha, para el enroque y la
+// posición inicial. Solo la usan las modalidades con `backLayout`.
+function backRow(color) {
+  return color === 'w' ? V.rows.wBack : V.rows.bBack;
+}
+
+setVariant(DEFAULT_VARIANT);

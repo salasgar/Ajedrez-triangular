@@ -44,7 +44,7 @@ const MODO = process.argv[2] || 'check';
 const ESPERADO = path.join(__dirname, 'perft-esperado.json');
 
 const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const gameSrc = ['geometry.js', 'rules.js', 'ai.js']
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
