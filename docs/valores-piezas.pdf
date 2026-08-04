@@ -1,0 +1,120 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 5710 >>
+stream
+BT 0 g /F2 18 Tf 1 0 0 1 40 782 Tm (Valores de las piezas por modalidad) Tj ET
+BT 0.45 g /F1 9 Tf 1 0 0 1 40 764 Tm (Ajedrez triangular · generado el 2026-08-04 a partir de variants.js) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 40 738 Tm (En centipeones: el peón vale 100 por definición y todo lo demás se mide) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 40 725 Tm (contra él. Son los números con los que la IA decide si una jugada le conviene.) Tj ET
+0.92 g 40 693 515 22 re f
+BT 0 g /F2 10 Tf 1 0 0 1 44 699 Tm (Modalidad) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 192.6142857142857 699 Tm (P) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 239.04285714285714 699 Tm (N) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 285.4714285714286 699 Tm (B) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 331.9 699 Tm (E) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 378.3285714285714 699 Tm (U) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 424.75714285714287 699 Tm (R) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 471.18571428571425 699 Tm (Q) Tj ET
+BT 0 g /F2 9 Tf 1 0 0 1 511.96 699 Tm (movil.) Tj ET
+0.3 G 0.8 w 40 691 m 555 691 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 677 Tm (Salas 2026 v2) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 187.4142857142857 677 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 233.84285714285716 677 Tm (265) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 280.2714285714286 677 Tm (335) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 326.7 677 Tm (358) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 677 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 419.5571428571429 677 Tm (483) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 465.98571428571427 677 Tm (981) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 677 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 665 Tm (hex4 \(96 casillas\) · medidos con regresión sobre autojuego y confirmados en la arena \(ronda 6\)) Tj ET
+0.8 G 0.3 w 40 661 m 555 661 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 647 Tm (Salas 2026 v1) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 187.4142857142857 647 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 233.84285714285716 647 Tm (265) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 280.2714285714286 647 Tm (335) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 326.7 647 Tm (358) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 647 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 419.5571428571429 647 Tm (483) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 465.98571428571427 647 Tm (981) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 647 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 635 Tm (hex4 \(96 casillas\) · hereda el motor de Salas \(2026\); solo cambia la coronación de flanco) Tj ET
+0.8 G 0.3 w 40 631 m 555 631 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 617 Tm (Salas 1998 \(Original\)) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 187.4142857142857 617 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 233.84285714285716 617 Tm (265) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 280.2714285714286 617 Tm (335) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 617 Tm (-) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 617 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 419.5571428571429 617 Tm (358) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 465.98571428571427 617 Tm (810) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 617 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 605 Tm (rect8 \(64 casillas\) · estimados a ojo, pendientes de medir \(ronda 15\)) Tj ET
+0.8 G 0.3 w 40 601 m 555 601 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 587 Tm (Dekle \(1986\)) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 187.4142857142857 587 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 233.84285714285716 587 Tm (300) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 280.2714285714286 587 Tm (320) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 587 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 373.12857142857143 587 Tm (400) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 419.5571428571429 587 Tm (400) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 465.98571428571427 587 Tm (800) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 587 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 575 Tm (hex4 \(96 casillas\) · estimados a ojo, pendientes de medir \(ronda 15\)) Tj ET
+0.8 G 0.3 w 40 571 m 555 571 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 557 Tm (Trigonal \(Koval, 2023\)) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 187.4142857142857 557 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 233.84285714285716 557 Tm (277) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 280.2714285714286 557 Tm (360) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 557 Tm (-) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 557 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 419.5571428571429 557 Tm (469) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 465.98571428571427 557 Tm (785) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 515.6 557 Tm (7.27) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 545 Tm (tri9 \(81 casillas\) · medidos con regresión sobre autojuego y confirmados en la arena \(ronda 15\)) Tj ET
+0.8 G 0.3 w 40 541 m 555 541 l S
+BT 0 g /F2 11 Tf 1 0 0 1 40 515 Tm (Las piezas) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 500 Tm (P   peón) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 488 Tm (N   caballo) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 476 Tm (B   alfil) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 464 Tm (E   elefante) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 452 Tm (U   unicornio) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 440 Tm (R   torre) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 428 Tm (Q   dama) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 416 Tm (K   rey: vale 0 en todas las modalidades, porque no se puede capturar) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 404 Tm (movil.   lo que suma cada jugada disponible, no es una pieza) Tj ET
+BT 0 g /F2 11 Tf 1 0 0 1 40 382 Tm (Por qué no coinciden entre modalidades) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 367 Tm (Una pieza no vale lo mismo en dos tableros distintos. El alfil de Trigonal avanza en) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 355 Tm (zigzag; el de Dekle no está atado al color de la casilla; la torre de Salas 1998 es la) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 343 Tm (pieza que en 2026 se llama elefante, y se mueve sobre 64 casillas en vez de 96. Los) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 331 Tm (valores se miden modalidad por modalidad, no se traspasan.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000006013 00000 n 
+0000006110 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+6212
+%%EOF

@@ -487,11 +487,13 @@ const VARIANTS = {
       ['P', '<b>Peón ♟</b>: avanza un paso por su carril hacia el rival y captura en las tres diagonales de delante. Desde la tercera posición puede avanzar dos (que, como advierte el autor, se solapa con una de sus capturas).'],
     ],
     engine: {
-      // Sin ajustar todavía: valores clásicos como punto de partida. El alfil
-      // en zigzag alcanza mucho más que el de ajedrez, así que casi seguro
-      // está infravalorado aquí. Pendiente de tune-values.js.
-      pieceValues: { P: 100, N: 300, B: 400, R: 500, Q: 900, K: 0 },
-      mobility: 4,
+      // Ajustados en la ronda 15: regresión sobre autojuego a profundidad 2
+      // (fase barata), confirmados en la arena contra los valores clásicos.
+      // El candidato "all" (con pesos posicionales) ganó +76 elo [48, 104].
+      // Los pesos posicionales no se guardan aquí: se aplican como cfg en la
+      // arena, pero el valor de pieza limpio es el que entra en variants.js.
+      pieceValues: { P: 100, N: 277, B: 360, R: 469, Q: 785, K: 0 },
+      mobility: 7.27,
     },
   },
 };
