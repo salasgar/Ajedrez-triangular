@@ -766,3 +766,131 @@ h1 {
   font-variant-numeric: tabular-nums;
   margin-top: 2px;
 }
+
+/* --- editor de posiciones (editor.html) --- */
+
+#board-col .editor-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.palette-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.palette-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  line-height: 1;
+  background: #2f2f2f;
+  border: 2px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 120ms ease-out;
+}
+
+.palette-btn:hover {
+  background: #3c4a5c;
+  border-color: #6f9fd8;
+}
+
+.palette-btn.active {
+  background: #5a7a9e;
+  border-color: #8fb3e8;
+  box-shadow: 0 0 10px #4a6a9e;
+}
+
+.palette-btn svg {
+  width: 32px;
+  height: 32px;
+}
+
+.eraser-btn {
+  font-size: 20px;
+}
+
+#editor-status {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+#editor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#editor-actions button {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: #2f2f2f;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+}
+
+#editor-actions button:hover {
+  background: #3c3c3c;
+  border-color: #666;
+}
+
+#editor-actions button.play-btn {
+  background: #2a5a3a;
+  border-color: #4a8a5a;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+#editor-actions button.play-btn:hover {
+  background: #3a7a4a;
+  border-color: #6ab07a;
+}
+
+.editor-message {
+  min-height: 20px;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 8px;
+  padding: 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.editor-message.success {
+  color: #6dd76d;
+  background: #1a3a1a;
+  opacity: 1;
+}
+
+.editor-message.error {
+  color: #ff6b6b;
+  background: #3a1a1a;
+  opacity: 1;
+}
+
+#editor-actions input[type="radio"] {
+  margin-right: 6px;
+}
+
+.radio-group {
+  display: inline-flex;
+  gap: 12px;
+  margin: 0 8px;
+}

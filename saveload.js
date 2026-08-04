@@ -5,6 +5,7 @@
 // configuración de modalidad y niveles del ordenador.
 
 const SAVE_PREFIX = 'ajedrez-triangular:save:';
+const DESIGN_POSITION_KEY = 'ajedrez-triangular:posicion-disenada';
 // v2: el sobre guarda con qué MODALIDAD se jugó la partida. Las de v1 ya no se
 // cargan: no dicen su modalidad, y aunque todas fueran del ajedrez de Salas,
 // desde la versión 2 ese reglamento incluye la coronación de flanco, así que
@@ -189,12 +190,12 @@ function downloadSave(envelope, filename) {
   URL.revokeObjectURL(url);
 }
 
-function readSaveFile(file, onOk, onError) {
+function readSaveFile(file, onOk, onError, validate = validateSave) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (!validateSave(data)) { onError(); return; }
+      if (!validate(data)) { onError(); return; }
       onOk(data);
     } catch {
       onError();

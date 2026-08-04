@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diseñar una posición</title>
+    <meta name="description" content="Editor de posiciones para ajedrez triangular.">
+    <meta name="theme-color" content="#1b1b1b">
+    <link rel="icon" href="icono.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icono-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+        <symbol id="piece-elephant" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M14.03 3.08L12.75 3.2L10.9 3.89L9.05 4.24L8 5.05L5.34 4.93L4.06 5.86L2.5 7.66L2.5 19.01L4.76 20.8L5.45 20.69L6.21 20.05L6.79 19.47L6.79 18.78L6.27 18.26L5.92 18.26L5.22 18.95L4.59 18.55L4.59 14.61L8.23 11.65L8.58 13.04L10.09 13.16L10.55 12.93L14.2 9.74L14.2 3.25ZM8.41 20.63L8.7 20.92L11.59 20.92L11.88 20.52L12.23 17.85L12.75 16.98L16.81 16.87L17.79 18.31L17.97 20.46L19.24 20.92L21.21 20.92L21.5 20.63L21.38 9.86L16.69 5.51L14.95 5.4L14.66 5.69L14.66 9.62L10.67 13.27L10.32 13.51L8.7 13.51L8.41 13.8ZM4.62 8.62Q5.55 8.84 5.98 7.98Q5.05 7.76 4.62 8.62Z"/>
+        </symbol>
+        <symbol id="piece-unicorn" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M17.4 2.1L15.1 6.4L12.9 5.9L10.2 6.5L7.6 8.3L6.1 10.8L3.1 12.6L2.6 13.7L4.4 13.4L3.5 15.1L5.6 14.2L5.1 16.2L6.9 14.6L7.4 16.6L8.6 14.9L10.1 16.1L10.6 21.6L12.4 21.6L12.1 16.9L13.9 18.1L14.4 21.6L16.2 21.6L15.7 17.4L17.9 15.2L19.4 11.6L19.1 8.4L17.2 6.6ZM15.6 8.9Q16.4 8.9 16.4 9.7Q16.4 10.5 15.6 10.5Q14.8 10.5 14.8 9.7Q14.8 8.9 15.6 8.9Z"/>
+        </symbol>
+    </defs></svg>
+
+    <h1>Diseñar una posición</h1>
+    <div class="layout">
+        <div id="board-col">
+            <div id="board-wrap"></div>
+            <div class="editor-palette" id="palette"></div>
+        </div>
+        <aside id="panel">
+            <div id="editor-status"></div>
+            <div id="mode-box">
+                <label for="variant">Modalidad de ajedrez triangular</label>
+                <select id="variant"></select>
+                <label class="opt-row">Turno a mover
+                    <label class="radio-group">
+                        <input type="radio" name="turn" value="w" checked> Blancas
+                    </label>
+                    <label class="radio-group">
+                        <input type="radio" name="turn" value="b"> Negras
+                    </label>
+                </label>
+            </div>
+            <div id="editor-actions">
+                <button id="btn-clear">Vaciar tablero</button>
+                <button id="btn-initial">Posición inicial</button>
+                <button id="btn-export">Exportar posición (.json)</button>
+                <button id="btn-import">Importar posición (.json)</button>
+                <input type="file" id="file-import" accept=".json,application/json" hidden>
+                <button id="btn-play" class="play-btn">Jugar esta posición</button>
+            </div>
+            <div id="editor-message" class="editor-message"></div>
+            <details id="help">
+                <summary>Ayuda</summary>
+                <ul>
+                    <li>Elige una pieza en la <b>paleta de la izquierda</b> (blancas en la fila superior, negras en la inferior, y una goma de borrar).</li>
+                    <li>Haz <b>clic en una casilla</b> para colocar la pieza elegida. Haz clic de nuevo sobre la misma pieza para quitarla (toggle).</li>
+                    <li><b>Clic derecho</b> sobre una casilla la vacía siempre, sin importar la pieza elegida.</li>
+                    <li><b>Vaciar tablero</b> borra todas las piezas de golpe.</li>
+                    <li><b>Posición inicial</b> coloca las piezas en su posición de arranque para la modalidad activa.</li>
+                    <li><b>Exportar</b> descarga la posición como archivo `.json`; puedes volver a <b>importarla</b> después.</li>
+                    <li><b>Jugar esta posición</b> (exige un rey de cada color) carga la posición en la partida principal.</li>
+                    <li><a href="index.html" class="back-link">← Volver al juego</a></li>
+                </ul>
+            </details>
+        </aside>
+    </div>
+
+    <script src="geometry.js"></script>
+    <script src="variants.js"></script>
+    <script src="rules.js"></script>
+    <script src="saveload.js"></script>
+    <script src="editor.js"></script>
+</body>
+</html>

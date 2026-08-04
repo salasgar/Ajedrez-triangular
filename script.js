@@ -1367,6 +1367,38 @@ function applyVariant(id, empezarPartida = true) {
 
 variantSelect.addEventListener('change', () => applyVariant(variantSelect.value));
 
+// Carga una posición diseñada en el editor, si se pasa ?posicion=1 en la URL.
+function tryLoadDesignedPosition() {
+  const url = new URL(window.location);
+  if (url.searchParams.get('posicion') !== '1') return;
+
+  // Limpia la URL para que no se vuelva a cargar la posición
+  history.replaceState({}, '', window.location.pathname);
+
+  const raw = localStorage.getItem(DESIGN_POSITION_KEY);
+  if (!raw) return;
+
+  try {
+    const data = JSON.parse(raw);
+    if (!data || !data.variant || !data.board) return;
+    localStorage.removeItem(DESIGN_POSITION_KEY);
+
+    // Cambia a la modalidad de la posición sin iniciar partida nueva
+    applyVariant(data.variant, false);
+
+    // Carga el tablero diseñado
+    game.board = new Map(data.board);
+    game.turn = data.turn || 'w';
+    game.history = [snapshot()];
+    game.histIndex = 0;
+    gamePaused = true;
+    clearSelection();
+    render();
+  } catch {
+    // Ignora si el JSON está corrupto
+  }
+}
+
 document.getElementById('new-game').addEventListener('click', () => {
   // Si ya estaba en pausa sin ninguna jugada hecha, pulsar "Nueva partida"
   // no reinicia nada nuevo: se interpreta como que el usuario quiere arrancar.
@@ -1658,3 +1690,4 @@ newGame();
 render();
 applyModeFromUI();
 refreshSaveList();
+tryLoadDesignedPosition();

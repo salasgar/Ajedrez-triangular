@@ -90,23 +90,10 @@ function castleMoves(board, kingKey, piece) {
   return out;
 }
 
-function newGame() {
-  game = {
-    board: new Map(),
-    variant: V.id,                  // con qué reglas se juega
-    turn: 'w',
-    capturedBy: { w: [], b: [] },   // piezas capturadas POR cada color
-    lastMove: null,                 // {from, to} (keys de casilla)
-    enPassant: null,                // {targetKey, pawnKey} si cabe captura al paso
-    status: 'playing',              // playing | check | checkmate | stalemate
-                                    // | repetition | fifty | material (tablas)
-    winner: null,
-    clock: 0,                       // medias jugadas sin captura ni peón (regla de los 50)
-    history: [],                    // instantáneas del estado tras cada jugada
-    histIndex: 0,                   // posición actual dentro del historial
-  };
+function initialPosition() {
+  const board = new Map();
   const put = (cell, color, type) =>
-    game.board.set(cell.key, { type, color, moved: false });
+    board.set(cell.key, { type, color, moved: false });
 
   if (V.position) {
     // Modalidad que da la posición inicial casilla a casilla (Trigonal).
@@ -129,6 +116,24 @@ function newGame() {
     for (const cell of wPawns) put(cell, 'w', 'P');
     for (const cell of bPawns) put(cell, 'b', 'P');
   }
+  return board;
+}
+
+function newGame() {
+  game = {
+    board: initialPosition(),
+    variant: V.id,                  // con qué reglas se juega
+    turn: 'w',
+    capturedBy: { w: [], b: [] },   // piezas capturadas POR cada color
+    lastMove: null,                 // {from, to} (keys de casilla)
+    enPassant: null,                // {targetKey, pawnKey} si cabe captura al paso
+    status: 'playing',              // playing | check | checkmate | stalemate
+                                    // | repetition | fifty | material (tablas)
+    winner: null,
+    clock: 0,                       // medias jugadas sin captura ni peón (regla de los 50)
+    history: [],                    // instantáneas del estado tras cada jugada
+    histIndex: 0,                   // posición actual dentro del historial
+  };
   game.history = [snapshot()];
   game.histIndex = 0;
 }
