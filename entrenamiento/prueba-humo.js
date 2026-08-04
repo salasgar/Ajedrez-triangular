@@ -2,7 +2,7 @@
 // por material, y el circuito serializar -> validar -> aplicar.
 'use strict';
 const fs = require('fs'), path = require('path');
-const REPO = '/Users/salasgar/Documents/git/Ajedrez-triangular';
+const REPO = path.join(__dirname, '..');
 const src = ['geometry.js','variants.js','rules.js','ai.js','saveload.js']
   .map(f => fs.readFileSync(path.join(REPO,f),'utf8')).join('\n');
 let fallos = 0;
@@ -106,6 +106,24 @@ comprueba('las 8 columnas llegan enteras de la fila 1 a la 8',
   'abcdefgh'.split('').every(l =>
     [1, 2, 3, 4, 5, 6, 7].every(n =>
       cellFromName(l + n).pawnAdv.w[0] === cellFromName(l + (n + 1)))));
+setVariant('salas');
+
+// 5bis2. SALAS v4: la dama con las tres familias de rayos.
+setVariant('salas-v4');
+comprueba('el hexágono v4 son 96 triángulos',
+  CELLS.length === 96 &&
+  [...new Set(CELLS.map(c => c.b))].length === 8);
+// El rey de v4 es "la dama, pero una casilla cada vez": debe coincidir
+// exactamente con las 12 vecinas por arista y vértice, verificado script.
+comprueba('el rey llega exactamente a un paso de dama, desde las 96 casillas',
+  CELLS.every(cell => {
+    const unPaso = new Set(cell.rays.Q.map(r => r[0]));
+    return unPaso.size === cell.leaps.K.length &&
+      cell.leaps.K.every(t => unPaso.has(t));
+  }));
+newGame();
+comprueba('reparte 40 piezas y tiene ' + movesForSide(game.board, 'w', null).length + ' jugadas de salida',
+  game.board.size === 40 && movesForSide(game.board, 'w', null).length > 0);
 setVariant('salas');
 
 // 5c. las otras modalidades arrancan y generan jugadas

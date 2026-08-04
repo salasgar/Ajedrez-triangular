@@ -1,4 +1,4 @@
-// modalidades.js — Comprueba que las cinco modalidades son correctas.
+// modalidades.js — Comprueba que todas las modalidades son correctas (seis en total).
 //
 // Herramienta de desarrollo, se ejecuta a mano: `node entrenamiento/modalidades.js`.
 //
