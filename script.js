@@ -392,6 +392,19 @@ function recentCaptureLen(color, turn) {
   return after > before ? after : -1;
 }
 
+// La pieza que se comió en la jugada `idx` del historial, o null si esa jugada
+// no fue captura. Se deduce comparando capturedBy con la entrada anterior, como
+// hace recentCaptureLen: el motor no guarda la comida en lastMove y no hace
+// falta que lo haga, y así las partidas guardadas de antes también la enseñan.
+function piezaComidaEn(idx) {
+  const h = game.history[idx], antes = game.history[idx - 1];
+  if (!h || !antes || !h.lastMove) return null;
+  const quien = rival(h.turn);   // el que movió, no el que mueve ahora
+  const lista = h.capturedBy[quien];
+  return lista.length > antes.capturedBy[quien].length
+    ? lista[lista.length - 1] : null;
+}
+
 function renderCaptured(el, color, turn, capturedBy) {
   el.innerHTML = '';
   const recentLen = recentCaptureLen(color, turn);
@@ -441,6 +454,61 @@ function makePieceNode(type, color, cx, cy) {
   }
   node.setAttribute('class', cls);
   return node;
+}
+
+// Quien haya pedido al sistema que no le muevan cosas en pantalla no recibe ni
+// el destello de la captura (la insignia sí: informa, no adorna).
+const sinAnimacion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// Insignia de captura: la pieza que se acaba de comer, en miniatura dentro de
+// un círculo rojo, como un superíndice de la pieza que la ha comido. Se queda
+// hasta la jugada siguiente —igual que el resaltado .last-move—, porque un
+// efecto que se desvanece no sirve de nada a quien estaba mirando otra cosa;
+// lo que solo pasa una vez, con la jugada recién hecha, es el destello.
+function makeCaptureBadge(pieza, cell, destellar) {
+  // Arriba a la derecha del centro de la casilla. En los ▲ el hueco de arriba
+  // es el estrecho (el vértice), así que la insignia baja un poco. Al voltear
+  // el tablero un ▲ se ve como un ▽, de ahí `arriba` y no `cell.up`.
+  const arriba = boardFlipped ? !cell.up : cell.up;
+  const dx = 12, dy = arriba ? -7 : -12;
+
+  const g = document.createElementNS(SVG_NS, 'g');
+  // El mismo truco que las piezas: la rotación propia cancela la del tablero
+  // volteado, así que la insignia sale derecha, y como ambas son de 180° el
+  // desplazamiento (dx, dy) conserva su signo EN PANTALLA.
+  const giro = boardFlipped ? `rotate(180 ${cell.cx} ${cell.cy}) ` : '';
+  g.setAttribute('transform', `${giro}translate(${cell.cx + dx} ${cell.cy + dy})`);
+
+  const destello = destellar && !sinAnimacion.matches;
+  if (destello) {
+    const aura = document.createElementNS(SVG_NS, 'circle');
+    aura.setAttribute('class', 'captura-aura');
+    aura.setAttribute('r', 7);
+    // se borra por reloj y no con animationend: si la animación no llega a
+    // arrancar (la pestaña estaba en segundo plano) ese evento no llega nunca
+    // y la onda se quedaría colgada del SVG
+    setTimeout(() => aura.remove(), 800);
+    g.appendChild(aura);
+  }
+
+  // La escala del pop va en un grupo aparte porque la transform de CSS
+  // sustituiría al atributo transform, que es el que coloca la insignia. Va con
+  // @keyframes y no con el doble rAF de las piezas —donde hace falta porque la
+  // casilla de salida es un dato variable— para que la insignia no pueda
+  // quedarse encogida si nunca llega el fotograma que la devuelve a su tamaño.
+  const marca = document.createElementNS(SVG_NS, 'g');
+  marca.setAttribute('class', 'captura-marca' + (destello ? ' captura-nueva' : ''));
+  const disco = document.createElementNS(SVG_NS, 'circle');
+  disco.setAttribute('class', 'captura-disco');
+  disco.setAttribute('r', 7);
+  marca.appendChild(disco);
+  const mini = document.createElementNS(SVG_NS, 'g');
+  mini.setAttribute('class', 'captura-mini');
+  mini.setAttribute('transform', 'scale(0.5)');
+  mini.appendChild(makePieceNode(pieza.type, pieza.color, 0, 0));
+  marca.appendChild(mini);
+  g.appendChild(marca);
+  return g;
 }
 
 // Dibujo del tablero (casillas resaltadas y piezas). Va aparte de render()
@@ -515,6 +583,16 @@ function drawBoard() {
       node.setAttribute('transform', giro);
     }
     piecesLayer.appendChild(node);
+  }
+  // Insignia de la pieza recién comida, encima de todas las piezas. Vive
+  // mientras la captura sea la última jugada mostrada; como piecesLayer se
+  // vacía en cada repintado, no hay nada que limpiar.
+  if (lastMove && !analysisHover) {
+    const comida = piezaComidaEn(reviewIndex === null ? game.histIndex : reviewIndex);
+    if (comida) {
+      piecesLayer.appendChild(
+        makeCaptureBadge(comida, CELL_MAP.get(lastMove.to), !!animar));
+    }
   }
   updateCellLabels(board);
 }
@@ -1398,6 +1476,10 @@ function tryLoadDesignedPosition() {
     // Ignora si el JSON está corrupto
   }
 }
+
+document.getElementById('btn-design').addEventListener('click', () => {
+  window.location.href = 'editor.html';
+});
 
 document.getElementById('new-game').addEventListener('click', () => {
   // Si ya estaba en pausa sin ninguna jugada hecha, pulsar "Nueva partida"

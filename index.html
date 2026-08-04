@@ -136,6 +136,12 @@
                 </label>
             </div>
             <button id="new-game">Nueva partida</button>
+            <!-- Empezar desde una posición inventada es otra forma de empezar
+                 partida, no una regla del juego: por eso va aquí y no en el
+                 desplegable "Reglas". -->
+            <div class="save-row">
+                <button id="btn-design" title="Colocar las piezas a mano y jugar a partir de esa posición">Diseñar una posición…</button>
+            </div>
             <div id="save-box">
                 <label for="save-select">Partidas guardadas</label>
                 <select id="save-select">
@@ -170,7 +176,6 @@
                     <li>Jaque, jaque mate y ahogado funcionan como en el ajedrez clásico.</li>
                     <li><b>Tablas</b>: además del ahogado, la partida acaba en tablas si la misma posición aparece por tercera vez o tras 50 jugadas de cada bando sin capturas ni movimientos de peón.</li>
                     <li><a href="valores-piezas.html"><b>Valores de piezas</b></a>: parámetros de evaluación del motor en cada modalidad.</li>
-                    <li><a href="editor.html"><b>Diseñar una posición</b></a>: editor para crear y experimentar con posiciones personalizadas.</li>
                 </ul>
             </details>
         </aside>
