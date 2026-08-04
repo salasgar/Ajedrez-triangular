@@ -154,17 +154,17 @@ const KOVAL_R = ['R', 'Q'], KOVAL_B = ['B', 'Q'];
 // OJO CON LOS NOMBRES. El `id` de cada modalidad es su identificador
 // PERMANENTE: viaja dentro de las partidas guardadas, de los libros de
 // aperturas y del corpus de entrenamiento, así que no se toca aunque cambie el
-// nombre visible. Por eso la que se enseña como «Salas 2026 v2» sigue siendo
-// `salas` por dentro, y la v1, `salas-2026`.
+// nombre visible. Por eso la que se enseña como «Salas v2» sigue siendo
+// `salas` por dentro, y la v3, `salas-v4`.
 const VARIANTS = {
 
   // =========================================================================
-  // Salas v3 (2026) — la modalidad de casa.
+  // Salas v2 (2026) — la modalidad de casa.
   // =========================================================================
   salas: {
     id: 'salas',
-    name: 'Salas v3 (2026)',
-    full: 'Ajedrez triangular de Salas v3 (2026)',
+    name: 'Salas v2 (2026)',
+    full: 'Ajedrez triangular de Salas v2 (2026)',
     board: 'hex4',
     // La fila del borde completa (9 casillas), de izquierda a derecha para las
     // blancas. Los índices pares son ▽ y los impares ▲. Las negras usan la
@@ -224,12 +224,12 @@ const VARIANTS = {
   },
 
   // =========================================================================
-  // Salas v4 (2026) — experimental: dama con las tres familias de rayos.
+  // Salas v3 (2026) — experimental: dama con las tres familias de rayos.
   // =========================================================================
   'salas-v4': {
     id: 'salas-v4',
-    name: 'Salas v4 (2026)',
-    full: 'Ajedrez triangular de Salas v4 (2026)',
+    name: 'Salas v3 (2026)',
+    full: 'Ajedrez triangular de Salas v3 (2026)',
     board: 'hex4',
     backLayout: ['R', 'B', 'N', 'K', 'E', 'Q', 'B', 'N', 'R'],
     promotionChoices: ['Q', 'R', 'E', 'B', 'N'],
@@ -276,24 +276,6 @@ const VARIANTS = {
       pieceValues: { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 1380, K: 0 },
       mobility: 4,
     },
-  },
-
-  // =========================================================================
-  // Salas v2 (2026) — el reglamento de 2026 tal como se publicó, sin la regla de
-  // coronación de flanco. Se conserva para poder comparar las dos.
-  // =========================================================================
-  'salas-2026': {
-    id: 'salas-2026',
-    name: 'Salas v2 (2026)',
-    full: 'Ajedrez triangular de Salas v2 (2026), sin coronación de flanco',
-    board: 'hex4',
-    inherits: 'salas',
-    edgePromotion: false,
-    note: 'El reglamento tal como se publicó, sin la coronación de flanco. Aquí ' +
-      'los dos peones de los extremos no pueden coronar: llegan a la penúltima ' +
-      'fila y se quedan ahí para siempre, salvo que puedan capturar.',
-    // Igual que el de Salas salvo el peón, que aquí no tiene la regla nueva.
-    help: null,
   },
 
   // =========================================================================

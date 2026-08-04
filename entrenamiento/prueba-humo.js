@@ -52,9 +52,7 @@ comprueba('las opciones de coronación de Salas son las cinco piezas',
 
 // 5b. CORONACION DE FLANCO. Un peón blanco en B7C se queda sin casilla de
 // avance: pegado al borde de arriba a la izquierda, no tiene nada enfrente.
-// Con la regla (modalidad 'salas') puede seguir en diagonal hasta B8D y
-// coronar; sin ella ('salas-2026') se queda ahí clavado para siempre, que es
-// justo el defecto geométrico que la regla corrige.
+// Con la regla puede seguir en diagonal hasta B8D y coronar.
 function peonAtascado() {
   newGame();
   game.board.clear();
@@ -69,11 +67,6 @@ const conRegla = peonAtascado();
 comprueba('con coronación de flanco, el peón de B7C avanza a B8D: ' + (conRegla.join(',') || 'nada'),
   conRegla.length === 1 && conRegla[0] === 'B8D');
 comprueba('y B8D corona', cellFromName('B8D').promoFor.w);
-setVariant('salas-2026');
-const sinRegla = peonAtascado();
-comprueba('sin la regla, ese mismo peón no tiene ninguna jugada: ' + (sinRegla.join(',') || 'nada'),
-  sinRegla.length === 0);
-setVariant('salas');
 
 // 5bis. SALAS 1998: el tablero rectangular y la colocación tradicional.
 setVariant('salas-1998');

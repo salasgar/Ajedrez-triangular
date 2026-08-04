@@ -10,7 +10,12 @@ limpiador de `/tmp` de macOS purga por antigüedad.
 |---|---|
 | `arena.js` | Match emparejado entre dos configuraciones arbitrarias del motor (`CFG_A`/`CFG_B` por entorno). Misma apertura con colores invertidos; registra el balance material de las partidas cortadas para adjudicarlas en el análisis. |
 | `analiza.js` | Marcador de una tanda: elo con IC 95%, z, p-valor; el margen de adjudicación se pasa como argumento para poder comprobar la robustez. |
-| `aperturas.js` | Genera `libro.json`: 400 aperturas fijas de 6 jugadas al azar sin capturas, para que todas las ramas comparen sobre las mismas posiciones. |
+| `aperturas.js` | Genera el libro de **una** modalidad (`MODALIDAD=dekle node aperturas.js > libro-dekle.json`): 400 aperturas fijas de 6 jugadas al azar sin capturas, para que todas las ramas comparen sobre las mismas posiciones. |
+| `elo.js` | La aritmética que comparten `analiza.js` y `escalera.js`: puntos, elo, intervalo, esperado. |
+| `escalera.js` | Encadena varios matches contiguos y dictamina cada escalón: imperceptible (< 50 elo), jugable, o insalvable (> 400). |
+| `versus.js` | Como `arena.js`, pero compara dos **versiones del código** en contextos aislados (`motor-viejo/` contra el de ahora). |
+| `modalidades.js` | Verifica las cinco modalidades por diferencia: generador rápido contra el lento, tablas de ataque contra el cálculo directo, peones sin salida, y que la IA devuelva jugada legal. |
+| `valores-pdf.js` | Escribe `docs/valores-piezas.pdf`, la tabla de valores de las piezas de cada modalidad, leída de `variants.js`. Con `--check` no escribe: falla si el PDF se ha quedado atrás. |
 | `corpus.js` | Fase cara del ajuste tipo Texel: autojuego que vuelca posiciones etiquetadas con el resultado (una línea JSON por posición). Shards paralelos por `SEED`; `ADJ_MARGIN` adjudica por material las partidas cortadas (imprescindible a prof. ≥3). |
 | `ajusta.js` | Fase barata: la regresión sobre un corpus ya generado. `--features=mat|matmob|matpos|all`, `--holdout` para validación fuera de muestra, `--reg` para estabilidad. |
 | `perft.js` | `check` (perft + dorados de búsqueda sobre 21 posiciones), `bench`, `divide`, `gen`. Lo que verifica que una optimización del motor no cambió lo que juega. |
@@ -21,7 +26,8 @@ Antes de publicar (el repo se sirve con GitHub Pages desde la rama, así que
 un push despliega la aplicación en vivo):
 
 ```sh
-node perft.js check && node test-worker.js && node prueba-humo.js
+node perft.js check && node test-worker.js && node prueba-humo.js &&
+  node modalidades.js && node valores-pdf.js --check
 ```
 
 ## Qué son los «dorados»
@@ -206,11 +212,54 @@ sigue por donde iba.
 
 ```sh
 ./instalar-servicio.sh             # instalar y arrancar
+NUCLEOS=2 ./instalar-servicio.sh   # igual, pero ocupando solo dos núcleos
 ./instalar-servicio.sh estado      # ¿corre? ¿cuántas partidas lleva?
 ./instalar-servicio.sh resultados  # elo/IC/p de lo jugado hasta ahora
 ./instalar-servicio.sh parar       # detener (sigue instalado)
 ./instalar-servicio.sh quitar      # desinstalar del arranque
 ```
+
+**`NUCLEOS` es el mando para decidir cuánta máquina se lleva esto** (6 por
+defecto). Cada proceso es de un solo hilo y ocupa un núcleo entero, así que
+`NUCLEOS=2` son dos núcleos de los ocho; las tandas y los ficheros son
+exactamente los mismos, solo que en más oleadas. Lo único que cambia es el
+reloj de pared, y de forma proporcional: la fase de corpus de la ronda 15 son
+2 horas de CPU por modalidad, o sea 20 minutos con los seis procesos y una
+hora con dos. El valor queda escrito en el plist, así que sobrevive a los
+reinicios y a `parar`/`arrancar`; para cambiarlo se reinstala.
+
+### Horario: muchos núcleos de noche, pocos de día
+
+`horario-nucleos.txt`, si existe, manda sobre `NUCLEOS`. Lleva una línea con
+tres números: el instante límite en segundos desde 1970, los núcleos hasta ese
+momento y los de después.
+
+```
+1785742343 8 2      # 8 núcleos hasta las 09:32, luego 2
+```
+
+**Es una hora absoluta a propósito, no un temporizador.** Un `sleep 7h` se
+muere con el ordenador y al encenderlo otra vez volvería a contar siete horas
+desde cero, que es lo contrario de lo que se quiere. Con una fecha en un
+fichero, el guion mira el reloj al arrancar y sabe en qué tramo está, tanto si
+el ordenador ha estado apagado cinco minutos como dos días. Pasado el límite se
+queda en el segundo número indefinidamente.
+
+El cambio de tramo no espera a que termine nada: al llegar la hora se **cortan
+los procesos que sobran del cupo**, empezando por los últimos lanzados. Si no,
+ocho arenas recién empezadas tendrían el ordenador ocupado horas después de la
+hora convenida. Es barato porque todo se reanuda: una arena guarda cada partida
+según la termina y pierde como mucho la que estuviera jugando; un shard de
+corpus pierde sus 20 minutos, porque su línea de resumen es lo último que
+escribe. Lo cortado no se da por hecho, así que la pasada siguiente lo retoma.
+
+`./instalar-servicio.sh estado` dice en qué tramo va y hasta cuándo.
+
+Lo que **no** hay que hacer es bajar la banda de prioridad (ver más abajo). Y
+si el limitador se escribiera con `jobs -rp`, que es lo natural, no limitaría
+nada: en un zsh no interactivo el control de trabajos está apagado y esa lista
+sale siempre vacía, así que arrancarían todos de golpe sin dar ningún error.
+Por eso `entrenamiento-continuo.sh` lleva la cuenta de los PID a mano.
 
 Dos cosas que conviene saber:
 
@@ -222,9 +271,15 @@ Dos cosas que conviene saber:
 - **El servicio no trabaja dentro del repo.** macOS no deja que un LaunchAgent
   lea `~/Documents`, así que `instalar-servicio.sh` copia el motor y las
   herramientas a `~/Library/Application Support/ajedrez-triangular-entrenamiento`
-  y trabaja ahí (`MOTOR=` le dice a `arena.js` dónde está el motor). La copia
-  es una foto fija: para entrenar con una versión nueva del motor, vuelve a
-  ejecutar `./instalar-servicio.sh`.
+  y trabaja ahí (`MOTOR=` le dice dónde está el motor; lo entienden `arena.js`,
+  `corpus.js`, `ajusta.js` y `aperturas.js`, que antes tenían la ruta del repo
+  escrita a fuego y por eso no podían correr como servicio). La copia es una
+  foto fija: para entrenar con una versión nueva del motor, vuelve a ejecutar
+  `./instalar-servicio.sh`.
+- **Desde la ronda 15 el servicio hace el ciclo entero solo**: corpus,
+  regresión y arena, sin copiar a mano el `CFG=` de una fase a la siguiente.
+  Antes la fase 1 había que lanzarla desde el repo porque las herramientas no
+  sabían salir de él.
 - **Nunca `ProcessType=Background` en el plist.** Parece lo correcto para una
   tarea de fondo y es una trampa: en Apple Silicon esa banda confina el
   proceso a los núcleos de eficiencia. Medido con `taskpolicy -b`: 208 → 1429
@@ -339,7 +394,13 @@ Arreglado añadiendo `nodes`, `temperature` y `depth`; comprobado contando
 firmas y limpiezas antes y después (1 firma / 1 limpieza en 12 jugadas → 2
 firmas / 12 limpiezas). Los datos malos están en `r13-tt-compartida/`.
 
-## Ronda 14: la curva de la temperatura (en curso)
+## Ronda 14: la curva de la temperatura (a medias, detrás de la 15)
+
+Tiene hechas `t_poda`, `t00_10` y `t10_25`, con 400 partidas cada una, y le
+faltan `t25_45`, `t45_70` y `t70_150`. En el guion ha bajado detrás de la ronda
+15 —no está comentada ni desactivada: retoma sus tres ramas en cuanto la 15
+cierre—, porque un valor de pieza inventado se nota jugando y una etiqueta de
+nivel mal calibrada, mucho menos.
 
 Si la temperatura 70 cuesta ~800 elo, es un mando demasiado brusco para un
 peldaño, y hay que saber cómo se comporta entre 0 y 70. Presupuesto congelado
@@ -358,6 +419,70 @@ lateral de la implementación del mando que se quiere graduar.
 
 Comprobación incluida: los cinco escalones de 0 a 70 tienen que sumar los
 ~798 elo que la ronda 13 midió de un tirón.
+
+## Ronda 15: los valores de las piezas de cada modalidad (la siguiente)
+
+Es la primera que ejecuta el guion de las que quedan vivas: va **antes** que la
+14, que se quedó a medias.
+
+Las catorce rondas anteriores midieron el ajedrez de Salas, y ninguna lo dijo:
+no exportaban `MODALIDAD`, así que jugaban la de por defecto. Desde que hay
+cinco modalidades eso ya no vale. **Un log sin modalidad en la cabecera es de
+Salas, por descarte; de la 15 en adelante, todos la llevan escrita** —en cada
+proceso, en el nombre de cada fichero y en la cabecera de cada log.
+
+De las cinco, solo Salas tiene los valores de las piezas medidos. Los otros
+están puestos a ojo, y se nota en cómo aparecen escritos en `variants.js`: la
+torre de 1998 «se copia del elefante», su dama «se estima con la misma
+proporción», el unicornio de Dekle vale 400 «como la torre» porque hay que
+poner algo.
+
+| modalidad | valores | de dónde salen |
+|---|---|---|
+| `salas` | P100 N265 B335 E358 R483 Q981 | medidos, confirmados en la arena (ronda 6) |
+| `salas-1998` | P100 N265 B335 R358 Q810 | a ojo |
+| `dekle` | P100 N300 B320 U400 R400 Q800 | a ojo |
+| `trigonal` | P100 N300 B400 R500 Q900 | a ojo, los del ajedrez normal |
+
+Y no hay razón para esperar que se parezcan: el alfil de Trigonal va en
+zigzag, el de Dekle no está atado al color, y en 1998 el tablero tiene 64
+casillas en vez de 96, así que las mismas piezas tienen otro alcance. Un valor
+de pieza mal puesto es de los errores que peor se ven y peor sientan: el motor
+busca perfectamente, pero hacia donde no debe.
+
+
+**Una modalidad entera cada vez**, con el ciclo de ajuste completo —el mismo de
+la ronda 6— y sin intervención manual entre fases:
+
+| fase | qué hace | procesos |
+|---|---|---|
+| 0 | el libro de aperturas de la modalidad, si falta | 1 |
+| 1 | corpus de autojuego (`corpus.js`, `ADJ_MARGIN=300`) | 6 shards × 20 min |
+| 2 | la regresión (`ajusta.js`), dos veces: `mat` y `all` | 2, segundos |
+| 3 | arena: cada candidato contra los valores **vigentes** | 2 ramas × 3 shards |
+
+Tres cosas que hacen que la ronda signifique algo:
+
+- **La fase 3 es la que decide.** La regresión minimiza el error al predecir el
+  resultado de una partida, que no es lo mismo que jugar mejor: en la ronda 6
+  el candidato de la regresión perdió contra los valores de entonces. Nada
+  entra en `variants.js` sin ganar antes en la arena.
+- **Los dos candidatos se miden contra el mismo rival, no entre sí.** Así las
+  dos preguntas —¿mejora el material?, ¿aportan algo los pesos posicionales?—
+  se contestan de una tanda. Comparándolos entre ellos no se sabría si alguno
+  mejora lo que ya hay.
+- **El candidato se juega con el presupuesto de la arena, no con el del
+  corpus.** `ajusta.js` imprime su `CFG=` con `"depth":2`, que es como se jugó
+  el autojuego; pasarlo tal cual haría que la arena comparase además dos
+  profundidades y no se sabría a qué atribuir la diferencia. El guion se queda
+  solo con lo ajustado (valores, pesos posicionales, peso de movilidad) y le
+  pega el presupuesto fijo de 4.500 nodos.
+
+Se reanuda a tres niveles, porque son horas de máquina: un shard de corpus está
+hecho cuando tiene su línea de resumen (lo último que escribe `corpus.js`), una
+arena se salta los pares que ya estén en su log, y una modalidad no se da por
+terminada porque los procesos hayan vuelto sino porque las 840 partidas están
+en el disco (`r15/<modalidad>-hecha.txt`).
 
 ## Ronda 11: ¿baja el peso de movilidad con la profundidad? NO
 
@@ -385,11 +510,48 @@ Consecuencia práctica: **no hace falta un `mobilityWeight` por nivel**.
 sería afinar sobre nada. Junto con la ronda 10 (pesos 3 y 4 indistinguibles a
 profundidad 5), el peso 4 único para todos los niveles queda confirmado.
 
+## La tabla de valores en PDF
+
+`docs/valores-piezas.pdf` es la tabla de los valores de las piezas de todas las
+modalidades, con el tablero de cada una y de dónde salen sus números. **Se
+genera, no se escribe a mano**: `node valores-pdf.js` la lee del bloque
+`engine` de `variants.js`, que es la única fuente de verdad. Una tabla copiada
+a mano estaría mal al segundo cambio y nadie se enteraría, porque nada la
+compara con el motor.
+
+Para que no se quede atrás sola, hay dos redes:
+
+- **El gancho de pre-commit** (`.git/hooks/pre-commit`, que instala
+  `instalar-servicio.sh` desde `pre-commit.sh`) regenera el PDF y lo mete en el
+  mismo commit cuando el commit toca `variants.js`. Los ganchos no viajan
+  dentro del repo, de ahí la copia.
+- **`node valores-pdf.js --check`** falla si el PDF no refleja los valores de
+  hoy. Va en la lista de comprobaciones de antes de publicar. Ignora la fecha
+  de generación, que cambia todos los días sin que cambie ningún valor.
+
+Cuando una ronda cambie valores, hay que tocar también
+`valores-origen.json`: es la nota de cada fila («medidos y confirmados en la
+arena», «estimados a ojo»), y es lo único de la tabla que no se puede deducir
+del código.
+
+El PDF se escribe a mano byte a byte (unas 60 líneas en `valores-pdf.js`), sin
+librerías, como todo lo demás del repo. Un aviso por si se edita: el texto va
+en latin1, así que los guiones largos y las comillas tipográficas hay que
+sustituirlos antes o desaparecen de la página sin dar ningún error.
+
 ## Datos
 
 - `corp/` — corpus de posiciones del ciclo 2 (autojuego nivel 4, prof. 3).
-- `libro.json` — libro de aperturas (regenerado 2026-07-27; el original se lo
-  llevó el limpiador de /tmp, la comparabilidad dentro de cada tanda no cambia).
+- `libro-<modalidad>.json` — un libro de aperturas **por modalidad**. Las
+  jugadas son claves de casilla y no valen de una a otra: de 100 aperturas de
+  Salas solo 44 son legales en Dekle (las de peón, que se mueve igual) y
+  ninguna en Trigonal, que ni siquiera tiene el mismo tablero. Un libro
+  equivocado no revienta, sesga la muestra en silencio, así que `arena.js` coge
+  por defecto el de su modalidad y comprueba al arrancar que las primeras 20
+  aperturas sean legales.
+- `libro.json` — el libro viejo, idéntico a `libro-salas.json` (regenerado
+  2026-07-27; el original se lo llevó el limpiador de /tmp). Lo siguen usando
+  `ronda6-fase3.sh`, `ronda7-versus.sh` y `ruido-anotaciones.js`.
 - `r4/` `r5/` `r6/` — logs de las confirmaciones (prof. 3, prof. 4 y ciclo 2).
   Los logs de la ablación original (prof. 2) se perdieron en la purga de /tmp;
   sus conclusiones están en el mensaje del commit `22407e1`.

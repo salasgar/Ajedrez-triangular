@@ -100,12 +100,6 @@ for (const id of Object.keys(VARIANTS)) {
     (difMov ? ', ' + difMov + ' MAL' : '') + ')', difMov === 0);
 
   // 3) todo peón debe poder coronar solo avanzando, desde cualquier casilla.
-  //
-  // La única modalidad que NO lo cumple es el reglamento original de Salas, y
-  // lo incumple a propósito: es el defecto geométrico que motiva la coronación
-  // de flanco. Ojo con deducirlo de edgePromotion, que sería lo intuitivo:
-  // Trigonal tampoco la tiene y aun así no atasca a nadie, porque allí el peón
-  // corona al llegar al final de su carril y siempre hay final de carril.
   const atascados = CELLS.filter(c => {
     if (c.promoFor.w) return false;
     const visto = new Set([c.key]), pila = [c];
@@ -116,13 +110,7 @@ for (const id of Object.keys(VARIANTS)) {
     }
     return true;
   });
-  if (V.id === 'salas-2026') {
-    comprueba('el reglamento original deja ' + atascados.length +
-      ' casillas sin salida (el defecto que corrige la coronación de flanco)',
-      atascados.length === 24);
-  } else {
-    comprueba('todo peón blanco puede coronar solo avanzando', atascados.length === 0);
-  }
+  comprueba('todo peón blanco puede coronar solo avanzando', atascados.length === 0);
 
   // 4) el motor devuelve una jugada legal
   newGame();

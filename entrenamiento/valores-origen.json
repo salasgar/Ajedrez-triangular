@@ -1,7 +1,6 @@
 {
   "_comentario": "De dónde salen los valores de cada modalidad. Lo lee valores-pdf.js para la nota que va bajo cada fila; es lo único de esa tabla que no se puede deducir del código. Al cerrar una ronda que cambie valores, cámbialo aquí también.",
   "salas": "medidos con regresión sobre autojuego y confirmados en la arena (ronda 6)",
-  "salas-2026": "hereda el motor de Salas (2026); solo cambia la coronación de flanco",
   "salas-v4": "estimados a ojo, pendientes de medir",
   "salas-1998": "estimados a ojo, pendientes de medir (ronda 15)",
   "dekle": "estimados a ojo, pendientes de medir (ronda 15)",
