@@ -146,6 +146,7 @@ function setTrigonalPawns() {
 // Conjuntos de tipos que atacan por cada haz de rayos, como constantes para no
 // crear arrays nuevos dentro de la búsqueda.
 const SALAS_R = ['R', 'Q'], SALAS_E = ['E', 'Q'], SALAS_B = ['B'];
+const SALAS4_R = ['R', 'Q'], SALAS4_E = ['E', 'Q'], SALAS4_B = ['B', 'Q'];
 const S98_R = ['R', 'Q'], S98_B = ['B', 'Q'];
 const DEKLE_R = ['R', 'Q'], DEKLE_B = ['B', 'Q'];
 const KOVAL_R = ['R', 'Q'], KOVAL_B = ['B', 'Q'];
@@ -218,6 +219,61 @@ const VARIANTS = {
     ],
     engine: {
       pieceValues: { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 981, K: 0 },
+      mobility: 4,
+    },
+  },
+
+  // =========================================================================
+  // Salas v4 (2026) — experimental: dama con las tres familias de rayos.
+  // =========================================================================
+  'salas-v4': {
+    id: 'salas-v4',
+    name: 'Salas v4 (2026)',
+    full: 'Ajedrez triangular de Salas v4 (2026)',
+    board: 'hex4',
+    backLayout: ['R', 'B', 'N', 'K', 'E', 'Q', 'B', 'N', 'R'],
+    promotionChoices: ['Q', 'R', 'E', 'B', 'N'],
+    castling: [
+      { king: 3, rook: 0, kingTo: 1, rookTo: 2 },
+      { king: 3, rook: 8, kingTo: 6, rookTo: 5 },
+    ],
+    edgePromotion: true,
+    setup() {
+      const filas = {
+        wBack: rowCells(1 - N), wPawns: rowCells(2 - N),
+        bBack: rowCells(N), bPawns: rowCells(N - 1),
+      };
+      return filas;
+    },
+    build() { setRowPawns(); },
+    pieces: {
+      R: { rays: c => c.rookRays },
+      B: { rays: c => c.bishopRays },
+      Q: { rays: c => c.rookRays.concat(c.bishopRays, c.elephantRays) },
+      E: { rays: c => c.elephantRays },
+      N: { leaps: c => c.knightTargets },
+      K: { leaps: c => c.kingNbrs },
+      P: { pawn: true },
+    },
+    slideGroups: () => [
+      { rays: c => c.rookRays, typeAt: () => SALAS4_R },
+      { rays: c => c.elephantRays, typeAt: () => SALAS4_E },
+      { rays: c => c.bishopRays, typeAt: () => SALAS4_B },
+    ],
+    note: 'Hexágono de 96 triángulos. La dama combina las tres familias de ' +
+      'deslizante (torre, alfil y elefante); el rey es esa misma dama a un ' +
+      'solo paso, que aquí coincide exactamente con las 12 casillas vecinas.',
+    help: [
+      ['R', '<b>Torre ♜</b>: se desliza por los tres carriles de casillas que pasan por ella, cruzando aristas.'],
+      ['B', '<b>Alfil ♝</b>: se desliza en las 6 direcciones diagonales, de vértice a vértice, siempre por triángulos de su misma orientación.'],
+      ['Q', '<b>Dama ♛</b>: combina torre, alfil y elefante.'],
+      ['N', '<b>Caballo ♞</b>: salta a las 12 casillas de orientación contraria que forman dos anillos a su alrededor; puede saltar por encima de otras piezas.'],
+      ['E', '<b>Elefante 🐘</b>: se desliza en línea recta hacia cualquiera de sus tres casillas vecinas por arista o en el sentido opuesto (6 direcciones, alternando aristas y vértices); no salta piezas.'],
+      ['K', '<b>Rey ♚</b>: un paso a cualquier casilla que toque la suya (por arista o por vértice) — es la dama a un solo paso.'],
+      ['P', '<b>Peón ♟</b>: avanza sin capturar a la casilla que tiene justo enfrente (azul) y captura en las dos casillas frontales diagonales (rojo). Puede avanzar dos veces en su primer movimiento y corona al llegar a la última fila. <b>Coronación de flanco</b>: si se queda sin casilla de enfrente, contra el borde del tablero, avanza en diagonal —sin capturar— para poder seguir coronando.'],
+    ],
+    engine: {
+      pieceValues: { P: 100, N: 265, B: 335, E: 358, R: 483, Q: 1380, K: 0 },
       mobility: 4,
     },
   },
