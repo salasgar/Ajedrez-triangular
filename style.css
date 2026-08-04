@@ -464,7 +464,8 @@ h1 {
 }
 
 #mode-box select,
-#save-box select {
+#save-box select,
+#position-box select {
     background: #1c1c1c;
     color: #eee;
     border: 1px solid #4a4a4a;
@@ -652,6 +653,8 @@ h1 {
     #mode-box select,
     #save-box select,
     #save-box button,
+    #position-box select,
+    #position-box button,
     #new-game {
         min-height: 40px;
         font-size: 0.95rem;
@@ -836,6 +839,16 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Mismo aspecto que el cajón de partidas guardadas del juego: los botones de
+   dentro son .save-row y ya heredan su estilo. */
+#position-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #bbb;
 }
 
 #editor-actions button {

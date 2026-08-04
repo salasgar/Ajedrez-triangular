@@ -219,14 +219,7 @@ function setInitialPosition() {
 }
 
 function exportPosition() {
-  const data = {
-    app: 'ajedrez-triangular',
-    kind: 'posicion',
-    version: 1,
-    variant: V.id,
-    turn: turn,
-    board: [...board],
-  };
+  const data = serializePosition(board, turn);
   const filename = `posicion-${new Date().toISOString().split('T')[0]}.json`;
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -239,24 +232,18 @@ function exportPosition() {
   URL.revokeObjectURL(url);
 }
 
-function validatePosition(data) {
-  if (!data || data.version !== 1 || data.kind !== 'posicion') return false;
-  if (!data.variant || !data.turn || !Array.isArray(data.board)) return false;
-  if (data.turn !== 'w' && data.turn !== 'b') return false;
-  const variant = VARIANTS[data.variant];
-  if (!variant) return false;
-  const forma = BOARDS[variant.board];
-  const piezas = new Set(Object.keys(variant.pieces || VARIANTS[variant.inherits].pieces));
-  for (const ent of data.board) {
-    if (!Array.isArray(ent) || ent.length !== 2) return false;
-    const [key, p] = ent;
-    const co = String(key).split(',').map(Number);
-    if (co.length !== 3 || co.some(n => !Number.isInteger(n))) return false;
-    const suma = co[0] + co[1] + co[2];
-    if (!(suma === 1 || suma === 2) || !forma.has(co[0], co[1], co[2])) return false;
-    if (!p || !piezas.has(p.type) || (p.color !== 'w' && p.color !== 'b')) return false;
-  }
-  return true;
+// Volcar un sobre en el editor: la modalidad primero, porque cambia el tablero
+// entero (y con él la paleta de piezas), y solo después el contenido.
+function aplicarPosicion(data) {
+  setVariant(data.variant);
+  board = new Map(data.board);
+  turn = data.turn;
+  document.querySelector(`input[name="turn"][value="${turn}"]`).checked = true;
+  document.getElementById('variant').value = V.id;
+  buildEditorSvg();
+  buildPalette();
+  redraw();
+  updateStatus();
 }
 
 function importPosition() {
@@ -267,20 +254,77 @@ document.getElementById('file-import').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
   readSaveFile(file, (data) => {
-    setVariant(data.variant);
-    board = new Map(data.board);
-    turn = data.turn;
-    document.querySelector(`input[name="turn"][value="${turn}"]`).checked = true;
-    buildEditorSvg();
-    buildPalette();
-    redraw();
-    updateStatus();
+    aplicarPosicion(data);
     showMessage('Posición importada correctamente.');
   }, () => {
     showMessage('Error: archivo de posición no válido.', true);
   }, validatePosition);
   e.target.value = '';
 });
+
+// --- posiciones guardadas en el navegador ---
+
+const positionSelect = document.getElementById('position-select');
+const btnOpenPos = document.getElementById('btn-open-pos');
+const btnDeletePos = document.getElementById('btn-delete-pos');
+
+function refreshPositionList(selectedName) {
+  positionSelect.innerHTML = '';
+  const empty = document.createElement('option');
+  empty.value = '';
+  empty.textContent = '— ninguna —';
+  positionSelect.appendChild(empty);
+  for (const { name, savedAt } of listPositions()) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    const fecha = savedAt
+      ? new Date(savedAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
+      : '';
+    opt.textContent = fecha ? `${name} · ${fecha}` : name;
+    positionSelect.appendChild(opt);
+  }
+  if (selectedName) positionSelect.value = selectedName;
+  actualizarBotonesPosicion();
+}
+
+function actualizarBotonesPosicion() {
+  btnOpenPos.disabled = btnDeletePos.disabled = !positionSelect.value;
+}
+
+function savePosition() {
+  const name = (prompt('Nombre de la posición:', positionSelect.value || '') || '').trim();
+  if (!name) return;
+  if (positionExists(name) &&
+      !confirm(`Ya existe una posición llamada «${name}». ¿Sobrescribirla?`)) return;
+  if (!savePositionToStorage(name, serializePosition(board, turn))) {
+    showMessage('No se pudo guardar la posición (almacenamiento lleno).', true);
+    return;
+  }
+  refreshPositionList(name);
+  showMessage(`Posición «${name}» guardada.`);
+}
+
+function openPosition() {
+  const name = positionSelect.value;
+  if (!name) return;
+  const data = loadPositionFromStorage(name);
+  if (!data) {
+    showMessage('No se pudo abrir la posición: datos dañados o incompatibles.', true);
+    return;
+  }
+  aplicarPosicion(data);
+  refreshPositionList(name);
+  showMessage(`Posición «${name}» abierta.`);
+}
+
+function deletePosition() {
+  const name = positionSelect.value;
+  if (!name) return;
+  if (!confirm(`¿Borrar la posición «${name}»?`)) return;
+  deletePositionFromStorage(name);
+  refreshPositionList();
+  showMessage(`Posición «${name}» borrada.`);
+}
 
 function showMessage(msg, isError = false) {
   const el = document.getElementById('editor-message');
@@ -301,15 +345,8 @@ function playPosition() {
     showMessage('Error: se necesita un rey blanco y uno negro para jugar.', true);
     return;
   }
-  const data = {
-    app: 'ajedrez-triangular',
-    kind: 'posicion',
-    version: 1,
-    variant: V.id,
-    turn: turn,
-    board: [...board],
-  };
-  localStorage.setItem(DESIGN_POSITION_KEY, JSON.stringify(data));
+  localStorage.setItem(DESIGN_POSITION_KEY,
+    JSON.stringify(serializePosition(board, turn)));
   window.location.href = 'index.html?posicion=1';
 }
 
@@ -369,6 +406,12 @@ document.getElementById('btn-export').addEventListener('click', exportPosition);
 document.getElementById('btn-import').addEventListener('click', importPosition);
 document.getElementById('btn-play').addEventListener('click', playPosition);
 
+document.getElementById('btn-save-pos').addEventListener('click', savePosition);
+btnOpenPos.addEventListener('click', openPosition);
+btnDeletePos.addEventListener('click', deletePosition);
+positionSelect.addEventListener('change', actualizarBotonesPosicion);
+
 buildEditorSvg();
 buildPalette();
 updateStatus();
+refreshPositionList();

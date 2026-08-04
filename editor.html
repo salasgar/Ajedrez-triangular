@@ -41,6 +41,20 @@
                     </label>
                 </label>
             </div>
+            <!-- Guardar en el navegador es lo cotidiano (diseñas una posición y
+                 la recuperas mañana); exportar a .json, de más abajo, es para
+                 llevársela a otro dispositivo o mandársela a alguien. -->
+            <div id="position-box">
+                <label for="position-select">Posiciones guardadas</label>
+                <select id="position-select">
+                    <option value="">— ninguna —</option>
+                </select>
+                <div class="save-row">
+                    <button id="btn-save-pos" title="Guardar esta posición con un nombre">Guardar</button>
+                    <button id="btn-open-pos" title="Abrir la posición seleccionada">Abrir</button>
+                    <button id="btn-delete-pos" title="Borrar la posición seleccionada">Borrar</button>
+                </div>
+            </div>
             <div id="editor-actions">
                 <button id="btn-clear">Vaciar tablero</button>
                 <button id="btn-initial">Posición inicial</button>
@@ -58,6 +72,7 @@
                     <li><b>Clic derecho</b> sobre una casilla la vacía siempre, sin importar la pieza elegida.</li>
                     <li><b>Vaciar tablero</b> borra todas las piezas de golpe.</li>
                     <li><b>Posición inicial</b> coloca las piezas en su posición de arranque para la modalidad activa.</li>
+                    <li><b>Guardar</b> archiva la posición con un nombre en este navegador; <b>Abrir</b> recupera la que elijas en la lista, y <b>Borrar</b> la quita.</li>
                     <li><b>Exportar</b> descarga la posición como archivo `.json`; puedes volver a <b>importarla</b> después.</li>
                     <li><b>Jugar esta posición</b> (exige un rey de cada color) carga la posición en la partida principal.</li>
                     <li><a href="index.html" class="back-link">← Volver al juego</a></li>

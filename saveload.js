@@ -175,6 +175,102 @@ function toggleFavorite(name) {
   }
 }
 
+// --- posiciones diseñadas con nombre en localStorage ---
+//
+// Lo que guarda el editor no es una partida: no hay historial, ni modo, ni
+// niveles, solo un tablero y a quién le toca. Por eso lleva su propio sobre y
+// su propio prefijo, y así `listSaves` sigue enseñando únicamente partidas.
+// Ojo con el prefijo: acaba en dos puntos para no solaparse con
+// DESIGN_POSITION_KEY, que empieza igual ('...:posicion-disenada').
+
+const POSITION_PREFIX = 'ajedrez-triangular:posicion:';
+const POSITION_VERSION = 1;
+
+function serializePosition(board, turn) {
+  return {
+    app: 'ajedrez-triangular',
+    kind: 'posicion',
+    version: POSITION_VERSION,
+    savedAt: new Date().toISOString(),
+    variant: V.id,
+    turn,
+    board: [...board],
+  };
+}
+
+// Igual que validateSave, se valida contra la modalidad DEL SOBRE, no contra
+// la activa, y sin cambiar de modalidad por el camino. A diferencia de una
+// partida, una posición puede no tener reyes: el editor deja diseñar finales
+// de peones y solo exige los dos reyes al pulsar «Jugar esta posición».
+function validatePosition(data) {
+  if (!data || data.version !== POSITION_VERSION || data.kind !== 'posicion') return false;
+  if (!data.variant || !data.turn || !Array.isArray(data.board)) return false;
+  if (data.turn !== 'w' && data.turn !== 'b') return false;
+  const modalidad = VARIANTS[data.variant];
+  if (!modalidad) return false;
+  const forma = BOARDS[modalidad.board];
+  const piezas = new Set(Object.keys(
+    modalidad.pieces || VARIANTS[modalidad.inherits].pieces));
+  for (const ent of data.board) {
+    if (!Array.isArray(ent) || ent.length !== 2) return false;
+    const [key, p] = ent;
+    const co = String(key).split(',').map(Number);
+    if (co.length !== 3 || co.some(n => !Number.isInteger(n))) return false;
+    const suma = co[0] + co[1] + co[2];
+    if (!(suma === 1 || suma === 2) || !forma.has(co[0], co[1], co[2])) return false;
+    if (!p || !piezas.has(p.type) || (p.color !== 'w' && p.color !== 'b')) return false;
+  }
+  return true;
+}
+
+function listPositions() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key.startsWith(POSITION_PREFIX)) continue;
+    try {
+      const data = JSON.parse(localStorage.getItem(key));
+      out.push({
+        name: key.slice(POSITION_PREFIX.length),
+        savedAt: data.savedAt,
+        variant: data.variant,
+      });
+    } catch {
+      // entrada corrupta: se omite
+    }
+  }
+  out.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+  return out;
+}
+
+function positionExists(name) {
+  return localStorage.getItem(POSITION_PREFIX + name) !== null;
+}
+
+function savePositionToStorage(name, envelope) {
+  try {
+    localStorage.setItem(POSITION_PREFIX + name, JSON.stringify(envelope));
+    return true;
+  } catch {
+    return false;   // cuota de almacenamiento superada
+  }
+}
+
+function loadPositionFromStorage(name) {
+  const raw = localStorage.getItem(POSITION_PREFIX + name);
+  if (raw === null) return null;
+  try {
+    const data = JSON.parse(raw);
+    return validatePosition(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function deletePositionFromStorage(name) {
+  localStorage.removeItem(POSITION_PREFIX + name);
+}
+
 // --- exportar e importar archivos .json ---
 
 function downloadSave(envelope, filename) {
