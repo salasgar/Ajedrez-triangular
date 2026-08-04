@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<!--
+  reglamento.html — El juego y sus modalidades, para leer o para imprimir.
+
+  Los diagramas NO están dibujados a mano: los genera el propio motor del juego,
+  cargando geometry.js, variants.js y rules.js igual que hace la aplicación. Así
+  que cualquier cambio de reglas se refleja aquí solo con volver a abrir la
+  página, y un diagrama nunca puede contradecir al programa.
+
+  Se abre directamente en el navegador (funciona desde file://). El PDF que hay
+  al lado se rehace con:
+
+    cd docs && "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --allow-file-access-from-files \
+      --virtual-time-budget=10000 --no-pdf-header-footer \
+      --print-to-pdf=reglamento.pdf "file://$PWD/reglamento.html"
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ajedrez Triangular — el juego y sus modalidades</title>
+<style>
+/* --- página ------------------------------------------------------------- */
+@page { size: A4; margin: 18mm 16mm; }
+
+:root {
+    --tinta: #1c1c1c;
+    --suave: #555;
+    --linea: #d8d2c8;
+    --fondo-caja: #faf6ef;
+}
+
+body {
+    max-width: 46em;
+    margin: 0 auto;
+    padding: 2em 1.2em 4em;
+    font: 16px/1.55 Georgia, "Times New Roman", serif;
+    color: var(--tinta);
+    background: #fff;
+}
+
+h1 { font-size: 2.1em; margin: 0 0 .1em; line-height: 1.15; }
+h2 {
+    font-size: 1.45em;
+    margin: 2.2em 0 .6em;
+    padding-bottom: .2em;
+    border-bottom: 1px solid var(--linea);
+}
+h3 { font-size: 1.15em; margin: 1.6em 0 .4em; }
+h4 { font-size: 1em; margin: 1.2em 0 .3em; }
+p { margin: .7em 0; text-align: justify; }
+ul, ol { margin: .7em 0; padding-left: 1.4em; }
+li { margin: .35em 0; }
+b { font-weight: bold; }
+a { color: #6a4a1e; }
+
+.subtitulo { font-size: 1.15em; color: var(--suave); margin: .2em 0 0; }
+.creditos { color: var(--suave); font-size: .9em; margin-top: .8em; }
+
+code, .cas {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: .88em;
+    background: #f2efe9;
+    padding: .05em .3em;
+    border-radius: 3px;
+}
+
+table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: .92em; }
+th, td { border: 1px solid var(--linea); padding: .35em .6em; text-align: left; vertical-align: top; }
+th { background: var(--fondo-caja); font-weight: bold; }
+
+.nota {
+    background: var(--fondo-caja);
+    border-left: 3px solid #c8b48a;
+    padding: .6em .9em;
+    margin: 1.1em 0;
+    font-size: .94em;
+}
+.nota p:first-child { margin-top: 0; }
+.nota p:last-child { margin-bottom: 0; }
+
+/* --- diagramas ---------------------------------------------------------- */
+figure { margin: 1.1em 0; text-align: center; page-break-inside: avoid; }
+figcaption { font-size: .85em; color: var(--suave); margin-top: .3em; }
+
+/* El tamaño de cada tablero lo pone el script: los tres tienen proporciones
+   muy distintas (el rectángulo de 1998 es más alto que ancho) y ajustarlo solo
+   por el ancho dejaba unos diagramas enormes y otros diminutos. */
+svg.tablero { max-width: 100%; height: auto; }
+
+.cell { stroke: #2b2b2b; stroke-width: 1; }
+.cell.light { fill: #f0d9b5; }
+.cell.dark  { fill: #b58863; }
+.cell.legal { fill: #8fb7dd; }
+.cell.capture { fill: #e0836a; }
+.cell.selected { fill: #baca44; }
+.cell.mark { fill: #b9a3d9; }
+
+.piece {
+    text-anchor: middle;
+    dominant-baseline: central;
+    font-size: 30px;
+    paint-order: stroke;
+    stroke-width: 0.9;
+}
+.piece-w { fill: #fdfdfd; stroke: #333; }
+.piece-b { fill: #1c1c1c; stroke: #ddd; }
+.piece-P { font-size: 24px; }
+.nombre { text-anchor: middle; dominant-baseline: central; font: 9px sans-serif; fill: #3a2f22; }
+
+/* lista de piezas: texto a la izquierda, diagrama a la derecha */
+ul.piezas { list-style: none; padding: 0; }
+ul.piezas > li {
+    display: flex;
+    gap: 1.1em;
+    align-items: center;
+    margin: .9em 0;
+    padding-bottom: .9em;
+    border-bottom: 1px dotted var(--linea);
+    page-break-inside: avoid;
+}
+ul.piezas > li > .texto { flex: 1; text-align: justify; font-size: .95em; }
+ul.piezas > li > svg { flex: 0 0 auto; }
+
+.leyenda { font-size: .85em; color: var(--suave); }
+.dos-columnas { display: flex; gap: 1.2em; flex-wrap: wrap; justify-content: center; }
+.dos-columnas figure { flex: 1 1 240px; margin: .6em 0; }
+
+.indice { background: var(--fondo-caja); padding: .8em 1.4em; border-radius: 6px; }
+.indice ol { margin: .3em 0; }
+
+hr { border: 0; border-top: 1px solid var(--linea); margin: 2.4em 0; }
+
+@media print {
+    body { max-width: none; padding: 0; font-size: 11.5pt; }
+    h2 { page-break-after: avoid; }
+    h3, h4 { page-break-after: avoid; }
+    figure, table, .nota { page-break-inside: avoid; }
+    .salto { page-break-before: always; }
+    a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Siluetas del elefante y el unicornio, las mismas que usa el juego. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <symbol id="piece-elephant" viewBox="0 0 24 24">
+        <path fill-rule="evenodd" d="M14.03 3.08L12.75 3.2L10.9 3.89L9.05 4.24L8 5.05L5.34 4.93L4.06 5.86L2.5 7.66L2.5 19.01L4.76 20.8L5.45 20.69L6.21 20.05L6.79 19.47L6.79 18.78L6.27 18.26L5.92 18.26L5.22 18.95L4.59 18.55L4.59 14.61L8.23 11.65L8.58 13.04L10.09 13.16L10.55 12.93L14.2 9.74L14.2 3.25ZM8.41 20.63L8.7 20.92L11.59 20.92L11.88 20.52L12.23 17.85L12.75 16.98L16.81 16.87L17.79 18.31L17.97 20.46L19.24 20.92L21.21 20.92L21.5 20.63L21.38 9.86L16.69 5.51L14.95 5.4L14.66 5.69L14.66 9.62L10.67 13.27L10.32 13.51L8.7 13.51L8.41 13.8ZM4.62 8.62Q5.55 8.84 5.98 7.98Q5.05 7.76 4.62 8.62Z"/>
+    </symbol>
+    <symbol id="piece-unicorn" viewBox="0 0 24 24">
+        <path fill-rule="evenodd" d="M17.4 2.1L15.1 6.4L12.9 5.9L10.2 6.5L7.6 8.3L6.1 10.8L3.1 12.6L2.6 13.7L4.4 13.4L3.5 15.1L5.6 14.2L5.1 16.2L6.9 14.6L7.4 16.6L8.6 14.9L10.1 16.1L10.6 21.6L12.4 21.6L12.1 16.9L13.9 18.1L14.4 21.6L16.2 21.6L15.7 17.4L17.9 15.2L19.4 11.6L19.1 8.4L17.2 6.6ZM15.6 8.9Q16.4 8.9 16.4 9.7Q16.4 10.5 15.6 10.5Q14.8 10.5 14.8 9.7Q14.8 8.9 15.6 8.9Z"/>
+    </symbol>
+</defs></svg>
+
+<h1>Ajedrez Triangular</h1>
+<p class="subtitulo">El juego y sus cinco modalidades</p>
+<p class="creditos">
+Ajedrez sobre tableros divididos en triángulos, jugable en el navegador en
+<a href="https://salasgar.github.io/Ajedrez-triangular/">salasgar.github.io/Ajedrez-triangular</a>.
+Este documento describe las reglas; los diagramas están dibujados por el propio
+programa, así que muestran exactamente lo que hace el juego.
+</p>
+
+<div class="indice">
+<b>Contenido</b>
+<ol>
+    <li>Qué es el ajedrez triangular</li>
+    <li>La retícula y los tres tableros</li>
+    <li>Las cinco modalidades de un vistazo</li>
+    <li>Ajedrez triangular de Salas v3 (2026)</li>
+    <li>Ajedrez triangular de Salas v4 (2026) — experimental</li>
+    <li>Salas v2 (2026), sin coronación de flanco</li>
+    <li>Salas v1 (1998)</li>
+    <li>Triangular Chess (Dekle, 1986)</li>
+    <li>Trigonal Chess (Koval, 2023)</li>
+    <li>Reglas comunes a todas las modalidades</li>
+    <li>Cómo se anotan las jugadas</li>
+    <li>El programa: niveles, análisis e interfaz</li>
+</ol>
+</div>
+
+<h2>1. Qué es el ajedrez triangular</h2>
+
+<p>
+Es el ajedrez jugado sobre un tablero cuyas casillas son <b>triángulos
+equiláteros</b> en vez de cuadrados. La mitad apuntan hacia arriba (▲, las
+casillas claras) y la otra mitad hacia abajo (▽, las oscuras), encajadas unas
+con otras como en un panal de triángulos.
+</p>
+
+<p>
+Todo lo que uno espera del ajedrez sigue estando: dos bandos, un rey al que hay
+que dar mate, peones que coronan, captura al paso, enroque, tablas por ahogado
+o por repetición. Lo que cambia —y cambia mucho— es la <b>geometría</b>, y con
+ella el movimiento de las piezas.
+</p>
+
+<p>
+La diferencia de fondo es esta. Un cuadrado tiene cuatro casillas vecinas por
+sus lados y ocho casillas que lo tocan; sus direcciones naturales son ocho, y de
+ahí salen la torre (cuatro), el alfil (las otras cuatro) y la dama (las ocho).
+Un triángulo, en cambio, tiene solo <b>tres vecinas por arista</b> —y las tres
+apuntan al revés que él— pero <b>doce casillas que lo tocan</b>. Los números no
+cuadran con los del ajedrez de siempre, así que las piezas no se pueden traducir:
+hay que <b>reinventarlas</b>. Cada modalidad de las que siguen es una forma
+distinta de hacerlo.
+</p>
+
+<p>
+Hay además un detalle que no tiene equivalente en el tablero cuadrado: como los
+triángulos <b>alternan orientación</b>, dos casillas contiguas no se comportan
+igual. Un peón situado en un ▲ avanza atravesando un vértice; el mismo peón en
+un ▽, cruzando una arista. Lo mismo vale para el rey y para los primeros pasos
+de las piezas de línea. Es la fuente de casi todas las sorpresas del juego.
+</p>
+
+<h2>2. La retícula y los tres tableros</h2>
+
+<p>
+Todas las modalidades juegan sobre <b>la misma retícula triangular</b>: lo
+único que las distingue en este punto es qué trozo de ella recortan.
+</p>
+
+<p>
+Cada casilla se identifica con tres coordenadas de carril <span class="cas">(a, b, c)</span>.
+Un <b>carril</b> es el recorrido que se hace pasando de un triángulo al de al
+lado por una arista, de un borde del tablero al otro; por cada casilla pasan
+tres carriles, uno por coordenada. La suma de las tres dice hacia dónde apunta
+el triángulo: <span class="cas">a + b + c = 2</span> es un ▲ y
+<span class="cas">a + b + c = 1</span> es un ▽.
+</p>
+
+<p>Con esas coordenadas, los tres tableros se describen en una línea cada uno:</p>
+
+<table>
+<tr><th>Tablero</th><th>Recorte</th><th>Casillas</th><th>Modalidades</th></tr>
+<tr><td><b>Hexágono</b></td><td><span class="cas">−3 ≤ a, b, c ≤ 4</span></td><td>96</td><td>Salas v1, v2, v3, v4 (2026); Dekle 1986</td></tr>
+<tr><td><b>Rectángulo 8×8</b></td><td>el hexágono sin sus dos picos laterales</td><td>64</td><td>Salas v1 (1998)</td></tr>
+<tr><td><b>Triángulo</b></td><td><span class="cas">a, b, c ≥ −2</span></td><td>81</td><td>Trigonal (Koval 2023)</td></tr>
+</table>
+
+<p>
+Que el triángulo salga de acotar las tres coordenadas por abajo, y que las 81
+casillas de Koval aparezcan solas (45 ▲ + 36 ▽) al poner esa cota en −2, no es
+un apaño: es la misma retícula mirada de otra manera.
+</p>
+
+<h3>El hexágono, y cómo se llaman sus casillas</h3>
+
+<p>
+Cada casilla lleva un nombre corto de tres caracteres, como <span class="cas">B1A</span> o
+<span class="cas">N4H</span>:
+</p>
+
+<ul>
+    <li>La inicial es el <b>color</b>: <span class="cas">B</span> si la casilla
+        apunta hacia arriba (clara), <span class="cas">N</span> si apunta hacia
+        abajo (oscura).</li>
+    <li>El número es la <b>franja horizontal</b>, del 1 (abajo, lado de las
+        blancas) al 8 (arriba).</li>
+    <li>La letra es la franja que va de <b>abajo-derecha a arriba-izquierda</b>,
+        de la <span class="cas">A</span> (la más a la izquierda) a la
+        <span class="cas">H</span>.</li>
+</ul>
+
+<p>
+Nombrar dos franjas y el color basta para identificar la casilla, porque la
+tercera coordenada sale sola de la suma. La casilla más baja del tablero es
+<span class="cas">B1A</span> y la más a la derecha, <span class="cas">N4H</span>.
+</p>
+
+<figure>
+    <div data-diagrama="nombres" data-mod="salas"></div>
+    <figcaption>El hexágono de 96 casillas con el nombre de cada una.</figcaption>
+</figure>
+
+<h3>El rectángulo y el triángulo</h3>
+
+<p>
+El <b>rectángulo de 1998</b> es el hexágono con los dos picos laterales
+cortados: quedan sus ocho filas, recortadas todas a ocho casillas. Los bordes
+izquierdo y derecho van en zigzag, porque la casilla del extremo de cada fila
+apunta hacia arriba o hacia abajo alternándose. Sus casillas se llaman
+<span class="cas">a1</span>…<span class="cas">h8</span>, como en el ajedrez de
+siempre y sin letra de color: aquí columna y fila ya identifican una sola
+casilla, porque dentro de una columna las filas van alternando ▲ y ▽.
+</p>
+
+<p>
+El <b>triángulo de Koval</b> se numera por filas: de la <span class="cas">a</span>
+(el vértice, una sola casilla) a la <span class="cas">i</span> (la base, 17
+casillas), y dentro de cada fila las casillas se numeran de izquierda a derecha.
+Salen nombres como <span class="cas">h2</span>, <span class="cas">d3</span> o
+<span class="cas">i17</span>. Se dibuja girado un cuarto de vuelta respecto a la
+retícula natural, tal como lo publicó su autor: el vértice a la izquierda y la
+base vertical a la derecha.
+</p>
+
+<div class="dos-columnas">
+    <figure>
+        <div data-diagrama="nombres" data-mod="salas-1998" data-w="320" data-h="340"></div>
+        <figcaption>Rectángulo 8×8 (Salas v1, 1998).</figcaption>
+    </figure>
+    <figure>
+        <div data-diagrama="nombres" data-mod="trigonal" data-w="320" data-h="340"></div>
+        <figcaption>Triángulo de 81 casillas (Koval).</figcaption>
+    </figure>
+</div>
+
+<h2 class="salto">3. Las cinco modalidades de un vistazo</h2>
+
+<p>
+El juego trae cinco reglamentos completos. El selector <b>Modalidad</b> los
+cambia enteros: el tablero, las piezas, la posición inicial y hasta los
+parámetros con los que juega el ordenador. Por defecto sale el ajedrez
+triangular de Salas de 2026.
+</p>
+
+<table>
+<tr><th>Modalidad</th><th>Autor y año</th><th>Tablero</th><th>Piezas por bando</th><th>Rasgo propio</th></tr>
+<tr>
+    <td><b>Salas v3 (2026)</b></td><td>Juan Luis Salas, 2026</td>
+    <td>hexágono, 96</td><td>9 de fondo (con elefante) + 11 peones</td>
+    <td>torre de carriles, alfil de color, elefante; coronación de flanco</td>
+</tr>
+<tr>
+    <td><b>Salas v4 (2026)</b></td><td>Juan Luis Salas, 2026</td>
+    <td>hexágono, 96</td><td>igual</td>
+    <td>dama con tres familias de rayos (experimental)</td>
+</tr>
+<tr>
+    <td><b>Salas v2 (2026)</b></td><td>Juan Luis Salas, 2026</td>
+    <td>hexágono, 96</td><td>igual</td>
+    <td>igual a v3, sin coronación de flanco</td>
+</tr>
+<tr>
+    <td><b>Salas v1 (1998)</b></td><td>Juan Luis Salas, 1998</td>
+    <td>rectángulo 8×8, 64</td><td>el ejército del ajedrez, 16 piezas</td>
+    <td>colocación y coordenadas del ajedrez de siempre</td>
+</tr>
+<tr>
+    <td><b>Dekle 1986</b></td><td>George R. Dekle Sr., 1986</td>
+    <td>hexágono, 96</td><td>9 de fondo (con unicornio) + 11 peones</td>
+    <td>torre y alfil son las dos mitades de un mismo haz de rayos</td>
+</tr>
+<tr>
+    <td><b>Trigonal</b></td><td>Max Koval, 2023</td>
+    <td>triángulo, 81</td><td>el ejército del ajedrez, 16 piezas</td>
+    <td>los dos bandos en los extremos de la base; alfil en zigzag</td>
+</tr>
+</table>
+
+<p>
+Las tres primeras son variantes del mismo juego, emparentadas entre sí; las dos
+últimas son juegos ajenos, incluidos aquí porque comparten retícula y permiten
+compararse con ellos. Las secciones que siguen describen cada una por separado.
+</p>
+
+<h2 class="salto">4. Ajedrez triangular de Salas v3 (2026)</h2>
+
+<p>
+La modalidad de casa, y la única con los valores del motor ajustados y
+confirmados jugando partidas. Se juega en el hexágono de 96 casillas. Cada bando
+tiene <b>nueve piezas de fondo y once peones</b>, que es justo lo que miden esas
+dos filas del hexágono.
+</p>
+
+<figure>
+    <div data-diagrama="inicio" data-mod="salas"></div>
+    <figcaption>Posición inicial: torre, alfil, caballo, <b>rey</b>, elefante,
+    <b>dama</b>, alfil, caballo y torre, con once peones delante. Rey contra rey
+    y dama contra dama.</figcaption>
+</figure>
+
+<h3>Las piezas</h3>
+
+<p>
+En cada diagrama, la pieza está en el centro y en azul las casillas a las que
+alcanza desde ahí con el tablero vacío.
+</p>
+
+<ul class="piezas" data-diagrama="piezas" data-mod="salas"></ul>
+
+<p>
+Merece la pena detenerse en dos de ellas. La <b>torre</b> se desliza por los tres
+carriles que pasan por su casilla; como cada paso cruza una arista y las aristas
+van alternando de orientación, su recorrido zigzaguea aunque la dirección de
+conjunto sea recta. El <b>elefante</b>, en cambio, va derecho de verdad:
+perpendicular a los lados del triángulo, alternando cruzar aristas y atravesar
+vértices. Son dos maneras distintas de «ir recto» en esta retícula, y las dos
+hacían falta.
+</p>
+
+<h3>El enroque</h3>
+
+<p>
+Como siempre: el rey y la torre no se han movido, no queda nada entre ellos, y
+el rey ni está en jaque ni cruza casillas atacadas. Por el lado corto el rey se
+desplaza <b>dos</b> casillas hacia la torre y esta salta al otro lado; por el
+lado largo, <b>tres</b>.
+</p>
+
+<p>
+Para enrocarse se selecciona el rey y se pulsa <b>la casilla de la torre
+propia</b>. La razón es geométrica: en esta retícula el rey ya alcanza por sí
+solo dos casillas a cada lado de su fila, así que señalar el destino del rey
+sería ambiguo, mientras que «rey a su propia torre» no puede significar otra
+cosa.
+</p>
+
+<h3>La coronación de flanco</h3>
+
+<p>
+En el hexágono, un peón que sube en línea recta se topa con el borde superior
+izquierdo o el derecho <b>antes</b> de llegar a la fila de coronación. Medido
+sobre la geometría: los dos peones de los extremos recorren
+<span class="cas">N2A → B3A → N4B → B5B → N6C → B7C</span> y ahí se quedan para
+siempre. Dos de los once peones de cada bando no podrían coronar nunca por sí
+solos.
+</p>
+
+<p>
+La solución —tomada de Dekle 1986, que se topó con el mismo problema en el mismo
+tablero— es una regla de una línea: <b>cuando el peón se queda sin casilla de
+avance, avanza en diagonal</b>, por su casilla de captura, haya o no pieza que
+capturar.
+</p>
+
+<p>
+Es una regla barata. Hay exactamente seis casillas por bando sin casilla de
+avance, y <b>cada una tiene una sola casilla de captura</b>, así que la regla
+añade un movimiento y nunca una elección. Con ella no queda ni una casilla del
+tablero desde la que un peón no pueda coronar.
+</p>
+
+<figure>
+    <div data-diagrama="flanco" data-mod="salas"></div>
+    <figcaption>En morado, las seis casillas desde las que un peón blanco no
+    tiene casilla de avance. La regla le hace avanzar en diagonal, encadenando
+    de una morada a la siguiente hasta salir del borde (en azul, la última de
+    cada cadena).</figcaption>
+</figure>
+
+<h2>5. Ajedrez triangular de Salas v4 (2026) — experimental</h2>
+
+<p>
+El mismo tablero de Salas v3, pero con una dama que combina las tres familias de rayos: la torre de carriles, el alfil de color y el elefante. A cambio, el valor aumenta a 1380 centipeones.
+</p>
+
+<p>
+El rey vuelve a ser (exactamente) la dama a un solo paso, que en esta retícula coincide exactamente con las 12 casillas vecinas.
+</p>
+
+<h2>6. Salas v2 (2026), sin coronación de flanco</h2>
+
+<p>
+El reglamento de 2026 tal como se publicó, antes de adoptar la coronación de
+flanco. Tablero, piezas y posición inicial son <b>idénticos</b> a los de la v2;
+lo único que cambia es el peón:
+</p>
+
+<div class="nota">
+<p>
+Aquí los dos peones de los extremos <b>no pueden coronar</b>: llegan a la
+penúltima fila pegados al borde y se quedan ahí para siempre, salvo que puedan
+capturar y cambiar así de diagonal.
+</p>
+</div>
+
+<p>
+Se conserva como modalidad aparte para poder comparar las dos con partidas
+reales, y para quien prefiera el reglamento original.
+</p>
+
+<h2 class="salto">7. Salas v1 (1998)</h2>
+
+<p>
+La primera versión, de 1998, y el antepasado directo de las de 2026: <b>mismo
+alfil, mismo caballo y mismo peón</b>, pero sobre un tablero de 8×8 y con el
+ejército del ajedrez de siempre.
+</p>
+
+<figure>
+    <div data-diagrama="inicio" data-mod="salas-1998"></div>
+    <figcaption>Posición inicial: torre, caballo, alfil, <b>rey</b>,
+    <b>dama</b>, alfil, caballo y torre. Ojo: el rey va a la izquierda de la
+    dama, al revés que en el ajedrez moderno, y está así a propósito.</figcaption>
+</figure>
+
+<p>
+Lo que cambió de 1998 a 2026 fueron las piezas de línea:
+</p>
+
+<table>
+<tr><th>1998</th><th>2026</th></tr>
+<tr>
+    <td><b>Torre</b>: seis rayos perpendiculares a los lados, alternando aristas y vértices</td>
+    <td>esa misma pieza, rebautizada <b>elefante</b>; la torre pasó a ser la de los tres carriles</td>
+</tr>
+<tr>
+    <td><b>Dama</b>: alfil + torre de 1998</td>
+    <td>ya no lleva alfil: es <b>torre nueva + elefante</b></td>
+</tr>
+<tr>
+    <td><b>Rey</b>: la dama, a un solo paso</td>
+    <td>igual (un paso a cualquier casilla que toque la suya)</td>
+</tr>
+</table>
+
+<p>
+Que el rey salga igual en las dos versiones no es una coincidencia buscada: los
+seis primeros pasos del alfil y los seis del elefante son <b>disjuntos</b> y
+suman exactamente las doce casillas que tocan a la suya, de modo que «la dama de
+1998 a un paso» y «un paso a cualquier vecina» resultan ser la misma pieza.
+</p>
+
+<ul class="piezas" data-diagrama="piezas" data-mod="salas-1998"></ul>
+
+<p>
+Hay <b>enroque</b> tradicional: el rey se aparta dos casillas hacia la torre y
+esta salta al otro lado (<span class="cas">d1→b1</span> con
+<span class="cas">a1→c1</span>, o <span class="cas">d1→f1</span> con
+<span class="cas">h1→e1</span>). Y aquí <b>no hace falta la coronación de
+flanco</b>: al recortar el hexágono a un rectángulo, las ocho columnas llegan
+enteras de la fila 1 a la 8, así que ningún peón se queda nunca sin casilla de
+avance.
+</p>
+
+<h2 class="salto">8. Triangular Chess (Dekle, 1986)</h2>
+
+<p>
+De George R. Dekle Sr., publicado en <i>World Game Review</i> nº 10 y recogido
+en la <i>Encyclopedia of Chess Variants</i> de Pritchard (1994). Es el juego más
+antiguo de los cinco y el que aportó la regla de coronación de flanco.
+</p>
+
+<p>
+Su tablero es <b>el mismo hexágono de 96 casillas</b> que el de Salas, y su
+dotación —juego completo más tres peones y un unicornio— da nueve piezas de
+fondo y once peones, que es justo lo que miden esas dos filas.
+</p>
+
+<figure>
+    <div data-diagrama="inicio" data-mod="dekle"></div>
+    <figcaption>Posición inicial de Dekle: como la de Salas, pero con
+    <b>unicornio</b> donde aquella lleva elefante.</figcaption>
+</figure>
+
+<p>
+Sus deslizantes son el elefante de Salas <b>partido en dos</b>: la torre son los
+tres rayos que arrancan cruzando una arista, el alfil los tres que arrancan por
+un vértice, y la dama los seis juntos. Su alfil, por tanto, no está atado al
+color de la casilla, a diferencia del de Salas.
+</p>
+
+<ul class="piezas" data-diagrama="piezas" data-mod="dekle"></ul>
+
+<p>
+Esa partición tiene una consecuencia curiosa: como los pasos de cada rayo van
+alternando arista y vértice, <b>el tipo de pieza que ataca por un rayo cambia
+con la distancia</b>. La casilla vecina ataca como torre, la siguiente como
+alfil, la siguiente como torre otra vez. Es una fuente de despistes para el
+jugador humano —y, en su día, también para el programa.
+</p>
+
+<div class="nota">
+<p>
+<b>Es una reconstrucción.</b> El tablero, la dotación y los deslizantes están
+bien asentados. El caballo, el unicornio y el orden de la fila de fondo se han
+reconstruido a partir de descripciones secundarias, que en esos tres puntos son
+ambiguas. Contrastarlos con la fuente original (Keller, Pritchard, o
+<i>Variations on the Theme of Chess</i> del propio Dekle, 2023) está pendiente.
+</p>
+</div>
+
+<h2 class="salto">9. Trigonal Chess (Koval, 2023)</h2>
+
+<p>
+De Max Koval, publicado en <i>The Chess Variant Pages</i>. Tablero triangular de
+81 casillas y juego de ajedrez normal, sin piezas de fantasía: el autor buscaba
+una traducción lo más directa posible del ajedrez a la retícula triangular.
+</p>
+
+<figure>
+    <div data-diagrama="inicio" data-mod="trigonal"></div>
+    <figcaption>Los dos ejércitos ocupan los dos extremos de la base del
+    triángulo. El peón corona al llegar al final de su carril.</figcaption>
+</figure>
+
+<p>
+Su <b>torre</b> —«siempre por el lado más lejano», dice el autor— resulta ser
+exactamente la torre del ajedrez de Salas: el mismo deslizamiento en zigzag por
+el carril. Su <b>alfil</b> es la pieza más llamativa de las cinco modalidades:
+alterna dos direcciones diagonales de modo que su deriva de conjunto va en línea
+recta, y con eso barre muchísimo más tablero que un alfil corriente.
+</p>
+
+<ul class="piezas" data-diagrama="piezas" data-mod="trigonal"></ul>
+
+<div class="nota">
+<p>
+<b>Reconstrucción parcial.</b> La torre está comprobada contra el diagrama del
+autor. El alfil alternante se ha reconstruido como el análogo de esa torre; lo
+que sí está verificado es la familia de direcciones: el autor afirma que en su
+«variación dura» el alfil cubre todas las casillas de su color en un tablero
+vacío, y con estas direcciones eso se cumple <b>exactamente</b> desde las 81
+casillas, ni una casilla de más ni una de menos.
+</p>
+<p>
+<b>No hay enroque</b>: el autor dice que lo hay, pero no publica sobre qué
+casillas, y en este tablero no se deduce. Se ha preferido que falte a
+inventarlo.
+</p>
+</div>
+
+<h2 class="salto">9. Reglas comunes a todas las modalidades</h2>
+
+<h3>Marcha de la partida</h3>
+<p>
+Mueven las blancas y se alterna. Se gana dando <b>jaque mate</b>. El rey no
+puede quedar en jaque después de la propia jugada, ni cruzar casillas atacadas
+al enrocarse.
+</p>
+
+<h3>El peón</h3>
+<ul>
+    <li><b>Avanza sin capturar</b> a la casilla que tiene justo enfrente, y
+        <b>captura</b> en las diagonales frontales (dos en el hexágono y el
+        rectángulo, tres en el triángulo de Koval).</li>
+    <li><b>Doble paso</b> en su primer movimiento, con la <b>captura al paso</b>
+        correspondiente en la jugada siguiente.</li>
+    <li><b>Corona</b> al llegar al final de su recorrido —la fila del rival, o
+        el final de su carril en Trigonal—, eligiendo pieza. El ordenador corona
+        siempre a dama.</li>
+    <li><b>Coronación de flanco</b> en Salas v3 (2026) y en Dekle: sin casilla de
+        avance contra el borde, el peón avanza en diagonal.</li>
+</ul>
+
+<h3>Tablas</h3>
+<ul>
+    <li><b>Ahogado</b>: el que tiene el turno no está en jaque y no tiene
+        jugada legal.</li>
+    <li><b>Triple repetición</b> de la posición.</li>
+    <li><b>Cincuenta jugadas</b> sin captura ni movimiento de peón.</li>
+    <li><b>Material insuficiente</b>: solo cuando quedan los dos reyes solos.</li>
+</ul>
+
+<div class="nota">
+<p>
+Esa última condición es más corta que en el ajedrez clásico, y está comprobada
+por fuerza bruta sobre esta geometría, no copiada. En el hexágono triangular el
+rey se acorrala contra el borde con muy poco, así que <b>rey y caballo contra
+rey</b> o <b>rey y alfil contra rey</b> —tablas muertas en el ajedrez de
+siempre— aquí sí tienen posiciones de mate. El único material con el que el mate
+es imposible es rey contra rey.
+</p>
+</div>
+
+<h2>10. Cómo se anotan las jugadas</h2>
+
+<p>
+Se escribe la inicial de la pieza (<b>R</b>ey, <b>D</b>ama, <b>T</b>orre,
+<b>A</b>lfil, <b>C</b>aballo, <b>E</b>lefante; el peón no lleva ninguna), el
+origen, un guion o un aspa si captura, y el destino:
+</p>
+
+<table>
+<tr><th>Jugada</th><th>Significado</th></tr>
+<tr><td><span class="cas">N2D-N4E</span></td><td>peón de N2D a N4E</td></tr>
+<tr><td><span class="cas">CB1D-N3F</span></td><td>caballo de B1D a N3F</td></tr>
+<tr><td><span class="cas">AN1D×N5D</span></td><td>alfil de N1D captura en N5D</td></tr>
+<tr><td><span class="cas">AN5D-N5C+</span></td><td>alfil a N5C, con jaque (<span class="cas">#</span> sería mate)</td></tr>
+<tr><td><span class="cas">N7D-B8D=C</span></td><td>peón corona en B8D eligiendo caballo</td></tr>
+<tr><td><span class="cas">0-0</span> / <span class="cas">0-0-0</span></td><td>enroque corto / largo</td></tr>
+</table>
+
+<p>
+El origen se escribe <b>siempre</b>, y no por gusto: en el hexágono los nombres
+de casilla empiezan por <span class="cas">B</span> o <span class="cas">N</span>
+y contienen letras <span class="cas">A</span>–<span class="cas">H</span>, que son
+justamente las iniciales de las piezas. En notación corta saldrían jugadas como
+<span class="cas">D×N5D</span>, que lo mismo es la dama capturando que un peón de
+la franja D.
+</p>
+
+<h2>11. El programa: niveles, análisis e interfaz</h2>
+
+<p>
+Se puede jugar humano contra humano, humano contra ordenador (con cualquiera de
+los dos colores) u ordenador contra ordenador. La aplicación se instala y
+funciona <b>sin conexión</b>.
+</p>
+
+<h3>Niveles del ordenador</h3>
+
+<p>
+Los niveles no se distinguen por una profundidad fija, sino por <b>cuánto se le
+deja pensar</b>: un presupuesto de posiciones a examinar. La profundidad sale de
+ahí, y por eso varía con la posición: con pocas piezas el mismo presupuesto
+llega mucho más lejos, que es justo donde hace falta.
+</p>
+
+<table>
+<tr><th>Nivel</th><th>Presupuesto</th><th>Piensa</th><th>Profundidad típica</th></tr>
+<tr><td>1</td><td>—</td><td>—</td><td>juega al azar</td></tr>
+<tr><td>2</td><td>300 nodos + azar</td><td>5 ms</td><td>1</td></tr>
+<tr><td>3</td><td>5.000 nodos + azar</td><td>35 ms</td><td>2</td></tr>
+<tr><td>4</td><td>4.500 nodos</td><td>32 ms</td><td>2</td></tr>
+<tr><td>5</td><td>16.000 nodos</td><td>86 ms</td><td>3</td></tr>
+<tr><td>6</td><td>60.000 nodos</td><td>346 ms</td><td>4</td></tr>
+<tr><td>7</td><td>220.000 nodos</td><td>1,1 s</td><td>5</td></tr>
+<tr><td>8</td><td>800.000 nodos</td><td>4,5 s</td><td>6</td></tr>
+</table>
+
+<p>
+Los niveles 2 y 3 llevan además un punto de azar: no siempre juegan lo mejor que
+ven, y a veces se equivocan de verdad. Sin eso, un motor que revisa las capturas
+antes de decidir no cuelga piezas ni pensando poquísimo, y el principiante se
+queda sin rival asequible. Del 4 en adelante juegan siempre lo mejor que ven, y
+son más flojos solo porque miran menos lejos.
+</p>
+
+<div class="nota">
+<p>
+La escalera de niveles es la misma en todas las modalidades, pero los valores de
+las piezas <b>solo están ajustados para el ajedrez de Salas de 2026</b>. En
+Salas v1 (1998), Dekle y Trigonal el motor juega <b>correctamente</b> —la generación
+de jugadas está verificada—, pero todavía no se puede decir que juegue
+<b>bien</b>.
+</p>
+</div>
+
+<h3>Análisis e interfaz</h3>
+
+<ul>
+    <li>Navegación por el historial: inicio, deshacer, rehacer, final y
+        reproducción automática hacia delante o hacia atrás.</li>
+    <li>Voltear el tablero, piezas capturadas, contador de jugadas y tiempo
+        consumido por cada bando (no es un control de tiempo: nadie pierde por
+        tiempo).</li>
+    <li>Guardar y cargar partidas en el navegador, marcarlas como favoritas, y
+        exportarlas o importarlas como archivo.</li>
+    <li><b>Panel de análisis</b>: las jugadas puntuadas de mejor a peor, la
+        jugada que eligió el ordenador con sus alternativas, y la posibilidad de
+        forzar la próxima jugada. Con el análisis guardado aparecen también la
+        gráfica de evaluación de la partida y las marcas
+        <b>?!</b>, <b>?</b> y <b>??</b>.</li>
+    <li><b>Accesibilidad</b>: el tablero es una sola parada de tabulador, se
+        recorre con las flechas, y cada casilla se anuncia con su nombre y lo que
+        tiene encima.</li>
+</ul>
+
+<hr>
+
+<p class="creditos">
+Ajedrez Triangular — juego y programa de Juan Luis Salas García. Las modalidades
+de Dekle y Koval son obra de sus respectivos autores y se incluyen como
+reconstrucciones. Los diagramas de este documento los genera el propio motor del
+juego.
+</p>
+
+<!-- El juego, tal cual: los diagramas salen del mismo código que dibuja el
+     tablero en la aplicación, así que no pueden desincronizarse de las reglas. -->
+<script src="../geometry.js"></script>
+<script src="../variants.js"></script>
+<script src="../rules.js"></script>
+<script>
+'use strict';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function el(tag, attrs) {
+    const n = document.createElementNS(SVG_NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+}
+
+// El elefante y el unicornio se dibujan con su silueta; el resto, con el
+// carácter tipográfico correspondiente.
+function pieceNode(type, color, cx, cy, escala) {
+    const cls = 'piece piece-' + color + ' piece-' + type;
+    if (type === 'E' || type === 'U') {
+        const lado = (type === 'E' ? 30 : 30) * escala;
+        const svg = el('svg', {
+            x: cx - lado / 2, y: cy - lado / 2, width: lado, height: lado,
+            viewBox: '0 0 24 24', class: cls,
+        });
+        svg.appendChild(el('use', {
+            href: type === 'E' ? '#piece-elephant' : '#piece-unicorn',
+        }));
+        return svg;
+    }
+    const t = el('text', { x: cx, y: cy, class: cls });
+    if (escala !== 1) t.setAttribute('font-size', (type === 'P' ? 24 : 30) * escala);
+    t.textContent = GLYPH[type];
+    return t;
+}
+
+// Un tablero de la modalidad activa.
+//   piezas   [[key, tipo, color], …]
+//   azul     casillas resaltadas (a dónde llega la pieza)
+//   rojo     casillas de captura del peón
+//   morado   casillas señaladas por otro motivo
+//   nombres  escribir el nombre de cada casilla
+//   maxW/maxH  caja en la que el tablero tiene que caber, en píxeles: el
+//              dibujo se escala para entrar entera en ella sin deformarse
+function boardSvg({ piezas = [], azul, rojo, morado, nombres = false,
+                    maxW = 200, maxH = 175, escala = 1 } = {}) {
+    const k = Math.min(maxW / BBOX.w, maxH / BBOX.h);
+    const svg = el('svg', {
+        viewBox: `${BBOX.x} ${BBOX.y} ${BBOX.w} ${BBOX.h}`,
+        width: Math.round(BBOX.w * k), height: Math.round(BBOX.h * k),
+        class: 'tablero',
+    });
+    const propias = new Set(piezas.filter(p => p[2] === 'w').map(p => p[0]));
+    for (const cell of CELLS) {
+        const poly = el('polygon', { points: cell.pts.map(p => p.join(',')).join(' ') });
+        poly.classList.add('cell', cell.up ? 'light' : 'dark');
+        if (!nombres && piezas.length === 1 && propias.has(cell.key)) poly.classList.add('selected');
+        if (azul && azul.has(cell.key)) poly.classList.add('legal');
+        if (rojo && rojo.has(cell.key)) poly.classList.add('capture');
+        if (morado && morado.has(cell.key)) poly.classList.add('mark');
+        svg.appendChild(poly);
+    }
+    if (nombres) {
+        for (const cell of CELLS) {
+            // el nombre baja un poco en los ▽, donde el centro geométrico
+            // queda alto respecto al hueco visible del triángulo
+            const t = el('text', {
+                x: cell.cx, y: cell.cy + (cell.up ? 3 : -3), class: 'nombre',
+            });
+            t.textContent = cellName(cell);
+            svg.appendChild(t);
+        }
+    }
+    for (const [key, type, color] of piezas) {
+        const cell = CELL_MAP.get(key);
+        svg.appendChild(pieceNode(type, color, cell.cx, cell.cy, escala));
+    }
+    return svg;
+}
+
+// La casilla de la orientación pedida más cercana al centro del tablero.
+function centralCell(up, dx = 0) {
+    const cx = BBOX.x + BBOX.w / 2 + dx * BBOX.w, cy = BBOX.y + BBOX.h / 2;
+    let mejor = null, d = Infinity;
+    for (const cell of CELLS) {
+        if (cell.up !== up) continue;
+        const dist = Math.hypot(cell.cx - cx, cell.cy - cy);
+        if (dist < d) { d = dist; mejor = cell; }
+    }
+    return mejor;
+}
+
+function posicionInicial() {
+    newGame();
+    return [...game.board].map(([key, p]) => [key, p.type, p.color]);
+}
+
+// Lista de piezas de la modalidad, con el diagrama de cada una al lado. Los
+// textos son los mismos que enseña el juego en su panel de reglas.
+function listaPiezas(ul) {
+    const c = centralCell(true);
+    for (const [type, texto] of V.help) {
+        const li = document.createElement('li');
+        const div = document.createElement('div');
+        div.className = 'texto';
+        div.innerHTML = texto;
+        li.appendChild(div);
+        if (type === 'P') {
+            // Uno de cada orientación, con peones negros en sus capturas, para
+            // que se vea que el avance depende de hacia dónde apunta el triángulo.
+            const pUp = centralCell(true, -0.15), pDown = centralCell(false, 0.15);
+            const azul = new Set([...pUp.pawnPush.w, ...pDown.pawnPush.w].map(t => t.key));
+            const rojo = new Set([...pUp.pawnCap.w, ...pDown.pawnCap.w].map(t => t.key));
+            const piezas = [[pUp.key, 'P', 'w'], [pDown.key, 'P', 'w']];
+            for (const key of rojo) piezas.push([key, 'P', 'b']);
+            li.appendChild(boardSvg({ piezas, azul, rojo, escala: 1.45 }));
+        } else {
+            const rays = c.rays[type], leaps = c.leaps[type];
+            const destinos = rays ? rays.flat().map(t => t.key) : leaps.map(t => t.key);
+            li.appendChild(boardSvg({
+                piezas: [[c.key, type, 'w']], azul: new Set(destinos), escala: 1.45,
+            }));
+        }
+        ul.appendChild(li);
+    }
+}
+
+// Casillas desde las que un peón blanco no tiene casilla de avance, y las
+// diagonales por las que la coronación de flanco le deja seguir.
+function diagramaFlanco() {
+    const sin = CELLS.filter(c => c.pawnAdv.w.length === 0 && c.b < N);
+    const morado = new Set(sin.map(c => c.key));
+    const azul = new Set();
+    for (const c of sin) for (const t of c.pawnPush.w) azul.add(t.key);
+    return boardSvg({
+        piezas: sin.map(c => [c.key, 'P', 'w']), azul, morado,
+        maxW: 420, maxH: 380,
+    });
+}
+
+for (const nodo of document.querySelectorAll('[data-diagrama]')) {
+    setVariant(nodo.dataset.mod);
+    // los diagramas que van de dos en dos piden su propia caja, más pequeña
+    const maxW = Number(nodo.dataset.w) || 460, maxH = Number(nodo.dataset.h) || 400;
+    switch (nodo.dataset.diagrama) {
+        case 'inicio':
+            nodo.appendChild(boardSvg({ piezas: posicionInicial(), maxW, maxH }));
+            break;
+        case 'nombres':
+            nodo.appendChild(boardSvg({ nombres: true, maxW, maxH }));
+            break;
+        case 'piezas':
+            listaPiezas(nodo);
+            break;
+        case 'flanco':
+            nodo.appendChild(diagramaFlanco());
+            break;
+    }
+}
+</script>
+</body>
+</html>
