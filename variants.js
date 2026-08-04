@@ -158,12 +158,12 @@ const KOVAL_R = ['R', 'Q'], KOVAL_B = ['B', 'Q'];
 const VARIANTS = {
 
   // =========================================================================
-  // Salas 2026 v2 — la modalidad de casa.
+  // Salas v3 (2026) — la modalidad de casa.
   // =========================================================================
   salas: {
     id: 'salas',
-    name: 'Salas 2026 v2',
-    full: 'Ajedrez triangular de Salas 2026 v2',
+    name: 'Salas v3 (2026)',
+    full: 'Ajedrez triangular de Salas v3 (2026)',
     board: 'hex4',
     // La fila del borde completa (9 casillas), de izquierda a derecha para las
     // blancas. Los índices pares son ▽ y los impares ▲. Las negras usan la
@@ -223,13 +223,13 @@ const VARIANTS = {
   },
 
   // =========================================================================
-  // Salas 2026 v1 — el reglamento de 2026 tal como se publicó, sin la regla de
+  // Salas v2 (2026) — el reglamento de 2026 tal como se publicó, sin la regla de
   // coronación de flanco. Se conserva para poder comparar las dos.
   // =========================================================================
   'salas-2026': {
     id: 'salas-2026',
-    name: 'Salas 2026 v1',
-    full: 'Ajedrez triangular de Salas 2026 v1, sin coronación de flanco',
+    name: 'Salas v2 (2026)',
+    full: 'Ajedrez triangular de Salas v2 (2026), sin coronación de flanco',
     board: 'hex4',
     inherits: 'salas',
     edgePromotion: false,
@@ -241,7 +241,7 @@ const VARIANTS = {
   },
 
   // =========================================================================
-  // Salas 1998 (Original) — la primera versión, la de 1998.
+  // Salas v1 (1998) — la primera versión, la de 1998.
   //
   // Es el antepasado de las de 2026: mismo alfil, mismo caballo y mismo peón,
   // pero sobre un tablero de 8×8 y con el ejército del ajedrez de siempre.
@@ -257,8 +257,8 @@ const VARIANTS = {
   // =========================================================================
   'salas-1998': {
     id: 'salas-1998',
-    name: 'Salas 1998 (Original)',
-    full: 'Ajedrez triangular de Salas 1998 (Original)',
+    name: 'Salas v1 (1998)',
+    full: 'Ajedrez triangular de Salas v1 (1998)',
     board: 'rect8',
     // La colocación del ajedrez tradicional, en el orden que le dio el autor:
     // torre, caballo, alfil, REY, DAMA, alfil, caballo y torre. Ojo, que el rey

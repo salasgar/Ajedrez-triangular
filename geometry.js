@@ -75,7 +75,7 @@ const KNIGHT_DELTAS = (() => {
 // `name`     nombre legible de una casilla
 // `parse`    nombre legible → coordenadas (o null)
 const BOARDS = {
-  // Hexágono de lado 4: el tablero del ajedrez de Salas y el de Dekle 1986.
+  // Hexágono de lado 4: el tablero de Salas (v2 y v3) y el de Dekle 1986.
   //
   // Nombre de casilla: B1A, N4H…
   //   B o N   color: Blanca si apunta hacia arriba, Negra si apunta hacia abajo

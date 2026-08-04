@@ -21,9 +21,9 @@ triangular de Salas.
 
 | Modalidad | Tablero | Piezas por bando |
 |---|---|---|
-| **Salas 2026 v2** | hexágono, 96 triángulos | 9 de fondo (con elefante) + 11 peones |
-| **Salas 2026 v1** | hexágono, 96 triángulos | igual, sin coronación de flanco |
-| **Salas 1998 (Original)** | rectángulo 8×8, 64 triángulos | juego de ajedrez normal, 16 piezas |
+| **Salas v3 (2026)** | hexágono, 96 triángulos | 9 de fondo (con elefante) + 11 peones |
+| **Salas v2 (2026)** | hexágono, 96 triángulos | igual, sin coronación de flanco |
+| **Salas v1 (1998)** | rectángulo 8×8, 64 triángulos | juego de ajedrez normal, 16 piezas |
 | **Dekle (1986)** | hexágono, 96 triángulos | 9 de fondo (con unicornio) + 11 peones |
 | **Trigonal (Koval, 2023)** | triángulo, 81 casillas | juego de ajedrez normal, 16 piezas |
 
@@ -44,7 +44,7 @@ acotando además su columna `a − c`.
 > libros de aperturas y del corpus de entrenamiento, así que no cambia aunque
 > cambie el nombre que se lee en el selector.
 
-### Salas 1998 (Original)
+### Salas v1 (1998)
 
 La primera versión, de 1998, y el antepasado directo de las de 2026: **mismo
 alfil, mismo caballo y mismo peón**, pero sobre un tablero de 8×8 y con el
@@ -146,7 +146,7 @@ casilla de captura**, así que la regla añade un movimiento y nunca una elecci�
 Con ella no queda ni una casilla del tablero desde la que un peón no pueda
 coronar.
 
-La modalidad **Salas 2026 v1** conserva el reglamento sin esa regla, para poder
+La modalidad **Salas v2 (2026)** conserva el reglamento sin esa regla, para poder
 comparar las dos.
 
 ## El tablero (modalidad de Salas)
@@ -336,8 +336,8 @@ lo permite, cae al cálculo síncrono.
 ### La fuerza del motor por modalidad
 
 La escalera de niveles es la misma en todas las modalidades, pero **los valores
-de las piezas solo están ajustados para el ajedrez de Salas de 2026**. Los de
-Salas 1998, Dekle y Trigonal (`engine.pieceValues` en [variants.js](variants.js))
+de las piezas solo están ajustados para el ajedrez de Salas v3 (2026)**. Los de
+Salas v1 (1998), Dekle y Trigonal (`engine.pieceValues` en [variants.js](variants.js))
 son una estimación a ojo: el unicornio puesto entre caballo y torre; para Koval
 los valores clásicos del ajedrez, aun sabiendo que su alfil en zigzag alcanza
 mucho más que el de siempre y casi seguro vale más de lo que dice esa tabla; y
@@ -382,7 +382,7 @@ implementación lenta y evidente**, en las cinco modalidades:
   `movesForSide` (que copia el tablero y prueba jugada a jugada).
 - `isAttackedFast` (que mira desde la casilla hacia fuera) contra `isAttacked`
   (que recorre todas las piezas rivales).
-- Y para el ajedrez de Salas, además, que el `perft` y una partida entera
+- Y para Salas, además, que el `perft` y una partida entera
   coincidan **jugada a jugada** con la versión anterior al refactor.
 
 ```sh
