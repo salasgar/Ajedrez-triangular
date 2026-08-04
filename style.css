@@ -129,6 +129,10 @@ h1 {
     cursor: pointer;
 }
 
+.cell:focus {
+    outline: none;
+}
+
 .cell.light { fill: #f0d9b5; }
 .cell.dark  { fill: #b58863; }
 
