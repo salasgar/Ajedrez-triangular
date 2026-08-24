@@ -30,6 +30,10 @@ const VS_TEXT = '︎';
 const GLYPH = {
   K: '♚' + VS_TEXT, Q: '♛' + VS_TEXT, R: '♜' + VS_TEXT, B: '♝' + VS_TEXT,
   N: '♞' + VS_TEXT, E: '🐘', U: '🦄', P: '♟' + VS_TEXT,
+  // Piedra, papel y tijera (más lagarto y Spock). Igual que el elefante y el
+  // unicornio, sobre el tablero van como icono SVG monocromo (los emoji no
+  // distinguen el bando); el emoji queda para el texto de las jugadas.
+  O: '🪨', A: '📄', T: '✂️', L: '🦎', S: '🖖',
 };
 
 // --- utilidades de construcción -------------------------------------------
@@ -535,6 +539,175 @@ const VARIANTS = {
     },
   },
 };
+
+// ===========================================================================
+// Piedra, papel y tijera — cuatro modalidades sobre el hexágono de 96.
+//
+// Todas las figuras se mueven como el rey (un paso a cualquier casilla vecina
+// por arista o por vértice), pero cada una solo puede capturar a las que
+// vence en el juego de siempre: piedra 🪨 a tijera, tijera ✂️ a papel y papel
+// 📄 a piedra (y en la versión de cinco, el lagarto 🦎 y Spock 🖖 con la regla
+// de Big Bang Theory). Las restricciones van en el mapa `captures` de cada
+// modalidad, que consulta canCapture() en rules.js.
+//
+// Dos parejas: sin rey (kingless: gana quien elimina TODAS las piezas del
+// rival, estado 'wiped') y con rey (el rey captura todo y todos capturan al
+// rey; el objetivo vuelve a ser el jaque mate; esa regla del rey no es un
+// caso especial: está escrita dentro del propio mapa `captures`).
+//
+// Letras de tipo (fijas, viajan en las partidas guardadas): Piedra 'O',
+// Papel 'A', Tijera 'T', Lagarto 'L', Spock 'S', Rey 'K'.
+// ===========================================================================
+
+// POSICIONES INICIALES PROVISIONALES, pendientes de ajuste. Para cambiarlas
+// basta tocar estas listas: la fila delantera (11 casillas, donde van los
+// peones en las modalidades clásicas) y la del fondo (9 casillas). Los dos
+// bandos usan las mismas listas y las mismas columnas, así que quedan figuras
+// iguales enfrentadas, como en las clásicas.
+const RPS_FRONT = Array(11).fill('A');            // una fila entera de papeles
+const RPS_BACK = ['O', 'T', 'O', 'T', 'O', 'T', 'O', 'T', 'O'];
+const RPSLS_FRONT = Array(11).fill('A');
+const RPSLS_BACK = ['O', 'T', 'L', 'S', 'O', 'S', 'L', 'T', 'O'];
+// En las -rey, el rey ocupa el centro de la fila del fondo.
+const conRey = fila => fila.map((t, i) => (i === 4 ? 'K' : t));
+
+// Matrices de captura: tipo → tipos rivales capturables.
+const RPS_CAPTURES = { O: ['T'], A: ['O'], T: ['A'] };
+const RPSLS_CAPTURES = {
+  O: ['T', 'L'],   // la piedra aplasta la tijera y aplasta al lagarto
+  A: ['O', 'S'],   // el papel tapa la piedra y desautoriza a Spock
+  T: ['A', 'L'],   // la tijera corta el papel y decapita al lagarto
+  L: ['S', 'A'],   // el lagarto envenena a Spock y devora el papel
+  S: ['T', 'O'],   // Spock rompe la tijera y vaporiza la piedra
+};
+// Con rey: cada mapa gana la fila del rey (captura todo) y la columna del rey
+// (todos lo capturan, por eso cualquier pieza da jaque).
+function capturesConRey(base) {
+  const out = { K: Object.keys(base) };
+  for (const [t, victimas] of Object.entries(base)) out[t] = victimas.concat('K');
+  return out;
+}
+
+const RPS_HELP = {
+  O: ['O', '<b>Piedra 🪨</b>: un paso a cualquier casilla que toque la suya (por arista o por vértice). Solo puede capturar tijeras (la piedra aplasta la tijera).'],
+  A: ['A', '<b>Papel 📄</b>: se mueve igual. Solo puede capturar piedras (el papel envuelve la piedra).'],
+  T: ['T', '<b>Tijera ✂️</b>: se mueve igual. Solo puede capturar papeles (la tijera corta el papel).'],
+  O5: ['O', '<b>Piedra 🪨</b>: un paso a cualquier casilla que toque la suya (por arista o por vértice). Captura tijeras y lagartos (los aplasta).'],
+  A5: ['A', '<b>Papel 📄</b>: se mueve igual. Captura piedras (las tapa) y a Spock (lo desautoriza).'],
+  T5: ['T', '<b>Tijera ✂️</b>: se mueve igual. Captura papeles (los corta) y lagartos (los decapita).'],
+  L5: ['L', '<b>Lagarto 🦎</b>: se mueve igual. Captura a Spock (lo envenena) y papeles (los devora).'],
+  S5: ['S', '<b>Spock 🖖</b>: se mueve igual. Captura tijeras (las rompe) y piedras (las vaporiza).'],
+  K: ['K', '<b>Rey ♚</b>: se mueve igual que las demás figuras, pero sin restricciones: puede capturar cualquier pieza rival. Y cualquier pieza rival puede capturarlo a él, así que todas dan jaque. El objetivo es el jaque mate de siempre.'],
+};
+
+// Fábrica de las cuatro: comparten tablero, filas, movimiento y motor.
+function rpsVariant(extra) {
+  return {
+    board: 'hex4',
+    promotionChoices: [],       // no hay peones, nadie corona
+    edgePromotion: false,
+    setup() {
+      return {
+        wBack: rowCells(1 - N), wPawns: rowCells(2 - N),
+        bBack: rowCells(N), bPawns: rowCells(N - 1),
+      };
+    },
+    // Sin peones, pero setVariant precalcula las tablas de peón sobre todas
+    // las casillas, así que se montan igual (no las usa nadie).
+    build() { setRowPawns(); },
+    slideGroups: () => [],      // ninguna pieza deslizante
+    engine: {
+      // Valores planos provisionales: la evaluación dinámica (el valor de una
+      // figura depende de cuántas presas y depredadores le queden) es de ai.js
+      // y queda pendiente.
+      pieceValues: { O: 100, A: 100, T: 100, L: 100, S: 100, K: 0 },
+      mobility: 4,
+    },
+    ...extra,
+  };
+}
+
+Object.assign(VARIANTS, {
+  rps: rpsVariant({
+    id: 'rps',
+    name: 'Piedra, papel y tijera',
+    full: 'Piedra, papel y tijera sobre el tablero triangular',
+    kingless: true,
+    captures: RPS_CAPTURES,
+    backLayout: RPS_BACK,
+    frontLayout: RPS_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+    },
+    note: 'Hexágono de 96 triángulos. Tres figuras que se mueven como el rey; ' +
+      'cada una solo captura a la que vence: piedra a tijera, tijera a papel ' +
+      'y papel a piedra. No hay jaque: gana quien deja al rival sin piezas.',
+    help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T],
+  }),
+
+  rpsls: rpsVariant({
+    id: 'rpsls',
+    name: 'Piedra, papel, tijera, lagarto, Spock',
+    full: 'Piedra, papel, tijera, lagarto, Spock sobre el tablero triangular',
+    kingless: true,
+    captures: RPSLS_CAPTURES,
+    backLayout: RPSLS_BACK,
+    frontLayout: RPSLS_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+      L: { leaps: c => c.kingNbrs },
+      S: { leaps: c => c.kingNbrs },
+    },
+    note: 'Como Piedra, papel y tijera pero con las cinco figuras de la regla ' +
+      'de Big Bang Theory: cada una captura exactamente a dos y es capturada ' +
+      'por otras dos. Gana quien deja al rival sin piezas.',
+    help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5],
+  }),
+
+  'rps-rey': rpsVariant({
+    id: 'rps-rey',
+    name: 'Piedra, papel y tijera con rey',
+    full: 'Piedra, papel y tijera con rey sobre el tablero triangular',
+    captures: capturesConRey(RPS_CAPTURES),
+    backLayout: conRey(RPS_BACK),
+    frontLayout: RPS_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+      K: { leaps: c => c.kingNbrs },
+    },
+    note: 'Piedra, papel y tijera con un rey por bando: el rey captura ' +
+      'cualquier pieza y cualquier pieza lo captura a él (todas dan jaque). ' +
+      'El objetivo vuelve a ser el jaque mate.',
+    help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T, RPS_HELP.K],
+  }),
+
+  'rpsls-rey': rpsVariant({
+    id: 'rpsls-rey',
+    name: 'Piedra, papel, tijera, lagarto, Spock con rey',
+    full: 'Piedra, papel, tijera, lagarto, Spock con rey sobre el tablero triangular',
+    captures: capturesConRey(RPSLS_CAPTURES),
+    backLayout: conRey(RPSLS_BACK),
+    frontLayout: RPSLS_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+      L: { leaps: c => c.kingNbrs },
+      S: { leaps: c => c.kingNbrs },
+      K: { leaps: c => c.kingNbrs },
+    },
+    note: 'Las cinco figuras de la regla de Big Bang Theory más un rey por ' +
+      'bando: el rey captura cualquier pieza y cualquier pieza lo captura a ' +
+      'él (todas dan jaque). El objetivo es el jaque mate.',
+    help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5, RPS_HELP.K],
+  }),
+});
 
 // Distancia en la retícula (mitad de la suma de diferencias absolutas).
 function dist(p, q) {

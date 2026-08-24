@@ -18,6 +18,19 @@ let FIFTY_MOVE_LIMIT = 100;
 
 let game = null;
 
+// --- restricciones de captura ---
+// Una modalidad puede declarar `captures`: un mapa tipo → tipos rivales que
+// esa pieza puede capturar (las de «Piedra, papel y tijera»). Si no lo
+// declara, todo se puede capturar, que es el ajedrez de siempre. La regla del
+// rey de las modalidades -rey (el rey captura todo y todos capturan al rey)
+// no es un caso especial: va codificada dentro del propio mapa.
+function canCapture(attackerType, victimType) {
+  const caps = V.captures;
+  if (!caps) return true;
+  const lista = caps[attackerType];
+  return !!lista && lista.includes(victimType);
+}
+
 // --- enroque ---
 // Los índices de CASTLING son posiciones dentro de la fila del borde. El rey
 // se aleja del centro tres casillas por el lado largo; por el corto solo caben
@@ -107,14 +120,23 @@ function initialPosition() {
       }
     }
   } else {
-    // Modalidad de fila de fondo + fila de peones (hexágono).
+    // Modalidad de fila de fondo + fila delantera (hexágono). La delantera
+    // son peones salvo que la modalidad dé un `frontLayout` propio (las de
+    // «Piedra, papel y tijera» ponen ahí sus papeles).
     const { wBack, wPawns, bBack, bPawns } = V.rows;
     V.backLayout.forEach((type, i) => {
       put(wBack[i], 'w', type);
       put(bBack[i], 'b', type);
     });
-    for (const cell of wPawns) put(cell, 'w', 'P');
-    for (const cell of bPawns) put(cell, 'b', 'P');
+    if (V.frontLayout) {
+      V.frontLayout.forEach((type, i) => {
+        put(wPawns[i], 'w', type);
+        put(bPawns[i], 'b', type);
+      });
+    } else {
+      for (const cell of wPawns) put(cell, 'w', 'P');
+      for (const cell of bPawns) put(cell, 'b', 'P');
+    }
   }
   return board;
 }
@@ -129,6 +151,7 @@ function newGame() {
     enPassant: null,                // {targetKey, pawnKey} si cabe captura al paso
     status: 'playing',              // playing | check | checkmate | stalemate
                                     // | repetition | fifty | material (tablas)
+                                    // | wiped (sin rey: un bando se quedó sin piezas)
     winner: null,
     clock: 0,                       // medias jugadas sin captura ni peón (regla de los 50)
     history: [],                    // instantáneas del estado tras cada jugada
@@ -202,7 +225,7 @@ function positionKey(board, turn, ep) {
 function gameEnded() {
   return game.status === 'checkmate' || game.status === 'stalemate' ||
     game.status === 'repetition' || game.status === 'fifty' ||
-    game.status === 'material';
+    game.status === 'material' || game.status === 'wiped';
 }
 
 // --- generación de movimientos ---
@@ -213,7 +236,8 @@ function slideMoves(board, piece, rays) {
     for (const t of ray) {
       const occ = board.get(t.key);
       if (!occ) { out.push(t); continue; }
-      if (occ.color !== piece.color) out.push(t);
+      // la primera pieza corta el rayo aunque no se pueda capturar
+      if (occ.color !== piece.color && canCapture(piece.type, occ.type)) out.push(t);
       break;
     }
   }
@@ -231,7 +255,7 @@ function pseudoMoves(board, cell, piece, ep = game && game.enPassant) {
   if (leaps) {
     return leaps.filter(t => {
       const o = board.get(t.key);
-      return !o || o.color !== piece.color;
+      return !o || (o.color !== piece.color && canCapture(piece.type, o.type));
     });
   }
 
@@ -254,7 +278,8 @@ function pseudoMoves(board, cell, piece, ep = game && game.enPassant) {
   // Capturas
   for (const t of cell.pawnCap[color]) {
     const o = board.get(t.key);
-    if (o && o.color !== color && !out.includes(t)) out.push(t);
+    if (o && o.color !== color && canCapture(piece.type, o.type) &&
+      !out.includes(t)) out.push(t);
   }
   // Captura al paso: la casilla intermedia que un peón rival acaba de saltar.
   if (ep) {
@@ -293,8 +318,11 @@ function isAttacked(board, target, byColor) {
 function rival(color) { return color === 'w' ? 'b' : 'w'; }
 
 // Movimientos legales: los pseudolegales que no dejan al propio rey en jaque.
+// En las modalidades sin rey (V.kingless) no hay jaque del que protegerse:
+// los legales SON los pseudolegales.
 function legalMoves(board, fromKey, piece, ep = game && game.enPassant) {
   const cell = CELL_MAP.get(fromKey);
+  if (V.kingless) return pseudoMoves(board, cell, piece, ep);
   const out = [];
   for (const t of pseudoMoves(board, cell, piece, ep)) {
     const copy = new Map(board);
@@ -401,6 +429,19 @@ function deadPosition(board) {
   return board.size === 2;   // los dos reyes y nada más
 }
 
+// Posición muerta de las modalidades sin rey (Piedra, papel y tijera): si
+// ninguna pieza viva de un bando puede capturar ya a ninguna del otro, y
+// viceversa, nadie puede eliminar a nadie y la partida son tablas. Es la
+// versión de «material insuficiente» que tiene sentido aquí (la clásica de
+// los dos reyes no aplica: no hay reyes).
+function deadPositionKingless(board) {
+  const tipos = { w: new Set(), b: new Set() };
+  for (const [, p] of board) tipos[p.color].add(p.type);
+  for (const a of tipos.w) for (const v of tipos.b) if (canCapture(a, v)) return false;
+  for (const a of tipos.b) for (const v of tipos.w) if (canCapture(a, v)) return false;
+  return true;
+}
+
 // Cierre común a toda jugada, ya aplicada sobre el tablero: pasa el turno,
 // actualiza el reloj de los 50 movimientos, decide el estado de la partida
 // (jaque, mate, ahogado, tablas) y registra la posición en el historial.
@@ -408,7 +449,8 @@ function finishMove(color, captured, isPawn) {
   const next = rival(color);
   game.turn = next;
   game.clock = (captured || isPawn) ? 0 : game.clock + 1;
-  const inCheck = isAttacked(game.board, findKing(game.board, next), color);
+  const inCheck = !V.kingless &&
+    isAttacked(game.board, findKing(game.board, next), color);
   const hasMoves = sideHasMoves(game.board, next);
   // veces que la posición resultante ha aparecido ya en la partida (una
   // repetición exige al menos 4 medias jugadas reversibles, de ahí la guarda)
@@ -419,7 +461,20 @@ function finishMove(color, captured, isPawn) {
       if (game.history[i].posKey === key) reps++;
     }
   }
-  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = color; }
+  if (V.kingless) {
+    // Sin rey no hay jaque ni mate: pierde el bando que se queda sin piezas
+    // ('wiped'); sin jugadas pero con piezas es ahogado, o sea tablas. La
+    // regla de los 50 movimientos no aplica (sin peones, el reloj solo se
+    // reiniciaría capturando y castigaría la maniobra legítima); el material
+    // insuficiente es la incapacidad mutua de captura, ver arriba.
+    let piezas = 0;
+    for (const [, p] of game.board) if (p.color === next) piezas++;
+    if (piezas === 0) { game.status = 'wiped'; game.winner = color; }
+    else if (!hasMoves) { game.status = 'stalemate'; }
+    else if (reps >= 3) { game.status = 'repetition'; }
+    else if (deadPositionKingless(game.board)) { game.status = 'material'; }
+    else { game.status = 'playing'; }
+  } else if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = color; }
   else if (!hasMoves) { game.status = 'stalemate'; }
   else if (reps >= 3) { game.status = 'repetition'; }   // aun con jaque: perpetuo
   else if (deadPosition(game.board)) { game.status = 'material'; }

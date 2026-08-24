@@ -428,9 +428,14 @@ function renderCaptured(el, color, turn, capturedBy) {
 }
 
 // Piezas que no tienen glifo Unicode recoloreable y van como símbolo SVG: el
-// elefante del ajedrez de Salas y el unicornio de Dekle. Los emoji 🐘 y 🦄
-// vienen con color de fábrica y iOS ignora el fill del CSS.
-const ICON_PIECES = { E: '#piece-elephant', U: '#piece-unicorn' };
+// elefante del ajedrez de Salas, el unicornio de Dekle y las cinco figuras de
+// Piedra, papel y tijera. Los emoji vienen con color de fábrica y iOS ignora
+// el fill del CSS.
+const ICON_PIECES = {
+  E: '#piece-elephant', U: '#piece-unicorn',
+  O: '#piece-rock', A: '#piece-paper', T: '#piece-scissors',
+  L: '#piece-lizard', S: '#piece-spock',
+};
 
 // Un nodo SVG para una pieza en (cx, cy): texto Unicode para las piezas de
 // ajedrez, o el icono vectorial para las de ICON_PIECES. En ambos casos con la
@@ -636,7 +641,13 @@ function render() {
     statusEl.textContent = 'Tablas por la regla de los 50 movimientos.';
   } else if (status === 'material') {
     turnEl.textContent = 'Fin de la partida';
-    statusEl.textContent = 'Tablas: solo quedan los reyes.';
+    statusEl.textContent = V.kingless
+      ? 'Tablas: ya ninguna pieza puede capturar a ninguna del rival.'
+      : 'Tablas: solo quedan los reyes.';
+  } else if (status === 'wiped') {
+    turnEl.textContent = 'Fin de la partida';
+    statusEl.textContent =
+      `¡Victoria por eliminación! Ganan las ${names[winner]}: el rival se ha quedado sin piezas.`;
   } else {
     turnEl.textContent = `Juegan las ${names[turn]}`;
     let msg = status === 'check' ? '¡Jaque!' : '';
@@ -684,9 +695,10 @@ function clearSelection() {
 // El diálogo se monta sobre el tablero y no deja seguir hasta elegir; con
 // Escape se toma la dama, que es lo que se querrá en la práctica.
 const PIECE_NAMES = { P: 'Peón', N: 'Caballo', B: 'Alfil', E: 'Elefante',
-  U: 'Unicornio', R: 'Torre', Q: 'Dama', K: 'Rey' };
-// torre y dama son femeninas: "torre blanca", pero "peón blanco"
-const PIECE_FEM = new Set(['R', 'Q']);
+  U: 'Unicornio', R: 'Torre', Q: 'Dama', K: 'Rey',
+  O: 'Piedra', A: 'Papel', T: 'Tijera', L: 'Lagarto', S: 'Spock' };
+// torre, dama, piedra y tijera son femeninas: "torre blanca", "peón blanco"
+const PIECE_FEM = new Set(['R', 'Q', 'O', 'T']);
 const colorAdj = (tipo, color) => PIECE_FEM.has(tipo)
   ? (color === 'w' ? 'blanca' : 'negra')
   : (color === 'w' ? 'blanco' : 'negro');
@@ -821,7 +833,10 @@ function nextAnalysis(idx) {
 // que no hay quien lo lea. Con el origen delante y un separador en medio no
 // hay ambigüedad posible, y de paso sobra toda la lógica de desambiguar, que
 // es una fuente de fallos menos.
-const LETRA_PIEZA = { K: 'R', Q: 'D', R: 'T', B: 'A', N: 'C', E: 'E', U: 'U', P: '' };
+const LETRA_PIEZA = { K: 'R', Q: 'D', R: 'T', B: 'A', N: 'C', E: 'E', U: 'U', P: '',
+  // Piedra, papel y tijera: dos letras para que no se confundan entre sí ni
+  // con las de las piezas clásicas
+  O: 'Pi', A: 'Pa', T: 'Ti', L: 'La', S: 'Sp' };
 
 // '+' si la jugada dio jaque, '#' si fue mate. Solo se sabe de las jugadas ya
 // hechas (el estado viene del snapshot siguiente); las jugadas propuestas del
@@ -1613,7 +1628,8 @@ function movesAsText() {
   }
   const fin = { checkmate: 'Jaque mate', stalemate: 'Ahogado',
     repetition: 'Tablas por repetición', fifty: 'Tablas por la regla de 50',
-    material: 'Tablas por material insuficiente' }[game.status];
+    material: 'Tablas por material insuficiente',
+    wiped: 'Victoria por eliminación' }[game.status];
   if (fin) {
     lineas.push('');
     lineas.push(fin + (game.winner ? ', ganan las ' +
@@ -1734,6 +1750,18 @@ function buildRuleMinis() {
   document.getElementById('help-castling').classList.toggle('hidden', !V.castling);
   document.getElementById('help-castling-how').textContent =
     V.castling ? textoEnroque() : '';
+  // la captura al paso solo existe donde hay peones, y el jaque donde hay rey;
+  // en las modalidades sin rey las tablas también son otras (ver rules.js)
+  document.getElementById('help-enpassant').classList.toggle('hidden', !V.pieces.P);
+  document.getElementById('help-check').classList.toggle('hidden', !!V.kingless);
+  document.getElementById('help-draws').innerHTML = V.kingless
+    ? '<b>Fin de la partida</b>: pierde el bando que se queda sin piezas. Son ' +
+      'tablas quedarse sin jugadas conservando piezas (ahogado), que la misma ' +
+      'posición aparezca por tercera vez, o que ya ninguna pieza de un bando ' +
+      'pueda capturar a ninguna del otro (y viceversa).'
+    : '<b>Tablas</b>: además del ahogado, la partida acaba en tablas si la ' +
+      'misma posición aparece por tercera vez o tras 50 jugadas de cada bando ' +
+      'sin capturas ni movimientos de peón.';
 
   const ul = document.getElementById('help-pieces');
   ul.innerHTML = '';

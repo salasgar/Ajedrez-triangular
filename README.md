@@ -26,6 +26,7 @@ triangular de Salas.
 | **Salas v1 (1998)** | rectángulo 8×8, 64 triángulos | juego de ajedrez normal, 16 piezas |
 | **Dekle (1986)** | hexágono, 96 triángulos | 9 de fondo (con unicornio) + 11 peones |
 | **Trigonal (Koval, 2023)** | triángulo, 81 casillas | juego de ajedrez normal, 16 piezas |
+| **Piedra, papel y tijera** (×4) | hexágono, 96 triángulos | 20 figuras que se mueven como el rey |
 
 Cada modalidad vive en [variants.js](variants.js): su dotación, cómo se mueve
 cada pieza, las reglas del peón y los valores con los que evalúa el motor. El
@@ -126,6 +127,43 @@ diagonales a 120°, cuya deriva neta va en línea recta.
 >
 > **No hay enroque**: el autor dice que lo hay, pero no publica sobre qué
 > casillas, y en este tablero no se deduce. Preferimos que falte a inventarlo.
+
+### Piedra, papel y tijera
+
+Cuatro modalidades experimentales sobre el mismo hexágono de 96 triángulos.
+Todas las figuras se mueven igual —un paso a cualquier casilla vecina, como el
+rey—, pero **cada una solo puede capturar a las que vence** en el juego de
+siempre. Moverse a una casilla vacía siempre se puede.
+
+- **Piedra, papel y tijera** (`rps`): piedra 🪨, papel 📄 y tijera ✂️. La
+  piedra captura la tijera, la tijera el papel y el papel la piedra. **No hay
+  rey ni jaque**: gana quien deja al rival sin piezas. Quedarse sin jugadas
+  conservando piezas es ahogado (tablas), y si ya ninguna pieza de un bando
+  puede capturar a ninguna del otro —y viceversa— son tablas por material.
+- **Piedra, papel, tijera, lagarto, Spock** (`rpsls`): las cinco figuras de la
+  regla de Big Bang Theory. La tijera corta el papel y decapita al lagarto; el
+  papel tapa la piedra y desautoriza a Spock; la piedra aplasta al lagarto y a
+  la tijera; el lagarto envenena a Spock y devora el papel; Spock rompe la
+  tijera y vaporiza la piedra. Cada figura captura exactamente a dos y es
+  capturada por otras dos.
+- **Con rey** (`rps-rey`, `rpsls-rey`): las mismas figuras más un rey por
+  bando. El rey puede capturar cualquier pieza rival y cualquier pieza rival
+  puede capturarlo a él —así que todas dan jaque— y el objetivo vuelve a ser
+  el **jaque mate**.
+
+La posición inicial (provisional, pendiente de ajuste) es una fila entera de
+papeles delante y, detrás, una fila que alterna las demás figuras —con el rey
+en el centro en las modalidades con rey—; los dos bandos quedan con figuras
+iguales enfrentadas. Sin peones no hay coronación, doble paso ni captura al
+paso, y tampoco enroque. En las modalidades sin rey no aplica la regla de las
+50 jugadas; la repetición triple sigue siendo tablas.
+
+Por dentro, la matriz de capturas vive en el mapa `captures` de cada modalidad
+(tipo → tipos capturables) y la consulta `canCapture()` en
+[rules.js](rules.js); las modalidades sin rey llevan el flag `kingless` y el
+fin por eliminación es el estado `wiped`. Las cinco figuras se dibujan como
+iconos SVG monocromos —igual que el elefante y el unicornio— para que tomen el
+color del bando.
 
 ### Coronación de flanco
 
