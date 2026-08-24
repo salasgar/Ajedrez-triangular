@@ -42,16 +42,47 @@ function makePieceNode(type, color, cx, cy) {
   return node;
 }
 
+// Un botón de la paleta es HTML, no una capa del SVG del tablero: un <text> o
+// un <use> sueltos, sin un <svg> que los envuelva, no pintan nada. Mismo
+// criterio que los botones de coronación de script.js.
+function setPieceContent(btn, type) {
+  if (ICON_PIECES[type]) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', ICON_PIECES[type]);
+    svg.appendChild(use);
+    btn.appendChild(svg);
+  } else {
+    btn.textContent = GLYPH[type];
+  }
+}
+
 function cellName(cell) {
-  return V.board ? V.board.name(cell) : cell.key;
+  return BOARD && BOARD.name ? BOARD.name(cell) : cell.key;
 }
 
 function buildEditorSvg() {
   const boardWrap = document.getElementById('board-wrap');
+  if (!boardWrap) {
+    console.error('buildEditorSvg: #board-wrap not found');
+    return;
+  }
+
+  if (!CELLS || CELLS.length === 0) {
+    console.error('buildEditorSvg: CELLS not initialized, length=' + (CELLS ? CELLS.length : 'undefined'));
+    return;
+  }
+
   boardWrap.innerHTML = '';
   cellPolys.clear();
   coordTexts.clear();
   focoTablero = null;
+
+  if (!BBOX) {
+    console.error('buildEditorSvg: BBOX not initialized');
+    return;
+  }
 
   document.documentElement.style.setProperty(
     '--board-aspect', (BBOX.w / BBOX.h).toFixed(4));
@@ -125,10 +156,25 @@ function eraseCell(cell) {
 
 function buildPalette() {
   const palette = document.getElementById('palette');
+  if (!palette) {
+    console.error('buildPalette: #palette not found');
+    return;
+  }
+
+  if (!V || !V.pieceTypes) {
+    console.error('buildPalette: V or V.pieceTypes not initialized, V=' + (V ? 'exists' : 'null'));
+    return;
+  }
+
   palette.innerHTML = '';
   palette.classList.add('editor-palette');
 
-  // Fila de blancas
+  // Blancas y negras van en un contenedor aparte de la goma: así el CSS las
+  // pone como dos columnas enfrentadas (paleta a la izquierda del tablero) o
+  // como dos filas (pantalla estrecha, paleta debajo) sin tocar el JS.
+  const cols = document.createElement('div');
+  cols.className = 'palette-cols';
+
   const whiteRow = document.createElement('div');
   whiteRow.className = 'palette-row';
   for (const type of V.pieceTypes) {
@@ -137,13 +183,12 @@ function buildPalette() {
     btn.dataset.type = type;
     btn.dataset.color = 'w';
     btn.title = PIECE_NAMES[type] + ' blanca';
-    btn.appendChild(makePieceNode(type, 'w', 12, 12));
+    setPieceContent(btn, type);
     btn.addEventListener('click', () => setBrush(type, 'w', btn));
     whiteRow.appendChild(btn);
   }
-  palette.appendChild(whiteRow);
+  cols.appendChild(whiteRow);
 
-  // Fila de negras
   const blackRow = document.createElement('div');
   blackRow.className = 'palette-row';
   for (const type of V.pieceTypes) {
@@ -152,11 +197,12 @@ function buildPalette() {
     btn.dataset.type = type;
     btn.dataset.color = 'b';
     btn.title = PIECE_NAMES[type] + ' negra';
-    btn.appendChild(makePieceNode(type, 'b', 12, 12));
+    setPieceContent(btn, type);
     btn.addEventListener('click', () => setBrush(type, 'b', btn));
     blackRow.appendChild(btn);
   }
-  palette.appendChild(blackRow);
+  cols.appendChild(blackRow);
+  palette.appendChild(cols);
 
   // Goma de borrar
   const eraserRow = document.createElement('div');
@@ -193,12 +239,17 @@ function fillVariantSelect() {
     const o = document.createElement('option');
     o.value = id;
     o.textContent = name;
-    if (id === V.id) o.selected = true;
+    if (V && id === V.id) o.selected = true;
     sel.appendChild(o);
   }
 }
 
-function onVariantChange() {
+// Ojo con el nombre: `onVariantChange` es el gancho global que setVariant()
+// llama al final (ver el final de setVariant en variants.js), y que ai.js usa
+// para rehacer sus tablas. Si el manejador del selector se llamara así, el
+// editor —que no carga ai.js— ocuparía ese hueco y se llamaría a sí mismo en
+// bucle hasta desbordar la pila.
+function aplicarModalidad() {
   if (board.size > 0) {
     if (!confirm('Cambiar de modalidad vaciará el tablero. ¿Continuar?')) return;
   }
@@ -400,8 +451,11 @@ function rowCells(b) {
 }
 
 // Inicialización
+// Asegurar que V está inicializado (debería estarlo por variants.js, pero por si acaso)
+if (!V) setVariant(DEFAULT_VARIANT || 'salas');
+
 fillVariantSelect();
-document.getElementById('variant').addEventListener('change', onVariantChange);
+document.getElementById('variant').addEventListener('change', aplicarModalidad);
 
 const turnRadios = document.querySelectorAll('input[name="turn"]');
 turnRadios.forEach(r => r.addEventListener('change', (e) => { turn = e.target.value; }));

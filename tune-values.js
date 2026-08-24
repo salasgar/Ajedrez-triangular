@@ -66,9 +66,12 @@ const N_GAMES = 1500;        // nº de partidas si no se da --minutes (~20 min e
 // la casilla de destino queda a tiro, lo que basta para que el signo tenga
 // sentido.
 const SELF_PLAY_CFG = { depth: 2, order: true };
-// valor de hoy del peso de movilidad (evaluate() en ai.js), punto de
-// partida para MOBILITY_WEIGHT_TUNED
-const MOBILITY_DEFAULT = 2;
+// Peso de movilidad de hoy: el término fijo sobre el que la regresión ajusta
+// el material, así que tiene que ser el que de verdad usa evaluate(). Lo pone
+// la modalidad (engine.mobility), y se rellena tras cargar variants.js —estaba
+// congelado en 2 desde antes de que la arena confirmara el 4, y con el número
+// equivocado el material sale sesgado.
+let MOBILITY_DEFAULT = 4;
 // factor de normalización de la característica de movilidad, ver
 // mobilityDiff() dentro de driverSrc
 const MOBILITY_SCALE = 10;
@@ -479,8 +482,16 @@ if (!VARIANTS[${JSON.stringify(CLI_VARIANT)}]) {
   process.exit(1);
 }
 setVariant(${JSON.stringify(CLI_VARIANT)});
-PIECES = V.pieceTypes.filter(t => t !== 'K');
-console.log('Modalidad: ' + V.full);
+// El peón va SIEMPRE el primero. fitValues() deja fijo el índice 0 como ancla
+// de la escala y da por hecho que ese índice es el peón; el orden que trae la
+// modalidad (Object.keys de sus piezas) lo dejaba el último, así que el ancla
+// caía sobre la torre y el valor del peón —el que después normaliza a 100 toda
+// la tabla— quedaba suelto. Mismo orden que usa corpus.js, para que los
+// vectores de los dos caminos sean intercambiables.
+PIECES = ['P', ...V.pieceTypes.filter(t => t !== 'K' && t !== 'P')];
+MOBILITY_DEFAULT = V.engine.mobility ?? 4;
+console.log('Modalidad: ' + V.full + '   piezas: ' + PIECES.join(' ') +
+  '   movilidad de hoy: ' + MOBILITY_DEFAULT);
 `;
 
 eval(gameSrc + '\n' + prepSrc + '\n' + driverSrc);

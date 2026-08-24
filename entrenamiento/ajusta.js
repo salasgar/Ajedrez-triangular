@@ -4,6 +4,14 @@
 //
 //   cat corp/*.jsonl | node ajusta.js [--reg=0.02] [--features=all] [--holdout=0.2]
 //
+// LA MODALIDAD Y LA LISTA DE PIEZAS SE LEEN DEL CORPUS, no se pasan por
+// argumento: cada shard las escribe en su resumen (ver corpus.js). Así no hay
+// forma de ajustar el corpus de una modalidad interpretándolo con las piezas
+// de otra, que era el fallo que esperaba a quien reutilizase este script tal
+// cual —las piezas estaban escritas a mano, y en Dekle la cuarta componente
+// del vector es el unicornio, no el elefante—. Si se mezclan shards de
+// modalidades distintas, aborta.
+//
 // Dos cosas que tune-values.js no hacía y que aquí son el objetivo:
 //
 //  1. SUBCONJUNTOS DE CARACTERÍSTICAS (--features). El ajuste actual mete
@@ -34,47 +42,84 @@ const ITERATIONS = Number(arg('iters', 800));
 const LEARNING_RATE = Number(arg('lr', 5));
 const ETIQUETA = arg('nombre', FEATURES + '-r' + REG);
 
-const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];
 const MOBILITY_SCALE = 10;
-// Peso de movilidad del motor VIGENTE (ai.js usa 4 desde el commit 22407e1):
-// es el término fijo sobre el que la regresión ajusta el material, y debe
-// coincidir con el motor que generó el corpus y que jugará el candidato.
-const MOBILITY_DEFAULT = 4;
 const K = 1 / 400;
 
-// --- CENTRALITY_BASE sale de la geometría, hay que cargarla ---
-const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
-const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
-  .map(f => fs.readFileSync(dir + '/' + f, 'utf8')).join('\n');
-let CENTRALITY_BASE, PIECE_VALUE_REF;
-eval(gameSrc + `
-CENTRALITY_BASE = CELLS.reduce((s, c) => s + centrality(c), 0) / CELLS.length;
-PIECE_VALUE_REF = PV();
-`);
-const ADVANCE_BASE = 0.5;
-
-// --- leer corpus y sumar los resúmenes de todos los shards ---
+// --- leer corpus: primero, porque de él salen la modalidad y las piezas ---
 const lineas = fs.readFileSync(0, 'utf8').trim().split('\n');
 const dataset = [];
-const mobTotal = PIECES.map(() => 0), mobCount = PIECES.map(() => 0);
-let partidas = 0, shards = 0;
+const resumenes = [];
 for (const l of lineas) {
   if (!l.startsWith('{')) continue;
   const o = JSON.parse(l);
-  if (o.resumen) {
-    shards++;
-    partidas += o.resumen.usadas;
-    o.resumen.mobTotal.forEach((v, i) => mobTotal[i] += v);
-    o.resumen.mobCount.forEach((v, i) => mobCount[i] += v);
-  } else {
-    dataset.push({ diff: o.d, label: o.y });
-  }
+  if (o.resumen) resumenes.push(o.resumen);
+  else dataset.push({ diff: o.d, label: o.y });
 }
 if (!dataset.length) { console.error('corpus vacio'); process.exit(1); }
+if (!resumenes.length) {
+  console.error('corpus sin linea de resumen: no se sabe de que modalidad es' +
+    ' ni en que orden van las piezas. Regeneralo con corpus.js.');
+  process.exit(1);
+}
+
+// Todos los shards tienen que ser de la misma modalidad y con las piezas en el
+// mismo orden: si no, sus vectores de características no miden lo mismo y
+// sumarlos daría un ajuste sin sentido.
+const MODALIDAD = resumenes[0].modalidad;
+const PIECES = resumenes[0].piezas;
+if (!MODALIDAD || !PIECES) {
+  console.error('resumen antiguo, sin modalidad/piezas. Regeneralo con corpus.js.');
+  process.exit(1);
+}
+for (const r of resumenes) {
+  if (r.modalidad !== MODALIDAD || r.piezas.join() !== PIECES.join()) {
+    console.error('ABORTA: se estan mezclando shards de modalidades distintas (' +
+      MODALIDAD + ' y ' + r.modalidad + ')');
+    process.exit(1);
+  }
+}
+
+const mobTotal = PIECES.map(() => 0), mobCount = PIECES.map(() => 0);
+let partidas = 0;
+const shards = resumenes.length;
+for (const r of resumenes) {
+  partidas += r.usadas;
+  r.mobTotal.forEach((v, i) => mobTotal[i] += v);
+  r.mobCount.forEach((v, i) => mobCount[i] += v);
+}
+
+// --- CENTRALITY_BASE y los valores de hoy salen de la geometría de ESA
+// modalidad, que hay que cargar (el tablero de Trigonal no es el del resto) ---
+const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
+const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
+  .map(f => fs.readFileSync(dir + '/' + f, 'utf8')).join('\n');
+let CENTRALITY_BASE, PIECE_VALUE_REF, MODALIDAD_FULL, MOBILITY_DEFAULT;
+eval(gameSrc + `
+setVariant(${JSON.stringify(MODALIDAD)});
+CENTRALITY_BASE = CELLS.reduce((s, c) => s + centrality(c), 0) / CELLS.length;
+PIECE_VALUE_REF = PV();
+MODALIDAD_FULL = V.full;
+// Peso de movilidad VIGENTE en esta modalidad: es el término fijo sobre el que
+// la regresión ajusta el material, y tiene que ser el mismo con el que se jugó
+// el corpus y con el que jugará el candidato.
+MOBILITY_DEFAULT = V.engine.mobility ?? 4;
+`);
+const ADVANCE_BASE = 0.5;
+
+// Comprobación de forma: el vector de cada posición tiene que traer una
+// componente de material y una de centralidad por pieza, más avance y
+// movilidad. Si no cuadra, el corpus no es de estas piezas.
+const N_FEAT = 2 * PIECES.length + 2;
+const raro = dataset.find(r => r.diff.length !== N_FEAT);
+if (raro) {
+  console.error('ABORTA: el corpus trae vectores de ' + raro.diff.length +
+    ' componentes y ' + MODALIDAD + ' (' + PIECES.join(',') + ') necesita ' + N_FEAT);
+  process.exit(1);
+}
 
 // Centrado de la movilidad: restar a cada pieza la movilidad media de su
 // tipo, para que la característica mida "mis piezas se mueven mejor de lo
-// normal" y no "tengo más piezas" (que ya lo miden las seis de material).
+// normal" y no "tengo más piezas" (que ya lo mide el material).
 const mobBase = PIECES.map((p, i) => (mobCount[i] ? mobTotal[i] / mobCount[i] : 0));
 const mobIdx = 2 * PIECES.length + 1;
 for (const row of dataset) {
@@ -85,7 +130,7 @@ for (const row of dataset) {
 
 // --- qué índices se dejan ajustar según --features ---
 // El peón (índice 0) queda siempre fijo como ancla de escala.
-const idxMat = [1, 2, 3, 4, 5];
+const idxMat = [...Array(PIECES.length).keys()].slice(1);
 const idxPos = [...Array(PIECES.length).keys()].map(i => PIECES.length + i).concat([2 * PIECES.length]);
 const idxMob = [mobIdx];
 const ENTRENABLES = {
@@ -153,13 +198,14 @@ const wFull = HOLDOUT > 0 ? fit(dataset, initial, ENTRENABLES) : wTrain;
 // de centralidad y movilidad pasándolo al valor de cada pieza, y renormalizar
 // el peón a 100)
 function traducir(w) {
-  const pawnIdx = 0;
+  const pawnIdx = 0;   // el peón va siempre primero (ver corpus.js)
+  const n = PIECES.length;
   const scale = 100 / w[pawnIdx];
   const s = w.map(v => v * scale);
-  let material = s.slice(0, 6);
-  let cent = s.slice(6, 12);
-  let adv = s[12];
-  let mob = s[13];
+  let material = s.slice(0, n);
+  let cent = s.slice(n, 2 * n);
+  let adv = s[2 * n];
+  let mob = s[mobIdx];
   const mobPorJugada = mob / MOBILITY_SCALE;
   material = material.map((v, i) => v - cent[i] * CENTRALITY_BASE - mobPorJugada * mobBase[i]);
   material[pawnIdx] -= adv * ADVANCE_BASE;
@@ -182,6 +228,7 @@ PIECES.forEach((p, i) => {
 });
 
 console.log(`=== ${ETIQUETA} ===`);
+console.log(`modalidad: ${MODALIDAD_FULL}   piezas: ${PIECES.join(' ')}`);
 console.log(`corpus: ${dataset.length} posiciones de ${partidas} partidas (${shards} shards)`);
 console.log(`ajustando: ${FEATURES}   reg=${REG}   iters=${ITERATIONS}`);
 if (HOLDOUT > 0) {
@@ -193,11 +240,20 @@ if (HOLDOUT > 0) {
   console.log(`   (${test.length} posiciones de validacion, ${train.length} de entrenamiento)`);
 }
 console.log('material :', PIECES.map((p, i) => `${p}=${r.material[i].toFixed(1)}`).join(' '));
+console.log('hoy      :', PIECES.map(p => `${p}=${PIECE_VALUE_REF[p]}`).join(' '));
 console.log('centrali.:', PIECES.map((p, i) => `${p}=${r.cent[i].toFixed(1)}`).join(' '));
 console.log(`avance(P): ${r.adv.toFixed(1)}   movilidad: ${r.mobPorJugada.toFixed(2)} (hoy ${MOBILITY_DEFAULT})`);
 
-// JSON directamente pegable en CFG_B de arena.js
+// Candidato para engine.pieceValues de esta modalidad en variants.js. Ojo:
+// es una SUGERENCIA. La regresión minimiza el error de predecir el resultado,
+// no la fuerza de juego; entra en variants.js solo después de ganar en la
+// arena contra los valores vigentes.
+console.log('\npieceValues: { ' + PIECES.map(p => `${p}: ${pv[p]}`).join(', ') + ', K: 0 },');
+
+// JSON directamente pegable en CFG_B de arena.js (con MODALIDAD=<esta>, que
+// arena.js necesita para poner el tablero y el juego de piezas correctos).
 const cfg = { depth: 2, mobility: true, order: true, quiesce: true, pieceValues: pv };
 if (Object.keys(posW).length) cfg.positionWeights = posW;
 if (FEATURES === 'all' || FEATURES === 'matmob') cfg.mobilityWeight = +r.mobPorJugada.toFixed(2);
+console.log('MODALIDAD=' + MODALIDAD);
 console.log('CFG=' + JSON.stringify(cfg));

@@ -1,0 +1,15 @@
+=== dekle-mat ===
+modalidad: Triangular Chess (George R. Dekle Sr., 1986)   piezas: P R B Q U N
+corpus: 366398 posiciones de 39343 partidas (8 shards)
+ajustando: mat   reg=0.02   iters=800
+logloss entrenamiento: 0.53592 -> 0.53442  (-1.50 milinats)
+logloss validacion   : 0.53089 -> 0.52932  (-1.57 milinats)   <- mejora fuera de muestra
+   (73280 posiciones de validacion, 293118 de entrenamiento)
+material : P=100.0 R=423.9 B=348.0 Q=823.0 U=412.8 N=323.2
+hoy      : P=100 R=400 B=320 Q=800 U=400 N=300
+centrali.: P=0.0 R=0.0 B=0.0 Q=0.0 U=0.0 N=0.0
+avance(P): 0.0   movilidad: 4.20 (hoy 4)
+
+pieceValues: { P: 100, R: 424, B: 348, Q: 823, U: 413, N: 323, K: 0 },
+MODALIDAD=dekle
+CFG={"depth":2,"mobility":true,"order":true,"quiesce":true,"pieceValues":{"P":100,"R":424,"B":348,"Q":823,"U":413,"N":323,"K":0}}

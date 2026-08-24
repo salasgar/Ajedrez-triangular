@@ -765,6 +765,58 @@ h1 {
   .piece.mueve { transition: none; }
 }
 
+/* Insignia de captura (makeCaptureBadge en script.js): la pieza recien comida,
+   en miniatura sobre un circulo rojo, como superindice de la que la ha comido.
+   El rojo es el mismo del jaque y de la lista de capturadas. El borde blanco la
+   despega de la casilla amarilla del ultimo movimiento y de la pieza de
+   debajo. */
+.captura-disco { fill: #d84b3a; stroke: #fff; stroke-width: 1; }
+
+/* la miniatura va al 50%, asi que su contorno tambien se reduciria a la mitad:
+   se compensa para que las piezas negras sigan leyendose sobre el rojo. El
+   peon recupera aqui el tamano de las demas piezas (fuera del tablero va un 20%
+   mas pequeno): dentro de la insignia no hay jerarquia que ensenar, solo hay
+   que reconocer que ficha se ha ido. */
+.captura-mini .piece { stroke-width: 1.2; }
+.captura-mini .piece-P { font-size: 24px; }
+
+/* transform-box/origin: sin esto el origen de la escala es el (0,0) del
+   viewBox, no el centro de la insignia, y el pop sale disparado */
+.captura-marca, .captura-aura {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Entrada: solo la lleva la insignia de una jugada RECIEN hecha (la clase
+   .captura-nueva la pone script.js), no la de una captura que ya estaba ahi y
+   se vuelve a pintar al mover el raton por el analisis o al correr el reloj.
+   Sin `forwards` a proposito: cuando la animacion acaba —o si no llega a
+   arrancar— la insignia se queda en su tamano normal, que es el estado bueno. */
+.captura-nueva { animation: captura-pop 220ms ease-out; }
+@keyframes captura-pop {
+  from { transform: scale(0.35); }
+}
+
+/* onda que se abre y se apaga al aparecer la insignia; script.js la quita del
+   SVG al terminar. Solo se crea si la jugada es nueva. */
+.captura-aura {
+  fill: none;
+  stroke: #d84b3a;
+  stroke-width: 2.5;
+  animation: captura-onda 450ms ease-out forwards;
+}
+@keyframes captura-onda {
+  from { transform: scale(1);   opacity: 0.9; }
+  to   { transform: scale(2.2); opacity: 0; }
+}
+
+/* La insignia se queda: informa de que ha desaparecido una ficha, no adorna.
+   Lo que se va es el movimiento; la onda ni siquiera se crea (ver sinAnimacion
+   en script.js). */
+@media (prefers-reduced-motion: reduce) {
+  .captura-nueva { animation: none; }
+}
+
 /* Tiempo consumido por cada bando. Discreto: informa, no compite con el
    estado de la partida. */
 .reloj {
@@ -776,20 +828,31 @@ h1 {
 
 /* --- editor de posiciones (editor.html) --- */
 
-#board-col .editor-palette {
+/* La paleta va a la IZQUIERDA del tablero: es la columna que la mano recorre
+   antes de ir a la casilla, y así no le roba alto a #board-col, cuya altura
+   está calculada al milímetro. Blancas y negras, dos columnas enfrentadas; la
+   goma, debajo. */
+.editor-palette {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
   background: #1a1a1a;
   border-radius: 6px;
-  margin-top: 12px;
+  align-self: center;
+}
+
+.palette-cols {
+  display: flex;
+  gap: 8px;
 }
 
 .palette-row {
   display: flex;
+  flex-direction: column;
   gap: 4px;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -822,6 +885,33 @@ h1 {
 .palette-btn svg {
   width: 32px;
   height: 32px;
+}
+
+/* Color de la pieza dentro del botón: `color` para los glifos Unicode y `fill`
+   para los iconos SVG (elefante, unicornio), igual que en .promo-btn. La fila
+   negra necesita además fondo claro: #1d1d1d sobre el #2f2f2f del botón no se
+   vería, y aquí son siete botones permanentes, no un diálogo de paso. */
+.palette-btn.piece-w { color: #f4f4f4; fill: #f4f4f4; stroke: #222; }
+
+.palette-btn.piece-b {
+  color: #1d1d1d;
+  fill: #1d1d1d;
+  stroke: #ddd;
+  background: #cfcfcf;
+  border-color: #8a8a8a;
+}
+
+/* El fondo claro de la fila negra tapa el resalte de :hover y .active (misma
+   especificidad y va después), así que llevan versión propia, más clara para
+   que la pieza negra se siga viendo. */
+.palette-btn.piece-b:hover {
+  background: #aac4e2;
+  border-color: #6f9fd8;
+}
+
+.palette-btn.piece-b.active {
+  background: #8fb3e8;
+  border-color: #4a6a9e;
 }
 
 .eraser-btn {

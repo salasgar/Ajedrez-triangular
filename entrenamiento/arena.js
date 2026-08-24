@@ -41,12 +41,41 @@ const CFG_A = process.env.CFG_A || '{"depth":2,"mobility":true,"order":true,"qui
 const CFG_B = process.env.CFG_B || CFG_A;
 const NAME_A = process.env.NAME_A || 'A';
 const NAME_B = process.env.NAME_B || 'B';
+// Modalidad en la que se juega el torneo (ver VARIANTS en variants.js). Cada
+// una tiene su tablero, su juego de piezas y sus valores, así que un log solo
+// es comparable con otro de la MISMA modalidad; por eso va también a la
+// cabecera. Ojo con el libro de aperturas: es específico de la modalidad (ver
+// LIBRO más abajo).
+const MODALIDAD = process.env.MODALIDAD || 'salas';
 // Libro de aperturas compartido (ver aperturas.js). Con LIBRO, el par número
 // `par` juega siempre la apertura `par` del libro, sea cual sea la
 // configuración: todas las ramas de una ablación se comparan sobre el mismo
 // conjunto de posiciones de partida. Sin LIBRO, cada proceso las sortea.
-const LIBRO = process.env.LIBRO
-  ? JSON.stringify(JSON.parse(fs.readFileSync(process.env.LIBRO, 'utf8')))
+//
+// EL LIBRO ES DE UNA MODALIDAD CONCRETA, y usar el que no toca no da error
+// ruidoso: las jugadas son claves de casilla, y en Dekle el 44% de las
+// aperturas de Salas resultan legales por casualidad (las de peón, que se
+// mueve igual) mientras el 56% restante no lo es. Con el libro equivocado la
+// tanda no reventaría: se quedaría callada midiendo solo aperturas de peón.
+// Por eso openingFor() comprueba la legalidad de la primera apertura y aborta
+// si no cuadra, en vez de fiarse del nombre del fichero.
+//
+// POR DEFECTO SE COGE EL LIBRO DE LA MODALIDAD, `libro-<id>.json` al lado de
+// este script. Pasarlo a mano era la manera más fácil de medir con el libro
+// equivocado —el nombre no lo comprueba nadie—, y ahora hay que salirse del
+// camino para conseguirlo. Con LIBRO= (vacío) se juega sin libro, sorteando
+// las aperturas en cada proceso, como antes.
+const LIBRO_PATH = 'LIBRO' in process.env
+  ? (process.env.LIBRO || null)
+  : path.join(__dirname, 'libro-' + MODALIDAD + '.json');
+if (LIBRO_PATH && !fs.existsSync(LIBRO_PATH)) {
+  process.stderr.write('no existe el libro ' + LIBRO_PATH + '. Generalo con' +
+    ' MODALIDAD=' + MODALIDAD + ' node aperturas.js > libro-' + MODALIDAD + '.json' +
+    ' (o pasa LIBRO= vacio para sortear las aperturas)\n');
+  process.exit(1);
+}
+const LIBRO = LIBRO_PATH
+  ? JSON.stringify(JSON.parse(fs.readFileSync(LIBRO_PATH, 'utf8')))
   : 'null';
 
 // Reanudación: con SALIDA=<fichero>, arena.js escribe ahí (añadiendo) y al
@@ -58,6 +87,21 @@ const SALIDA = process.env.SALIDA || null;
 const hechos = new Set();
 if (SALIDA && fs.existsSync(SALIDA)) {
   for (const l of fs.readFileSync(SALIDA, 'utf8').split('\n')) {
+    // La clave de reanudación es solo `par/whiteIs`: no lleva la modalidad,
+    // así que reutilizar un fichero de otra modalidad no daría error, daría
+    // SILENCIO —todos los pares constarían como hechos y el proceso volvería
+    // enseguida sin jugar nada—. Por eso se compara contra la cabecera.
+    if (l.startsWith('# ')) {
+      try {
+        const cab = JSON.parse(l.slice(2));
+        if (cab.modalidad && cab.modalidad !== MODALIDAD) {
+          process.stderr.write('ABORTA: ' + SALIDA + ' es de la modalidad ' +
+            cab.modalidad + ' y esta tanda es de ' + MODALIDAD + '\n');
+          process.exit(1);
+        }
+      } catch { /* cabecera a medias de un corte */ }
+      continue;
+    }
     if (!l.startsWith('{')) continue;
     try {
       const g = JSON.parse(l);
@@ -88,6 +132,15 @@ Math.random = function () {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
+// La modalidad se fija ANTES de nada: cambia el tablero, el juego de piezas,
+// las tablas precalculadas y los valores por defecto de PV().
+if (!VARIANTS[${JSON.stringify(MODALIDAD)}]) {
+  process.stderr.write('modalidad desconocida: ${MODALIDAD}. Hay: ' +
+    Object.keys(VARIANTS).join(', ') + '\\n');
+  process.exit(1);
+}
+setVariant(${JSON.stringify(MODALIDAD)});
+
 FIFTY_MOVE_LIMIT = ${FIFTY};
 AI_LEVELS.A = ${CFG_A};
 AI_LEVELS.B = ${CFG_B};
@@ -109,6 +162,30 @@ function materialBalance(board, color) {
 // arrancar de una posición equilibrada para que la inversión de colores
 // compare lo mismo en ambos sentidos.
 const LIBRO_APERTURAS = ${LIBRO};
+
+// El libro tiene que ser de ESTA modalidad. Se comprueba jugando las primeras
+// aperturas contra el generador de jugadas legales: si alguna no lo es, la
+// tanda se para aquí en vez de medir en silencio un subconjunto sesgado.
+//
+// Se miran 20 y no una porque el fallo no es todo o nada: entre dos
+// modalidades del mismo tablero coinciden las jugadas de peón, así que el 44%
+// de las aperturas de Salas resultan legales en Dekle. Con una sola muestra
+// habría casi una posibilidad entre dos de dar por bueno el libro que no es.
+if (LIBRO_APERTURAS) {
+  for (const ap of LIBRO_APERTURAS.slice(0, 20)) {
+    newGame();
+    for (const s of ap) {
+      const [from, to] = s.split('>');
+      const legales = movesForSide(game.board, game.turn, game.enPassant);
+      if (!legales.some(m => m.from === from && m.to === to)) {
+        process.stderr.write('ABORTA: el libro no es de la modalidad ' +
+          V.id + ' (la jugada ' + s + ' no es legal ahí)\\n');
+        process.exit(1);
+      }
+      makeMove(from, to);
+    }
+  }
+}
 
 // Apertura del par indicado: la del libro si lo hay (compartida entre
 // ramas), si no una sorteada sobre la marcha.
@@ -198,10 +275,11 @@ const salidaFd = SALIDA ? fs.openSync(SALIDA, 'a') : null;
 // Un log que no dice qué midió no sirve para nada dentro de un mes.
 const CABECERA = '# ' + JSON.stringify({
   fecha: new Date().toISOString(),
+  modalidad: MODALIDAD,
   A: { nombre: NAME_A, cfg: JSON.parse(CFG_A) },
   B: { nombre: NAME_B, cfg: JSON.parse(CFG_B) },
   MAX_PLIES, FIFTY, OPENING_PLIES, SEED, FIRST, PAIRS,
-  libro: process.env.LIBRO || null,
+  libro: LIBRO_PATH,
 }) + '\n';
 const ESCRIBE = salidaFd === null
   ? (s) => process.stdout.write(s)
@@ -211,7 +289,8 @@ const HECHOS = hechos;
 // tramo se jugó en otra tanda (y con qué motor, si se hubiera cambiado)
 ESCRIBE(CABECERA);
 
-process.stderr.write(`arena: ${NAME_A} vs ${NAME_B} · pares ${FIRST}..${FIRST + PAIRS - 1}` +
+process.stderr.write(`arena[${MODALIDAD}]: ${NAME_A} vs ${NAME_B}` +
+  ` · pares ${FIRST}..${FIRST + PAIRS - 1}` +
   ` · seed ${SEED}` + (SALIDA ? ` · ${hechos.size} partidas ya hechas en ${SALIDA}` : '') + '\n');
 eval(gameSrc + '\n' + driverSrc);
 if (salidaFd !== null) fs.closeSync(salidaFd);

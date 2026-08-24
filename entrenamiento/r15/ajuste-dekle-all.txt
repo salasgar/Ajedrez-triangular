@@ -1,0 +1,15 @@
+=== dekle-all ===
+modalidad: Triangular Chess (George R. Dekle Sr., 1986)   piezas: P R B Q U N
+corpus: 366398 posiciones de 39343 partidas (8 shards)
+ajustando: all   reg=0.02   iters=800
+logloss entrenamiento: 0.53592 -> 0.53058  (-5.34 milinats)
+logloss validacion   : 0.53089 -> 0.52536  (-5.53 milinats)   <- mejora fuera de muestra
+   (73280 posiciones de validacion, 293118 de entrenamiento)
+material : P=100.0 R=391.8 B=320.2 Q=749.8 U=378.3 N=298.3
+hoy      : P=100 R=400 B=320 Q=800 U=400 N=300
+centrali.: P=-0.6 R=0.0 B=-2.6 Q=23.3 U=4.2 N=-12.3
+avance(P): -19.8   movilidad: 7.63 (hoy 4)
+
+pieceValues: { P: 100, R: 392, B: 320, Q: 750, U: 378, N: 298, K: 0 },
+MODALIDAD=dekle
+CFG={"depth":2,"mobility":true,"order":true,"quiesce":true,"pieceValues":{"P":100,"R":392,"B":320,"Q":750,"U":378,"N":298,"K":0},"positionWeights":{"P":{"centrality":-1,"advance":-20},"B":{"centrality":-3},"Q":{"centrality":23},"U":{"centrality":4},"N":{"centrality":-12}},"mobilityWeight":7.63}

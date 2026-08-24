@@ -1,0 +1,207 @@
+/* problemas.css — Pestañas y panel de la sección «Problemas».
+   Va aparte de style.css para no mezclarse con la hoja de la partida: aquí
+   solo hay lo que existe por los problemas y nada más. Los colores y los
+   radios son los mismos que usa el panel lateral, para que se vea como una
+   parte más de la aplicación y no como un añadido. */
+
+/* --- barra de pestañas --- */
+
+#tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    background: #242424;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+#tabs .tab {
+    background: transparent;
+    color: #bbb;
+    border: none;
+    border-radius: 7px;
+    padding: 8px 22px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+#tabs .tab:hover { color: #eee; background: #2f2f2f; }
+
+#tabs .tab.is-active {
+    background: #4a7edb;
+    color: #fff;
+    font-weight: bold;
+}
+
+/* el foco del teclado tiene que verse: la pestaña activa se distingue por el
+   fondo azul, y sin esto quien navega con el tabulador no sabría dónde está */
+#tabs .tab:focus-visible {
+    outline: 2px solid #f0b13b;
+    outline-offset: 2px;
+}
+
+/* --- panel de problemas --- */
+
+#panel-problemas {
+    background: #242424;
+    border-radius: 10px;
+    padding: 18px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+#panel-problemas[hidden] { display: none; }
+
+#prob-enunciado {
+    font-size: 1.1rem;
+    font-weight: bold;
+    line-height: 1.35;
+}
+
+.prob-sub {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: #8d8d8d;
+    margin-top: -6px;
+}
+.prob-sub:empty { display: none; }
+
+.prob-estado {
+    min-height: 1.2em;
+    font-weight: bold;
+    color: #f0b13b;
+}
+.prob-estado.bien { color: #6cc06c; }
+.prob-estado.mal { color: #e07a6a; }
+.prob-estado:empty { display: none; }
+
+.prob-progreso {
+    font-size: 0.85rem;
+    color: #bbb;
+}
+.prob-progreso:empty { display: none; }
+
+/* --- botones --- */
+
+#prob-nuevo {
+    background: #4a7edb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    cursor: pointer;
+    flex: 2;
+}
+#prob-nuevo:hover:not(:disabled) { background: #5b8ce4; }
+#prob-nuevo:disabled { opacity: 0.45; cursor: default; }
+
+/* Los demás botones reutilizan .save-row de style.css (misma caja gris que los
+   de guardar partida); aquí solo se ajusta lo que se sale de ese molde. */
+.prob-fila { display: flex; gap: 6px; }
+
+/* --- la solución escrita --- */
+
+#prob-linea:empty { display: none; }
+
+.prob-linea-tit {
+    font-size: 0.85rem;
+    color: #bbb;
+    margin-bottom: 6px;
+}
+
+.prob-linea-movs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 6px;
+    font-size: 0.85rem;
+}
+
+.prob-linea-num { color: #777; }
+
+.prob-linea-mov {
+    font-variant-numeric: tabular-nums;
+    color: #bbb;
+}
+.prob-linea-mov.suya { color: #eee; font-weight: bold; }
+
+.prob-linea-nota {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #8d8d8d;
+}
+
+/* --- selectores y almacén --- */
+
+#prob-box,
+#prob-save-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #bbb;
+}
+
+#prob-box select,
+#prob-save-box select {
+    background: #1c1c1c;
+    color: #eee;
+    border: 1px solid #4a4a4a;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 0.9rem;
+    width: 100%;
+    margin-top: 2px;
+}
+
+.prob-almacen {
+    font-size: 0.75rem;
+    color: #7a7a7a;
+}
+
+#prob-ayuda > summary {
+    color: #bbb;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+#prob-ayuda > summary:hover { color: #eee; }
+
+#prob-ayuda ul {
+    margin: 8px 0 0 18px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #a5a5a5;
+}
+#prob-ayuda li { margin-bottom: 6px; }
+
+/* --- la pista sobre el tablero --- */
+/* Un aro parpadeante alrededor de la casilla de salida. No se rellena la
+   casilla a propósito: taparía la pieza, que es justo lo que hay que mirar. */
+
+.cell.prob-pista {
+    stroke: #f0b13b;
+    stroke-width: 3;
+    animation: prob-late 1.1s ease-in-out infinite;
+}
+
+@keyframes prob-late {
+    0%, 100% { stroke-opacity: 1; }
+    50% { stroke-opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cell.prob-pista { animation: none; }
+}
+
+/* En pantallas estrechas el panel deja de tener ancho fijo, igual que hace
+   style.css con el de la partida. */
+@media (max-width: 700px) {
+    #panel-problemas { width: 100%; max-width: 420px; }
+    #tabs { width: 100%; max-width: 420px; justify-content: center; }
+}

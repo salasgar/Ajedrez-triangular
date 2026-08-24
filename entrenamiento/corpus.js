@@ -17,12 +17,21 @@
 // característica y que hay que sumar entre shards.
 //
 // Variables de entorno:
-//   SEED     semilla del PRNG (distinta por shard)
-//   GAMES    partidas concluyentes objetivo (por shard)
-//   MINUTES  alternativa a GAMES: presupuesto de tiempo
-//   LEVEL    nivel real de AI_LEVELS para el autojuego; si no, CFG
-//   CFG      configuración de autojuego (JSON), por defecto profundidad 2
-//   FIFTY    regla de los 50 movimientos durante el autojuego
+//   SEED      semilla del PRNG (distinta por shard)
+//   GAMES     partidas concluyentes objetivo (por shard)
+//   MINUTES   alternativa a GAMES: presupuesto de tiempo
+//   LEVEL     nivel real de AI_LEVELS para el autojuego; si no, CFG
+//   CFG       configuración de autojuego (JSON), por defecto profundidad 2
+//   FIFTY     regla de los 50 movimientos durante el autojuego
+//   MODALIDAD qué modalidad se autojuega (salas por defecto)
+//
+// LA LISTA DE PIEZAS YA NO ESTÁ ESCRITA AQUÍ. Cada modalidad tiene la suya
+// —Dekle cambia el elefante por el unicornio, Trigonal no tiene ninguna de las
+// dos—, así que el vector de características no mide lo mismo en todas. La
+// lista concreta, en el orden en que se escribieron las componentes, va en el
+// resumen final del shard: ajusta.js la lee de ahí y comprueba que todos los
+// shards que se le pasan juntos coincidan. Sin eso, concatenar el corpus de
+// dos modalidades daría un ajuste sin sentido y sin ningún aviso.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -42,14 +51,29 @@ const SAMPLE_STRIDE = Number(process.env.SAMPLE_STRIDE || 8);
 // ninguna partida da mate dentro del tope; sin esto se tiraría la mayoría del
 // cómputo. 0 = comportamiento antiguo (descartar). Ver README de la fase.
 const ADJ_MARGIN = Number(process.env.ADJ_MARGIN || 0);
+const MODALIDAD = process.env.MODALIDAD || 'salas';
 
-const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
+// Dónde están geometry/variants/rules/ai. Por defecto el repo; con MOTOR= se
+// apunta a otra copia, igual que en arena.js. Hace falta para que el servicio
+// de arranque automático pueda generar corpus: macOS no deja que un
+// LaunchAgent lea ~/Documents, así que trabaja sobre una copia del motor.
+const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
 const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
   .join('\n');
 
 const driverSrc = `
-const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];
+if (!VARIANTS[${JSON.stringify(MODALIDAD)}]) {
+  process.stderr.write('modalidad desconocida: ${MODALIDAD}. Hay: ' +
+    Object.keys(VARIANTS).join(', ') + '\\n');
+  process.exit(1);
+}
+setVariant(${JSON.stringify(MODALIDAD)});
+
+// Las piezas de esta modalidad menos el rey (vale 0 y no se ajusta). El peón
+// va SIEMPRE el primero: fitValues lo deja fijo como ancla de la escala, y
+// tanto ajusta.js como tune-values.js dan por hecho el índice 0.
+const PIECES = ['P', ...V.pieceTypes.filter(t => t !== 'K' && t !== 'P')];
 
 let _s = ${SEED} >>> 0;
 Math.random = function () {
@@ -165,12 +189,13 @@ while (budgetMs ? (Date.now() - t0 < budgetMs) : (usadas < ${GAMES})) {
   }
   usadas++;
   if (usadas % 25 === 0) {
-    process.stderr.write('  seed ${SEED}: ' + usadas + ' partidas · ' + posiciones +
-      ' posiciones · ' + ((Date.now() - t0) / 60000).toFixed(1) + ' min\\n');
+    process.stderr.write('  ' + V.id + ' seed ${SEED}: ' + usadas + ' partidas · ' +
+      posiciones + ' posiciones · ' + ((Date.now() - t0) / 60000).toFixed(1) + ' min\\n');
   }
 }
 
 process.stdout.write(JSON.stringify({ resumen: {
+  modalidad: V.id, piezas: PIECES,
   seed: ${SEED}, usadas, adjudicadas, jugadas: jugadas_total, posiciones, descartadas,
   mobTotal, mobCount, mins: +((Date.now() - t0) / 60000).toFixed(1),
 } }) + '\\n');

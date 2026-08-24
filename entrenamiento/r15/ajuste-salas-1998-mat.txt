@@ -1,0 +1,15 @@
+=== salas-1998-mat ===
+modalidad: Ajedrez triangular de Salas 1998 (Original)   piezas: P R B Q N
+corpus: 387158 posiciones de 47919 partidas (8 shards)
+ajustando: mat   reg=0.02   iters=800
+logloss entrenamiento: 0.50549 -> 0.50413  (-1.35 milinats)
+logloss validacion   : 0.50751 -> 0.50614  (-1.37 milinats)   <- mejora fuera de muestra
+   (77440 posiciones de validacion, 309718 de entrenamiento)
+material : P=100.0 R=376.0 B=355.0 Q=816.2 N=272.0
+hoy      : P=100 R=358 B=335 Q=810 N=265
+centrali.: P=0.0 R=0.0 B=0.0 Q=0.0 N=0.0
+avance(P): 0.0   movilidad: 4.21 (hoy 4)
+
+pieceValues: { P: 100, R: 376, B: 355, Q: 816, N: 272, K: 0 },
+MODALIDAD=salas-1998
+CFG={"depth":2,"mobility":true,"order":true,"quiesce":true,"pieceValues":{"P":100,"R":376,"B":355,"Q":816,"N":272,"K":0}}

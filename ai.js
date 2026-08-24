@@ -809,10 +809,15 @@ function evaluate(board, color, cfg) {
   if (V.captures && cfg.dynamicValues !== false) return evaluateRps(board, color, cfg);
   const values = cfg.pieceValues || PV();
   const posW = cfg.positionWeights;
-  // 4 puntos por jugada disponible. Confirmado a prof. 2-3 que gana fuerza
-  // sobre el 2 clásico (~+58 elo el salto de 2 a 4 junto con el material
-  // ajustado). Un cfg puede seguir sustituyéndolo para experimentar.
-  const mobilityWeight = cfg.mobilityWeight ?? 4;
+  // Puntos por jugada disponible. Sale de la modalidad (engine.mobility), como
+  // los valores de las piezas: no tiene por qué ser el mismo número en un
+  // tablero de 96 casillas que en uno de 81, ni con un alfil que recorre 3
+  // casillas que con uno en zigzag que cruza el tablero. Hoy las cuatro
+  // declaran 4, que es el valor confirmado en la arena para el ajedrez de
+  // Salas (~+58 elo el salto de 2 a 4 junto con el material ajustado, a
+  // profundidad 2-3); en las demás está sin medir. Un cfg puede seguir
+  // sustituyéndolo para experimentar, que es como lo mide arena.js.
+  const mobilityWeight = cfg.mobilityWeight ?? V.engine.mobility ?? 4;
   let score = 0;
   for (const [key, p] of board) {
     const sign = p.color === color ? 1 : -1;
@@ -1212,7 +1217,9 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
 // clonables (el Map del tablero, escalares y claves de posición).
 function searchState() {
   const posKeys = [], posHashes = [];
-  for (let i = 0; i <= game.histIndex; i++) {
+  // desde la última edición del tablero: lo anterior es otra partida y contarlo
+  // haría ver repeticiones que no existen (ver lastEditIndex en rules.js)
+  for (let i = lastEditIndex(); i <= game.histIndex; i++) {
     const s = game.history[i];
     posKeys.push(s.posKey);
     // clave 'h1,h2' de cada posición del historial, en el mismo formato que
@@ -1232,7 +1239,7 @@ function searchState() {
 function stateAtIndex(i) {
   const s = game.history[i];
   const posKeys = [], posHashes = [];
-  for (let j = 0; j <= i; j++) {
+  for (let j = lastEditIndex(i); j <= i; j++) {
     const sj = game.history[j];
     posKeys.push(sj.posKey);
     const [h1, h2] = computeHash(sj.board);

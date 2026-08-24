@@ -1,0 +1,15 @@
+=== trigonal-mat ===
+modalidad: Trigonal Chess (Max Koval, 2023)   piezas: P R B Q N
+corpus: 314863 posiciones de 40935 partidas (8 shards)
+ajustando: mat   reg=0.02   iters=800
+logloss entrenamiento: 0.55676 -> 0.55559  (-1.17 milinats)
+logloss validacion   : 0.55619 -> 0.55509  (-1.10 milinats)   <- mejora fuera de muestra
+   (62980 posiciones de validacion, 251883 de entrenamiento)
+material : P=100.0 R=505.3 B=394.0 Q=866.6 N=294.5
+hoy      : P=100 R=500 B=400 Q=900 N=300
+centrali.: P=0.0 R=0.0 B=0.0 Q=0.0 N=0.0
+avance(P): 0.0   movilidad: 4.11 (hoy 4)
+
+pieceValues: { P: 100, R: 505, B: 394, Q: 867, N: 294, K: 0 },
+MODALIDAD=trigonal
+CFG={"depth":2,"mobility":true,"order":true,"quiesce":true,"pieceValues":{"P":100,"R":505,"B":394,"Q":867,"N":294,"K":0}}

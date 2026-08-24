@@ -39,9 +39,9 @@
 
     <h1>Diseñar una posición</h1>
     <div class="layout">
+        <div class="editor-palette" id="palette"></div>
         <div id="board-col">
             <div id="board-wrap"></div>
-            <div class="editor-palette" id="palette"></div>
         </div>
         <aside id="panel">
             <div id="editor-status"></div>
@@ -97,10 +97,17 @@
         </aside>
     </div>
 
-    <script src="geometry.js"></script>
-    <script src="variants.js"></script>
-    <script src="rules.js"></script>
-    <script src="saveload.js"></script>
-    <script src="editor.js"></script>
+    <script src="geometry.js?v=1"></script>
+    <script src="variants.js?v=1"></script>
+    <script src="rules.js?v=1"></script>
+    <script src="saveload.js?v=2"></script>
+    <script src="editor.js?v=3"></script>
+    <!-- Crear problemas desde el editor. Va después de editor.js porque se
+         cuelga de sus nodos y de su tablero, y arrastra el motor de problemas,
+         que necesita ai.js para generar y aplicar jugadas. -->
+    <script src="ai.js?v=1"></script>
+    <script src="problemas.js?v=1"></script>
+    <script src="problema-imagen.js?v=1"></script>
+    <script src="crear-problema.js?v=1"></script>
 </body>
 </html>

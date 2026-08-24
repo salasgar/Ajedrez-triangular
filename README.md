@@ -306,6 +306,26 @@ Dama capturando que un peón de la franja D.
 - **Tiempo consumido** por cada bando. No es un control de tiempo: nadie pierde
   por tiempo, solo se mide lo que se ha pensado.
 
+### Problemas en imagen
+
+Cualquier problema se puede descargar como **imagen `.png`**: el diagrama del
+tablero y, debajo, el enunciado («Las blancas juegan y dan mate en 3 jugadas»),
+la letra pequeña de qué cuenta como resolverlo y la modalidad. El diagrama no es
+una captura de pantalla: se vuelve a dibujar sobre un `<canvas>` con la misma
+geometría que el tablero de verdad, así que sale sin las marcas de la partida
+(selección, último movimiento, jaque) y con las coordenadas visibles solo en las
+casillas vacías, que es como se lee un diagrama impreso.
+
+El **editor de posiciones** puede además crear problemas propios. Se coloca la
+posición, se elige el objetivo (dar mate, ganar una pieza, coronar o salvar
+tablas) y en cuántas jugadas, y **Comprobar** lo verifica con el mismo buscador
+Y/O que genera los problemas automáticos: solo se acepta si el objetivo se puede
+forzar contra cualquier defensa. Un enunciado que no se sostiene no se guarda; y
+si la posición resulta ser un mate en dos cuando se pedían tres, el enunciado se
+corrige solo. El problema comprobado se guarda en el navegador —aparece en la
+pestaña **Problemas** del juego—, se exporta en `.json` o se descarga como
+imagen.
+
 ### Teclado y lectores de pantalla
 
 El tablero es **una sola parada de tabulador**; dentro se anda con las flechas
@@ -429,6 +449,8 @@ está midiendo la nueva.
 | [ai-async.js](ai-async.js) | Ejecuta la búsqueda en un Web Worker construido desde un Blob. |
 | [saveload.js](saveload.js) | Guardado versionado en `localStorage` y en archivos `.json`. |
 | [script.js](script.js) | Dibujo del tablero en SVG e interacción con la interfaz. |
+| [problema-imagen.js](problema-imagen.js) | Dibuja un problema en un `<canvas>` y lo descarga como `.png`, con el enunciado debajo. |
+| [crear-problema.js](crear-problema.js) | Convierte la posición del editor en un problema, comprobando antes que el objetivo se puede forzar. |
 | [style.css](style.css) | Estilos. |
 | [tune-values.js](tune-values.js) | Herramienta de desarrollo (Node) para ajustar los valores de las piezas. |
 
