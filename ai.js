@@ -495,10 +495,15 @@ function genMoves(board, color, ep, kings, probe) {
 function evaluate(board, color, cfg) {
   const values = cfg.pieceValues || PV();
   const posW = cfg.positionWeights;
-  // 4 puntos por jugada disponible. Confirmado a prof. 2-3 que gana fuerza
-  // sobre el 2 clásico (~+58 elo el salto de 2 a 4 junto con el material
-  // ajustado). Un cfg puede seguir sustituyéndolo para experimentar.
-  const mobilityWeight = cfg.mobilityWeight ?? 4;
+  // Puntos por jugada disponible. Sale de la modalidad (engine.mobility), como
+  // los valores de las piezas: no tiene por qué ser el mismo número en un
+  // tablero de 96 casillas que en uno de 81, ni con un alfil que recorre 3
+  // casillas que con uno en zigzag que cruza el tablero. Hoy las cuatro
+  // declaran 4, que es el valor confirmado en la arena para el ajedrez de
+  // Salas (~+58 elo el salto de 2 a 4 junto con el material ajustado, a
+  // profundidad 2-3); en las demás está sin medir. Un cfg puede seguir
+  // sustituyéndolo para experimentar, que es como lo mide arena.js.
+  const mobilityWeight = cfg.mobilityWeight ?? V.engine.mobility ?? 4;
   let score = 0;
   for (const [key, p] of board) {
     const sign = p.color === color ? 1 : -1;
