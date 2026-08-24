@@ -9,7 +9,7 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-24T18:10Z · por la sesión s-20260824T180039-ac278f27 (montaje)
+Regenerado: 2026-08-24T18:40Z · por la sesión s-20260824T180039-ac278f27 (cierre de la 01)
 
 ## Antes de hacer nada
 
@@ -26,8 +26,9 @@ Regenerado: 2026-08-24T18:10Z · por la sesión s-20260824T180039-ac278f27 (mont
    `sid="s-$(date -u +%Y%m%dT%H%M%S)-$(head -c4 /dev/urandom | od -An -tx1 | tr -d ' \n')"`
    Nada de `$RANDOM`.
 5. Reclama tu tarea: crea `hechos/reclamos/NN--<sid>.md`, ejecuta
-   `sleep 30 && ls reparto/hechos/reclamos/` —el comando, no la intención— y cede si
-   otra sesión llegó antes (gana el reclamo de apertura más antigua; empate, sid menor).
+   `sleep 30 && ls reparto/hechos/reclamos/` —OJO: el `sleep` en primer plano está
+   bloqueado por el harness; lánzalo con `run_in_background`— y cede si otra sesión
+   llegó antes (gana el reclamo de apertura más antigua; empate, sid menor).
 
 El protocolo completo está en la skill `reparto`, fichero `referencias/concurrencia.md`.
 Lo esencial: cada sesión escribe únicamente ficheros con su identificador en el nombre,
@@ -39,7 +40,7 @@ nadie edita el fichero de nadie, y este tablón se regenera a partir de los dem�
    dice Juan Luis en la frase de arranque; si no la dice, pregúntala en una línea antes
    de reclamar, salvo que todas las tareas libres sean de la misma banda.
 1. **Una sesión, una tarea, reclamada**, con `caduca:` calculado (2 × duración
-   esperada) y el `sleep 30` de verdad.
+   esperada) y el `sleep 30` de verdad (en segundo plano).
 2. **Un reclamo está vivo** si su último `caduca:` está en el futuro, no tiene línea de
    cierre y nadie lo releva. Caducado = relevable con `releva a: <sid>`.
 3. **Estira la caducidad antes de una operación larga** (aquí git tarda minutos), y
@@ -60,7 +61,8 @@ nadie edita el fichero de nadie, y este tablón se regenera a partir de los dem�
 10. **Un cierre en falso se anula, no se borra**: escribe la incidencia y, cuando de
     verdad cierre, una terminada nueva con fecha posterior.
 11. **Una tarea mal cortada no se renumera**: incidencia con el corte natural,
-    `ABANDONADA`, y avisar. Las tareas nuevas se añaden al final de la numeración.
+    `ABANDONADA`, y avisar. Las tareas nuevas se añaden al final de la numeración (así
+    entró la 10).
 12. **No modificar nunca** los seis `traspaso-*.md` de los trabajos (son el registro de
     las sesiones que se fueron; `traspaso-reparto-ajedrez.md` sí se actualiza, pero
     solo al hacer traspaso de sesión) ni `reparto/autorizaciones.md`.
@@ -77,20 +79,20 @@ equivalencia de hoy está en `proyecto.md`.
 
 | # | Tarea | Fichero | Precondición | Duración esperada | Banda | Salida (dueño único) | Disparo | Estado | Reclamo vivo (sid · caduca) |
 |---|---|---|---|---|---|---|---|---|---|
-| 01 | Vaciar el árbol compartido a git, un commit por trabajo | tareas/tarea-01-vaciado.md | ninguna | 3 h | ALTO | rama `vaciado-arbol` | manual | PENDIENTE | |
-| 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | PENDIENTE | |
+| 01 | Vaciar el árbol compartido a git, un commit por trabajo | tareas/tarea-01-vaciado.md | ninguna | 3 h | ALTO | rama `vaciado-arbol` | manual | **LISTA** | |
+| 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | EN CURSO | s-20260824T180039-ac278f27 · 20:19Z |
 | 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | BLOQUEADA | |
-| 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | BLOQUEADA | |
+| 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | BLOQUEADA (falta 02) | |
 | 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | BLOQUEADA | |
 | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 2 h | MEDIO | `main` + `entrenamiento/` | manual | BLOQUEADA | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | BLOQUEADA | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | BLOQUEADA | |
-| 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 01 LISTA + 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | BLOQUEADA | |
+| 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
+| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
 
-Pueden ir en paralelo desde ya: **01 y 02** (no comparten ni un fichero; se juntan en
-la 04). Máximo de sesiones útiles a la vez en este reparto: **dos** hasta que cierre la
-04; después, también dos (05+algo de git-solo, luego 06/07 en serie por `script.js` —
-la 06 y la 07 sí pueden ir a la vez: no comparten ficheros).
+Pueden ir en paralelo: mientras la 02 está en curso, nada más está libre (la 09 espera
+firma). Cuando cierre la 04: la 05 primero; después la 06 y la 07 sí pueden ir a la
+vez (no comparten ficheros), y la 10 con ellas si la 03 cerró.
 
 ## Registro de finalizaciones
 
@@ -98,10 +100,14 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
-(vacío todavía)
+- LISTA · tarea 01 · 2026-08-24 18:35 · s-20260824T180039-ac278f27 · 7 commits, 0 hunks sin dueño, 13 js verificados · rama `vaciado-arbol` en origin
 
 ## Incidencias de coordinación
 
 Derivado de `hechos/incidencias/`.
 
-(vacío todavía)
+- s-20260824T180039-ac278f27: séptimo trabajo sin traspaso (paleta del editor)
+  descubierto en la 01 y commiteado como `0f91612`; la ronda 15 del entrenamiento
+  cerró → tarea 10 nueva; `libro-salas-v4.json` no salía en `git status` del
+  inventario; el `sleep` en primer plano está bloqueado por el harness; `du` marca 0B
+  en ficheros evictados por iCloud.
