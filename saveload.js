@@ -6,11 +6,22 @@
 
 const SAVE_PREFIX = 'ajedrez-triangular:save:';
 const DESIGN_POSITION_KEY = 'ajedrez-triangular:posicion-disenada';
+// Traspaso de "Editar tablero": la partida en curso va aquí mientras el
+// usuario está en editor.html retocándola. El editor añade `board`/`turn` al
+// volver; sin ellos (p. ej. tras pulsar "atrás" en el navegador) la partida
+// se restaura tal cual estaba, sin aplicar ninguna edición.
+// { app, kind:'edicion', version:1, savedAt, envelope, board?, turn? }
+//   envelope : lo que devuelve serializeGame(mode, levelW, levelB)
+const EDIT_SESSION_KEY = 'ajedrez-triangular:edicion';
 // v2: el sobre guarda con qué MODALIDAD se jugó la partida. Las de v1 ya no se
 // cargan: no dicen su modalidad, y aunque todas fueran del ajedrez de Salas,
 // desde la versión 2 ese reglamento incluye la coronación de flanco, así que
 // tampoco se reproducirían con las reglas con las que se jugaron.
-const SAVE_VERSION = 2;
+// v3: el historial puede llevar snapshots `edited: true` (edición del
+// tablero a mitad de partida, ver applyEdit en rules.js), que no llevan
+// `lastMove`. Los ficheros v2 siguen cargando: por definición no tienen
+// ediciones, así que la validación de v3 los acepta sin más.
+const SAVE_VERSION = 3;
 
 // El análisis de una jugada puede tener 80 entradas, y una partida entera
 // 200 jugadas: guardarlo entero multiplicaría por varias veces el tamaño del
@@ -50,7 +61,7 @@ function serializeGame(mode, levelW, levelB) {
 // validador no debe tener efectos secundarios: basta consultar la forma del
 // tablero y el juego de piezas que declara esa modalidad.
 function validateSave(data) {
-  if (!data || data.version !== SAVE_VERSION) return false;
+  if (!data || (data.version !== SAVE_VERSION && data.version !== 2)) return false;
   if (!Array.isArray(data.history) || data.history.length === 0) return false;
   if (!Number.isInteger(data.histIndex) ||
       data.histIndex < 0 || data.histIndex >= data.history.length) return false;
@@ -85,9 +96,15 @@ function validateSave(data) {
     // el mate no captura al rey: siempre 2 (salvo en las modalidades sin rey,
     // donde no hay ninguno que contar: ahí `piezas` ya rechaza el tipo 'K')
     if (piezas.has('K') && reyes !== 2) return false;
-    // toda jugada del historial (i >= 1) lleva su lastMove
-    if (i > 0 && (!s.lastMove || typeof s.lastMove.from !== 'string' ||
-        typeof s.lastMove.to !== 'string')) return false;
+    // toda jugada del historial (i >= 1) lleva su lastMove, salvo los
+    // snapshots de una edición del tablero, que no son una jugada y no
+    // llevan ninguna
+    if (i > 0) {
+      if (s.edited) {
+        if (s.lastMove !== null) return false;
+      } else if (!s.lastMove || typeof s.lastMove.from !== 'string' ||
+          typeof s.lastMove.to !== 'string') return false;
+    }
     return true;
   });
 }

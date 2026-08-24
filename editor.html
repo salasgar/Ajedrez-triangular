@@ -45,6 +45,7 @@
         </div>
         <aside id="panel">
             <div id="editor-status"></div>
+            <div id="edit-session-banner" class="edit-session-banner" hidden></div>
             <div id="mode-box">
                 <label for="variant">Modalidad de ajedrez triangular</label>
                 <select id="variant"></select>
@@ -78,6 +79,8 @@
                 <button id="btn-import">Importar posición (.json)</button>
                 <input type="file" id="file-import" accept=".json,application/json" hidden>
                 <button id="btn-play" class="play-btn">Jugar esta posición</button>
+                <button id="btn-resume" class="play-btn" hidden>Continuar partida</button>
+                <button id="btn-save-situation" hidden>Guardar situación de partida</button>
             </div>
             <div id="editor-message" class="editor-message"></div>
             <details id="help">
@@ -91,6 +94,7 @@
                     <li><b>Guardar</b> archiva la posición con un nombre en este navegador; <b>Abrir</b> recupera la que elijas en la lista, y <b>Borrar</b> la quita.</li>
                     <li><b>Exportar</b> descarga la posición como archivo `.json`; puedes volver a <b>importarla</b> después.</li>
                     <li><b>Jugar esta posición</b> (exige un rey de cada color) carga la posición en la partida principal.</li>
+                    <li>Si llegas aquí desde <b>«Editar tablero…»</b> a mitad de una partida, la modalidad queda bloqueada (cambiarla invalidaría la partida) y las piezas que no toques conservan si ya se habían movido: retocar un peón no le devuelve el enroque al rey.</li>
                     <li><a href="index.html" class="back-link">← Volver al juego</a></li>
                 </ul>
             </details>

@@ -1081,28 +1081,51 @@ function renderScoresheet() {
   list.className = 'sheet-list';
   const cur = effIndex();
 
+  // El número de jugada ya no sale de la paridad de `i`: una edición del
+  // tablero (game.history[i].edited) puede cambiar de quién es el turno sin
+  // que se haya jugado ninguna jugada, y ahí la paridad deja de significar
+  // "blancas". Se lleva un contador aparte que abre con las blancas y cierra
+  // con las negras, y una edición cierra el par sin consumir número.
+  let numJugada = 1;
+  let parAbierto = false;
+
   for (let i = 1; i < game.history.length; i++) {
-    const entrada = sheetEntry(i);
+    const h = game.history[i];
     const row = document.createElement('div');
     row.className = 'sheet-row' + (i === cur ? ' current' : '');
-
     const num = document.createElement('span');
     num.className = 'sheet-num';
-    // el número de jugada solo en la ply de las blancas (i impar); i=1 es la
-    // primera jugada blanca, i=2 la primera negra, etc.
-    num.textContent = (i % 2 === 1) ? Math.ceil(i / 2) + '.' : '';
-    const mv = document.createElement('span');
-    mv.className = 'sheet-move';
-    mv.textContent = entrada.texto;
     row.appendChild(num);
-    row.appendChild(mv);
-    if (entrada.anot) {
-      const marca = document.createElement('span');
-      marca.className = 'sheet-mark mark-' + (entrada.anot.marca === '??' ? 'bad'
-        : entrada.anot.marca === '?' ? 'mid' : 'soft');
-      marca.textContent = entrada.anot.marca;
-      marca.title = entrada.anot.titulo;
-      row.appendChild(marca);
+
+    if (h.edited) {
+      const mv = document.createElement('span');
+      mv.className = 'sheet-move sheet-edit';
+      mv.textContent = '✎ Posición editada';
+      row.appendChild(mv);
+      parAbierto = false;
+    } else {
+      const entrada = sheetEntry(i);
+      const color = game.history[i - 1].turn;
+      if (color === 'w') {
+        num.textContent = numJugada + '.';
+        parAbierto = true;
+      } else {
+        num.textContent = parAbierto ? '' : numJugada + '…';
+        parAbierto = false;
+        numJugada++;
+      }
+      const mv = document.createElement('span');
+      mv.className = 'sheet-move';
+      mv.textContent = entrada.texto;
+      row.appendChild(mv);
+      if (entrada.anot) {
+        const marca = document.createElement('span');
+        marca.className = 'sheet-mark mark-' + (entrada.anot.marca === '??' ? 'bad'
+          : entrada.anot.marca === '?' ? 'mid' : 'soft');
+        marca.textContent = entrada.anot.marca;
+        marca.title = entrada.anot.titulo;
+        row.appendChild(marca);
+      }
     }
 
     row.addEventListener('click', () => {
@@ -1137,18 +1160,26 @@ function renderScoresheet() {
 const EVAL_CAP = 1000;
 const CHART_W = 260, CHART_H = 68;
 
+// Devuelve una lista de TRAMOS (no un único array de puntos): una edición del
+// tablero corta la curva ahí, porque comparar la evaluación de antes con la
+// de después de editar no significa nada (no es la misma partida).
 function evalSeries() {
-  const pts = [];
+  const segments = [[]];
   for (let i = 1; i < game.history.length; i++) {
+    if (game.history[i].edited) {
+      if (segments[segments.length - 1].length) segments.push([]);
+      continue;
+    }
     const v = evalWhiteAt(i);   // ya viene normalizada a «desde las blancas»
     if (v === null) continue;
-    pts.push({ i, v: Math.max(-EVAL_CAP, Math.min(EVAL_CAP, v)) });
+    segments[segments.length - 1].push({ i, v: Math.max(-EVAL_CAP, Math.min(EVAL_CAP, v)) });
   }
-  return pts;
+  return segments.filter(seg => seg.length);
 }
 
 function buildEvalChart() {
-  const pts = evalSeries();
+  const segments = evalSeries();
+  const pts = segments.flat();
   if (pts.length < 2) return null;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `0 0 ${CHART_W} ${CHART_H}`);
@@ -1172,13 +1203,17 @@ function buildEvalChart() {
   svg.appendChild(el('rect', { x: 0, y: y(50), width: CHART_W,
     height: Math.max(1, y(-50) - y(50)), class: 'eval-band' }));
   svg.appendChild(el('line', { x1: 0, y1: y(0), x2: CHART_W, y2: y(0), class: 'eval-zero' }));
-  // área bajo la curva y curva
-  const d = pts.map((p, k) => (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
-  svg.appendChild(el('path', {
-    d: d + ` L${x(pts[pts.length - 1].i).toFixed(1)} ${y(0).toFixed(1)} L${x(pts[0].i).toFixed(1)} ${y(0).toFixed(1)} Z`,
-    class: 'eval-area',
-  }));
-  svg.appendChild(el('path', { d, class: 'eval-line' }));
+  // área bajo la curva y curva: un trazo por tramo, para no dibujar una recta
+  // que una dos posiciones que solo conecta una edición del tablero.
+  for (const seg of segments) {
+    if (seg.length < 2) continue;
+    const d = seg.map((p, k) => (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+    svg.appendChild(el('path', {
+      d: d + ` L${x(seg[seg.length - 1].i).toFixed(1)} ${y(0).toFixed(1)} L${x(seg[0].i).toFixed(1)} ${y(0).toFixed(1)} Z`,
+      class: 'eval-area',
+    }));
+    svg.appendChild(el('path', { d, class: 'eval-line' }));
+  }
   // marca de la jugada que se está viendo
   const cur = effIndex();
   if (cur >= 1) {
@@ -1373,10 +1408,15 @@ btnStart.addEventListener('click', () => { exitReview(); cancelAi(); goToStart()
 btnUndo.addEventListener('click', () => {
   exitReview();
   cancelAi();
+  const eraEdicion = game.history[game.histIndex].edited;
   undoMove();
-  // contra el ordenador se deshace el par: su respuesta y la jugada humana
+  // Contra el ordenador se deshace el par: su respuesta y la jugada humana.
+  // Pero no si media una edición del tablero: el snapshot de la edición es un
+  // estado válido en el que pararse (el siguiente "Deshacer" la revierte), y
+  // el par de antes de editar pertenece a otra partida.
   const oneAi = (aiConfig.w === null) !== (aiConfig.b === null);
-  if (oneAi && aiConfig[game.turn] !== null && game.histIndex > 0) undoMove();
+  if (!eraEdicion && !game.history[game.histIndex].edited &&
+      oneAi && aiConfig[game.turn] !== null && game.histIndex > 0) undoMove();
   clearSelection();
   render();
 });
@@ -1508,6 +1548,48 @@ document.getElementById('btn-design').addEventListener('click', () => {
   window.location.href = 'editor.html';
 });
 
+document.getElementById('btn-edit-board').addEventListener('click', () => {
+  exitReview();
+  cancelAi();
+  localStorage.setItem(EDIT_SESSION_KEY, JSON.stringify({
+    app: 'ajedrez-triangular',
+    kind: 'edicion',
+    version: 1,
+    savedAt: new Date().toISOString(),
+    envelope: currentEnvelope(),
+  }));
+  window.location.href = 'editor.html?partida=1';
+});
+
+// Retoma una sesión de "Editar tablero": el editor ha vuelto con la posición
+// retocada (?editado=1, y el sobre de EDIT_SESSION_KEY lleva `board`/`turn`),
+// o el usuario ha pulsado "atrás" en el navegador sin llegar a tocar nada —en
+// ese caso el sobre sigue sin `board`/`turn` y basta con restaurar la partida
+// tal cual estaba, sin aplicar ninguna edición—. Se llama antes de
+// tryLoadDesignedPosition() porque las dos claves de localStorage conviven.
+function tryResumeEditedGame() {
+  const url = new URL(window.location);
+  const editado = url.searchParams.get('editado') === '1';
+  if (editado) history.replaceState({}, '', window.location.pathname);
+
+  const raw = localStorage.getItem(EDIT_SESSION_KEY);
+  if (!raw) return;
+  localStorage.removeItem(EDIT_SESSION_KEY);
+
+  let data;
+  try { data = JSON.parse(raw); } catch { return; }
+  if (!data || !data.envelope) return;
+
+  loadEnvelope(data.envelope);
+  if (editado && data.board && data.turn) {
+    applyEdit(data.board, data.turn);
+    liveAnalysis = null;
+    cancelAi();
+    render();
+    scheduleAi();
+  }
+}
+
 document.getElementById('new-game').addEventListener('click', () => {
   // Si ya estaba en pausa sin ninguna jugada hecha, pulsar "Nueva partida"
   // no reinicia nada nuevo: se interpreta como que el usuario quiere arrancar.
@@ -1632,12 +1714,37 @@ function movesAsText() {
     (aiConfig.w !== null ? '  ·  blancas: nivel ' + aiConfig.w : '') +
     (aiConfig.b !== null ? '  ·  negras: nivel ' + aiConfig.b : ''));
   lineas.push('');
-  for (let i = 1; i < game.history.length; i += 2) {
-    const n = Math.ceil(i / 2) + '.';
-    const blancas = sheetEntry(i).texto;
-    const negras = game.history[i + 1] ? '  ' + sheetEntry(i + 1).texto : '';
-    lineas.push(n.padStart(4) + ' ' + blancas.padEnd(12) + negras);
+  // Misma numeración por contador que renderScoresheet: una edición del
+  // tablero rompe el emparejamiento por paridad de `i`.
+  let numJugada = 1;
+  let parAbierto = false;
+  let pendiente = null;   // línea "N. blancas" esperando la respuesta negra
+  for (let i = 1; i < game.history.length; i++) {
+    const h = game.history[i];
+    if (h.edited) {
+      if (pendiente !== null) { lineas.push(pendiente); pendiente = null; }
+      lineas.push('     — posición editada —');
+      parAbierto = false;
+      continue;
+    }
+    const color = game.history[i - 1].turn;
+    const texto = sheetEntry(i).texto;
+    if (color === 'w') {
+      if (pendiente !== null) lineas.push(pendiente);
+      pendiente = (numJugada + '.').padStart(4) + ' ' + texto.padEnd(12);
+      parAbierto = true;
+    } else if (parAbierto && pendiente !== null) {
+      lineas.push(pendiente + '  ' + texto);
+      pendiente = null;
+      parAbierto = false;
+      numJugada++;
+    } else {
+      lineas.push((numJugada + '…').padStart(4) + ' ' + texto);
+      parAbierto = false;
+      numJugada++;
+    }
   }
+  if (pendiente !== null) lineas.push(pendiente);
   const fin = { checkmate: 'Jaque mate', stalemate: 'Ahogado',
     repetition: 'Tablas por repetición', fifty: 'Tablas por la regla de 50',
     material: 'Tablas por material insuficiente',
@@ -1812,4 +1919,5 @@ newGame();
 render();
 applyModeFromUI();
 refreshSaveList();
+tryResumeEditedGame();
 tryLoadDesignedPosition();

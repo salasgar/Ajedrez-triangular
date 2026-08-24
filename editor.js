@@ -136,13 +136,33 @@ function redraw() {
   }
 }
 
+// `moved` decide el enroque y el doble avance del peón (rules.js). Retocar
+// una pieza distinta de la que ya había en la casilla no debe borrar ese
+// historial: se conserva si la pieza colocada es la misma pieza y color que
+// ya estaba, y si no, `moved` solo es `false` cuando esa pieza en esa casilla
+// coincide con la posición inicial de la modalidad — igual que si nunca se
+// hubiera movido. En cualquier otro caso, `moved: true`: no hay forma de
+// saber si de verdad no se ha movido, y conceder enroque de más es peor que
+// negarlo de más.
+function movedForPlacement(cell, type, color, existing) {
+  if (existing && existing.type === type && existing.color === color) {
+    return existing.moved;
+  }
+  const inicial = initialPosition().get(cell.key);
+  return !(inicial && inicial.type === type && inicial.color === color);
+}
+
 function placeOrErase(cell) {
   if (!brush) { eraseCell(cell); return; }
   const existing = board.get(cell.key);
   if (existing && existing.type === brush.type && existing.color === brush.color) {
     board.delete(cell.key);
   } else {
-    board.set(cell.key, { type: brush.type, color: brush.color });
+    board.set(cell.key, {
+      type: brush.type,
+      color: brush.color,
+      moved: movedForPlacement(cell, brush.type, brush.color, existing),
+    });
   }
   redraw();
   updateStatus();
@@ -407,6 +427,80 @@ function playPosition() {
   window.location.href = 'index.html?posicion=1';
 }
 
+// --- sesión de edición a mitad de partida ---
+//
+// Si venimos de "Editar tablero…" en index.html (?partida=1 con un sobre en
+// EDIT_SESSION_KEY), el editor arranca con la posición exacta de la partida
+// en curso en vez de vacío, bloquea el selector de modalidad —cambiarla
+// invalidaría la partida entera— y sustituye "Jugar esta posición" por
+// "Continuar partida" y "Guardar situación de partida".
+
+let editSession = null;   // true mientras estamos en esta sesión; controla qué botones se ven
+
+function tryEnterEditSession() {
+  const url = new URL(window.location);
+  if (url.searchParams.get('partida') !== '1') return;
+  history.replaceState({}, '', window.location.pathname);
+
+  const raw = localStorage.getItem(EDIT_SESSION_KEY);
+  if (!raw) return;
+  let data;
+  try { data = JSON.parse(raw); } catch { localStorage.removeItem(EDIT_SESSION_KEY); return; }
+  if (!data || !data.envelope) { localStorage.removeItem(EDIT_SESSION_KEY); return; }
+
+  const envelope = data.envelope;
+  const snap = envelope.history[envelope.histIndex];
+  editSession = true;
+
+  setVariant(envelope.variant);
+  board = new Map(snap.board.map(([k, p]) => [k, { ...p }]));   // conserva 'moved'
+  turn = snap.turn;
+  document.querySelector(`input[name="turn"][value="${turn}"]`).checked = true;
+  document.getElementById('variant').value = V.id;
+  document.getElementById('variant').disabled = true;
+
+  buildEditorSvg();
+  buildPalette();
+  redraw();
+  updateStatus();
+
+  document.getElementById('btn-play').hidden = true;
+  document.getElementById('btn-resume').hidden = false;
+  document.getElementById('btn-save-situation').hidden = false;
+  const banner = document.getElementById('edit-session-banner');
+  banner.textContent = `Editando la partida en curso — jugada ${envelope.histIndex}`;
+  banner.hidden = false;
+}
+
+// Peones en su casilla de coronación: avisa, no bloquea (la coronación no se
+// aplica sola al volver; se avisa para que quien edita lo tenga en cuenta).
+function pawnsOnPromotionSquare() {
+  const out = [];
+  for (const [key, p] of board) {
+    if (p.type === 'P' && CELL_MAP.get(key).promoFor[p.color]) out.push(key);
+  }
+  return out;
+}
+
+function resumePosition() {
+  const problema = positionProblem(board, turn);
+  if (problema) { showMessage(problema, true); return; }
+  if (pawnsOnPromotionSquare().length > 0) {
+    showMessage('Aviso: hay un peón en casilla de coronación; no corona solo al volver.');
+  }
+  const raw = localStorage.getItem(EDIT_SESSION_KEY);
+  if (!raw) { showMessage('Se perdió la sesión de edición: usa "Nueva partida" en el juego.', true); return; }
+  let data;
+  try { data = JSON.parse(raw); } catch {
+    showMessage('Se perdió la sesión de edición: usa "Nueva partida" en el juego.', true);
+    return;
+  }
+  data.board = [...board];
+  data.turn = turn;
+  localStorage.setItem(EDIT_SESSION_KEY, JSON.stringify(data));
+  window.location.href = 'index.html?editado=1';
+}
+
 function teclaEnCasilla(e, cell) {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
@@ -465,6 +559,8 @@ document.getElementById('btn-initial').addEventListener('click', setInitialPosit
 document.getElementById('btn-export').addEventListener('click', exportPosition);
 document.getElementById('btn-import').addEventListener('click', importPosition);
 document.getElementById('btn-play').addEventListener('click', playPosition);
+document.getElementById('btn-resume').addEventListener('click', resumePosition);
+document.getElementById('btn-save-situation').addEventListener('click', savePosition);
 
 document.getElementById('btn-save-pos').addEventListener('click', savePosition);
 btnOpenPos.addEventListener('click', openPosition);
@@ -475,3 +571,4 @@ buildEditorSvg();
 buildPalette();
 updateStatus();
 refreshPositionList();
+tryEnterEditSession();
