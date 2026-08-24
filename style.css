@@ -828,20 +828,31 @@ h1 {
 
 /* --- editor de posiciones (editor.html) --- */
 
-#board-col .editor-palette {
+/* La paleta va a la IZQUIERDA del tablero: es la columna que la mano recorre
+   antes de ir a la casilla, y así no le roba alto a #board-col, cuya altura
+   está calculada al milímetro. Blancas y negras, dos columnas enfrentadas; la
+   goma, debajo. */
+.editor-palette {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
   background: #1a1a1a;
   border-radius: 6px;
-  margin-top: 12px;
+  align-self: center;
+}
+
+.palette-cols {
+  display: flex;
+  gap: 8px;
 }
 
 .palette-row {
   display: flex;
+  flex-direction: column;
   gap: 4px;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -874,6 +885,33 @@ h1 {
 .palette-btn svg {
   width: 32px;
   height: 32px;
+}
+
+/* Color de la pieza dentro del botón: `color` para los glifos Unicode y `fill`
+   para los iconos SVG (elefante, unicornio), igual que en .promo-btn. La fila
+   negra necesita además fondo claro: #1d1d1d sobre el #2f2f2f del botón no se
+   vería, y aquí son siete botones permanentes, no un diálogo de paso. */
+.palette-btn.piece-w { color: #f4f4f4; fill: #f4f4f4; stroke: #222; }
+
+.palette-btn.piece-b {
+  color: #1d1d1d;
+  fill: #1d1d1d;
+  stroke: #ddd;
+  background: #cfcfcf;
+  border-color: #8a8a8a;
+}
+
+/* El fondo claro de la fila negra tapa el resalte de :hover y .active (misma
+   especificidad y va después), así que llevan versión propia, más clara para
+   que la pieza negra se siga viendo. */
+.palette-btn.piece-b:hover {
+  background: #aac4e2;
+  border-color: #6f9fd8;
+}
+
+.palette-btn.piece-b.active {
+  background: #8fb3e8;
+  border-color: #4a6a9e;
 }
 
 .eraser-btn {
