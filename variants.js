@@ -559,17 +559,37 @@ const VARIANTS = {
 // Papel 'A', Tijera 'T', Lagarto 'L', Spock 'S', Rey 'K'.
 // ===========================================================================
 
-// POSICIONES INICIALES PROVISIONALES, pendientes de ajuste. Para cambiarlas
-// basta tocar estas listas: la fila delantera (11 casillas, donde van los
-// peones en las modalidades clásicas) y la del fondo (9 casillas). Los dos
-// bandos usan las mismas listas y las mismas columnas, así que quedan figuras
-// iguales enfrentadas, como en las clásicas.
+// POSICIONES INICIALES. Las dos SIN REY (rps, rpsls) siguen provisionales,
+// pendientes de que la arena termine de medir sus candidatas reducidas (ver
+// entrenamiento/rps-posiciones-resumen.md): las de 20 piezas quedaron
+// descartadas —casi el 100% de las partidas agota el tope de jugadas, al no
+// haber jaque que las corte— pero las candidatas reducidas que las
+// sustituyen (eq18-giro, fondo9-giro, frente11-giro y equivalentes en rpsls)
+// no llegaron a medirse: la criba se paró antes de alcanzarlas. Para
+// cambiarlas basta tocar estas listas: la fila delantera (11 casillas) y la
+// del fondo (9). Los dos bandos usan las mismas listas y las mismas
+// columnas, así que quedan figuras iguales enfrentadas, como en las
+// clásicas.
 const RPS_FRONT = Array(11).fill('A');            // una fila entera de papeles
 const RPS_BACK = ['O', 'T', 'O', 'T', 'O', 'T', 'O', 'T', 'O'];
 const RPSLS_FRONT = Array(11).fill('A');
 const RPSLS_BACK = ['O', 'T', 'L', 'S', 'O', 'S', 'L', 'T', 'O'];
 // En las -rey, el rey ocupa el centro de la fila del fondo.
 const conRey = fila => fila.map((t, i) => (i === 4 ? 'K' : t));
+
+// POSICIONES INICIALES DE LAS -REY, medidas en la arena (tarea 03 del
+// reparto) y ya NO provisionales. Con rey el motivo del descarte de arriba
+// no aplica —el jaque mate corta la partida antes del tope—, así que aquí sí
+// valió el candidato de 20 piezas «ciclo-K-espejo»: mismo ciclo O-A-T (o
+// O-A-T-L-S) en las dos filas, rey al centro del fondo, negras en espejo
+// (misma letra en la misma columna). Detalle y números completos en
+// entrenamiento/rps-posiciones-resumen.md. Van en listas propias, ya NO
+// comparten las de arriba con las modalidades sin rey: sus posiciones
+// ganadoras no tienen por qué coincidir (y no coinciden).
+const RPS_REY_FRONT = ['O', 'A', 'T', 'O', 'A', 'T', 'O', 'A', 'T', 'O', 'A'];
+const RPS_REY_BACK = ['T', 'O', 'A', 'T', 'O', 'A', 'T', 'O', 'A'];
+const RPSLS_REY_FRONT = ['O', 'A', 'T', 'L', 'S', 'O', 'A', 'T', 'L', 'S', 'O'];
+const RPSLS_REY_BACK = ['A', 'T', 'L', 'S', 'O', 'A', 'T', 'L', 'S'];
 
 // Matrices de captura: tipo → tipos rivales capturables.
 const RPS_CAPTURES = { O: ['T'], A: ['O'], T: ['A'] };
@@ -673,8 +693,8 @@ Object.assign(VARIANTS, {
     name: 'Piedra, papel y tijera con rey',
     full: 'Piedra, papel y tijera con rey sobre el tablero triangular',
     captures: capturesConRey(RPS_CAPTURES),
-    backLayout: conRey(RPS_BACK),
-    frontLayout: RPS_FRONT,
+    backLayout: conRey(RPS_REY_BACK),
+    frontLayout: RPS_REY_FRONT,
     pieces: {
       O: { leaps: c => c.kingNbrs },
       A: { leaps: c => c.kingNbrs },
@@ -692,8 +712,8 @@ Object.assign(VARIANTS, {
     name: 'Piedra, papel, tijera, lagarto, Spock con rey',
     full: 'Piedra, papel, tijera, lagarto, Spock con rey sobre el tablero triangular',
     captures: capturesConRey(RPSLS_CAPTURES),
-    backLayout: conRey(RPSLS_BACK),
-    frontLayout: RPSLS_FRONT,
+    backLayout: conRey(RPSLS_REY_BACK),
+    frontLayout: RPSLS_REY_FRONT,
     pieces: {
       O: { leaps: c => c.kingNbrs },
       A: { leaps: c => c.kingNbrs },
