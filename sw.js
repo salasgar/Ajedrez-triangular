@@ -19,6 +19,7 @@ const FICHEROS = [
   './style.css',
   './geometry.js',
   './variants.js',
+  './tessellations.js',
   './rules.js',
   './ai.js',
   './ai-async.js',
