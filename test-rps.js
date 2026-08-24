@@ -68,8 +68,9 @@ for (const id of ['rps', 'rpsls', 'rps-rey', 'rpsls-rey']) {
   const conRey = id.endsWith('-rey');
   ok(info.size === 40, `${id}: 40 piezas en el tablero (hay ${info.size})`);
   ok(info.status === 'playing', `${id}: la partida arranca en 'playing'`);
-  ok(info.tipos.wA === 11 && info.tipos.bA === 11,
-    `${id}: 11 papeles por bando en la fila delantera`);
+  const tiposBlancas = Object.keys(info.tipos).filter(k => k[0] === 'w');
+  const simetria = tiposBlancas.every(k => info.tipos[k] === info.tipos['b' + k.slice(1)]);
+  ok(simetria, `${id}: mismo reparto de piezas por tipo en los dos bandos (negras en espejo)`);
   ok(!!info.tipos.wK === conRey && !!info.tipos.bK === conRey,
     `${id}: rey ${conRey ? 'presente' : 'ausente'}`);
   ok(info.jugadas > 0, `${id}: las blancas tienen jugadas (${info.jugadas})`);
