@@ -9,12 +9,12 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-24T22:56Z · por la sesión s-20260824T213344-deadcf4b (cierre de la 07)
+Regenerado: 2026-08-24T23:25Z · por la sesión s-20260824T214036-9bb6b2c2 (cierre de la 06)
 
-El árbol compartido está limpio sobre `main` = `origin/main` (daa0f28): desde aquí las
-tareas de interfaz editan los ficheros directamente, con los reclamos del harness
-(`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de respaldo de la
-reconciliación; no usarlo, se tirará tras la 08.
+El árbol compartido está sobre `main` = `origin/main` (8336795: fast-forward + el commit
+de código de la 06 + el commit de hechos de la 06). Las tareas de interfaz editan los
+ficheros directamente, con los reclamos del harness (`.claude/sesiones/`) como siempre.
+Queda un `stash@{0}` de respaldo de la reconciliación; no usarlo, se tirará tras la 08.
 
 ## Antes de hacer nada
 
@@ -89,15 +89,22 @@ equivalencia de hoy está en `proyecto.md`.
 | 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | EN CURSO | s-20260824T214012-f5750bb7 · caduca 2026-08-25T01:40:12Z |
 | 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | **LISTA** | |
 | 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | **LISTA** | |
-| 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | EN CURSO | s-20260824T214036-9bb6b2c2 · caduca 2026-08-25T01:53:00Z |
+| 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | **LISTA** | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | **LISTA** | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | PENDIENTE | |
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
 
 Libres ahora mismo: la **08** (MEDIO; la 05 y la 07 ya están LISTAS) — no comparte
-ficheros con la 03 ni la 06, que siguen en curso en otras sesiones. La 09 sigue
-esperando las dos firmas de `autorizaciones.md`; la 10 espera a que cierre la 03.
+ficheros con la 03, que sigue en curso en otra sesión. La sesión `8df0fd81` parece ya
+estar trabajando sobre `index.html`/`script.js`/`editor.*` con Playwright, así que puede
+que la 08 esté cogiéndose ahora mismo sin reclamo todavía escrito en `hechos/` — mira
+`hechos/reclamos/08--*` antes de darla por libre. La 09 sigue esperando las dos firmas
+de `autorizaciones.md`; la 10 espera a que cierre la 03.
+
+Nota de rendimiento para quien coja la 08: la pestaña «Problemas» en difícil/experto
+puede tardar hasta 45-90 s en dar un problema nuevo si el almacén está vacío para ese
+nivel (ver el registro de la tarea 06); no es un cuelgue, es el generador trabajando.
 
 ## Registro de finalizaciones
 
@@ -105,6 +112,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 06 · 2026-08-24 23:11 · s-20260824T214036-9bb6b2c2 · 2 ficheros modificados (problemas.js, problemas-ui.js) + 1 nuevo (entrenamiento/prueba-problemas.js); difícil/experto sí generan (el 0 medido era la ventana de medición, no el generador); arreglado el presupuesto real (`msEspera` por nivel) que hacía fallar «Nuevo problema» en difícil/experto; verificador independiente reconstruido, 44 problemas reverificados (32 fácil/medio + 12 difícil/experto), 0 fallos · main = 8336795
 - LISTA · tarea 07 · 2026-08-24 22:52 · s-20260824T213344-deadcf4b · 7 ficheros (290 inserciones, 41 borrados); node test-edicion.js 31/31; ciclo completo en Chromium headless vía Playwright, 19/19, 0 errores de consola · origin/main = daa0f28
 - LISTA · tarea 05 · 2026-08-24 20:50 · s-20260824T180039-ac278f27 · 4 cambios html + 3 ganchos + 1 fallo CSS arreglado, verificado en Chrome · main = 792e745
 - LISTA · tarea 04 · 2026-08-24 19:35 · s-20260824T180039-ac278f27 · 5 choques resueltos, 4 pruebas en verde, árbol limpio · main = e0dd26e
