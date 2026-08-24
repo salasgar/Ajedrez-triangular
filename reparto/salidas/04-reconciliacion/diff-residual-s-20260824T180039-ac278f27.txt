@@ -1,0 +1,1929 @@
+diff --git a/.gitignore b/.gitignore
+index 40ddbcd..397a6ca 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,2 +1,3 @@
+ .DS_Store
+ .claude/
++entrenamiento/horario-nucleos.txt
+diff --git a/README.md b/README.md
+index 79471b1..a8afade 100644
+--- a/README.md
++++ b/README.md
+@@ -247,6 +247,26 @@ Dama capturando que un peón de la franja D.
+ - **Tiempo consumido** por cada bando. No es un control de tiempo: nadie pierde
+   por tiempo, solo se mide lo que se ha pensado.
+ 
++### Problemas en imagen
++
++Cualquier problema se puede descargar como **imagen `.png`**: el diagrama del
++tablero y, debajo, el enunciado («Las blancas juegan y dan mate en 3 jugadas»),
++la letra pequeña de qué cuenta como resolverlo y la modalidad. El diagrama no es
++una captura de pantalla: se vuelve a dibujar sobre un `<canvas>` con la misma
++geometría que el tablero de verdad, así que sale sin las marcas de la partida
++(selección, último movimiento, jaque) y con las coordenadas visibles solo en las
++casillas vacías, que es como se lee un diagrama impreso.
++
++El **editor de posiciones** puede además crear problemas propios. Se coloca la
++posición, se elige el objetivo (dar mate, ganar una pieza, coronar o salvar
++tablas) y en cuántas jugadas, y **Comprobar** lo verifica con el mismo buscador
++Y/O que genera los problemas automáticos: solo se acepta si el objetivo se puede
++forzar contra cualquier defensa. Un enunciado que no se sostiene no se guarda; y
++si la posición resulta ser un mate en dos cuando se pedían tres, el enunciado se
++corrige solo. El problema comprobado se guarda en el navegador —aparece en la
++pestaña **Problemas** del juego—, se exporta en `.json` o se descarga como
++imagen.
++
+ ### Teclado y lectores de pantalla
+ 
+ El tablero es **una sola parada de tabulador**; dentro se anda con las flechas
+@@ -369,6 +389,8 @@ está midiendo la nueva.
+ | [ai-async.js](ai-async.js) | Ejecuta la búsqueda en un Web Worker construido desde un Blob. |
+ | [saveload.js](saveload.js) | Guardado versionado en `localStorage` y en archivos `.json`. |
+ | [script.js](script.js) | Dibujo del tablero en SVG e interacción con la interfaz. |
++| [problema-imagen.js](problema-imagen.js) | Dibuja un problema en un `<canvas>` y lo descarga como `.png`, con el enunciado debajo. |
++| [crear-problema.js](crear-problema.js) | Convierte la posición del editor en un problema, comprobando antes que el objetivo se puede forzar. |
+ | [style.css](style.css) | Estilos. |
+ | [tune-values.js](tune-values.js) | Herramienta de desarrollo (Node) para ajustar los valores de las piezas. |
+ 
+diff --git a/ai.js b/ai.js
+index bd7ab63..a46ca3e 100644
+--- a/ai.js
++++ b/ai.js
+@@ -495,10 +495,15 @@ function genMoves(board, color, ep, kings, probe) {
+ function evaluate(board, color, cfg) {
+   const values = cfg.pieceValues || PV();
+   const posW = cfg.positionWeights;
+-  // 4 puntos por jugada disponible. Confirmado a prof. 2-3 que gana fuerza
+-  // sobre el 2 clásico (~+58 elo el salto de 2 a 4 junto con el material
+-  // ajustado). Un cfg puede seguir sustituyéndolo para experimentar.
+-  const mobilityWeight = cfg.mobilityWeight ?? 4;
++  // Puntos por jugada disponible. Sale de la modalidad (engine.mobility), como
++  // los valores de las piezas: no tiene por qué ser el mismo número en un
++  // tablero de 96 casillas que en uno de 81, ni con un alfil que recorre 3
++  // casillas que con uno en zigzag que cruza el tablero. Hoy las cuatro
++  // declaran 4, que es el valor confirmado en la arena para el ajedrez de
++  // Salas (~+58 elo el salto de 2 a 4 junto con el material ajustado, a
++  // profundidad 2-3); en las demás está sin medir. Un cfg puede seguir
++  // sustituyéndolo para experimentar, que es como lo mide arena.js.
++  const mobilityWeight = cfg.mobilityWeight ?? V.engine.mobility ?? 4;
+   let score = 0;
+   for (const [key, p] of board) {
+     const sign = p.color === color ? 1 : -1;
+@@ -873,7 +878,9 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
+ // clonables (el Map del tablero, escalares y claves de posición).
+ function searchState() {
+   const posKeys = [], posHashes = [];
+-  for (let i = 0; i <= game.histIndex; i++) {
++  // desde la última edición del tablero: lo anterior es otra partida y contarlo
++  // haría ver repeticiones que no existen (ver lastEditIndex en rules.js)
++  for (let i = lastEditIndex(); i <= game.histIndex; i++) {
+     const s = game.history[i];
+     posKeys.push(s.posKey);
+     // clave 'h1,h2' de cada posición del historial, en el mismo formato que
+@@ -893,7 +900,7 @@ function searchState() {
+ function stateAtIndex(i) {
+   const s = game.history[i];
+   const posKeys = [], posHashes = [];
+-  for (let j = 0; j <= i; j++) {
++  for (let j = lastEditIndex(i); j <= i; j++) {
+     const sj = game.history[j];
+     posKeys.push(sj.posKey);
+     const [h1, h2] = computeHash(sj.board);
+diff --git a/editor.html b/editor.html
+index 1ee7206..1cc14a6 100644
+--- a/editor.html
++++ b/editor.html
+@@ -23,9 +23,9 @@
+ 
+     <h1>Diseñar una posición</h1>
+     <div class="layout">
++        <div class="editor-palette" id="palette"></div>
+         <div id="board-col">
+             <div id="board-wrap"></div>
+-            <div class="editor-palette" id="palette"></div>
+         </div>
+         <aside id="panel">
+             <div id="editor-status"></div>
+@@ -81,10 +81,17 @@
+         </aside>
+     </div>
+ 
+-    <script src="geometry.js"></script>
+-    <script src="variants.js"></script>
+-    <script src="rules.js"></script>
+-    <script src="saveload.js"></script>
+-    <script src="editor.js"></script>
++    <script src="geometry.js?v=1"></script>
++    <script src="variants.js?v=1"></script>
++    <script src="rules.js?v=1"></script>
++    <script src="saveload.js?v=2"></script>
++    <script src="editor.js?v=3"></script>
++    <!-- Crear problemas desde el editor. Va después de editor.js porque se
++         cuelga de sus nodos y de su tablero, y arrastra el motor de problemas,
++         que necesita ai.js para generar y aplicar jugadas. -->
++    <script src="ai.js?v=1"></script>
++    <script src="problemas.js?v=1"></script>
++    <script src="problema-imagen.js?v=1"></script>
++    <script src="crear-problema.js?v=1"></script>
+ </body>
+ </html>
+diff --git a/editor.js b/editor.js
+index c602cd5..d85b022 100644
+--- a/editor.js
++++ b/editor.js
+@@ -37,17 +37,48 @@ function makePieceNode(type, color, cx, cy) {
+   return node;
+ }
+ 
++// Un botón de la paleta es HTML, no una capa del SVG del tablero: un <text> o
++// un <use> sueltos, sin un <svg> que los envuelva, no pintan nada. Mismo
++// criterio que los botones de coronación de script.js.
++function setPieceContent(btn, type) {
++  if (ICON_PIECES[type]) {
++    const svg = document.createElementNS(SVG_NS, 'svg');
++    svg.setAttribute('viewBox', '0 0 24 24');
++    const use = document.createElementNS(SVG_NS, 'use');
++    use.setAttribute('href', ICON_PIECES[type]);
++    svg.appendChild(use);
++    btn.appendChild(svg);
++  } else {
++    btn.textContent = GLYPH[type];
++  }
++}
++
+ function cellName(cell) {
+-  return V.board ? V.board.name(cell) : cell.key;
++  return BOARD && BOARD.name ? BOARD.name(cell) : cell.key;
+ }
+ 
+ function buildEditorSvg() {
+   const boardWrap = document.getElementById('board-wrap');
++  if (!boardWrap) {
++    console.error('buildEditorSvg: #board-wrap not found');
++    return;
++  }
++
++  if (!CELLS || CELLS.length === 0) {
++    console.error('buildEditorSvg: CELLS not initialized, length=' + (CELLS ? CELLS.length : 'undefined'));
++    return;
++  }
++
+   boardWrap.innerHTML = '';
+   cellPolys.clear();
+   coordTexts.clear();
+   focoTablero = null;
+ 
++  if (!BBOX) {
++    console.error('buildEditorSvg: BBOX not initialized');
++    return;
++  }
++
+   document.documentElement.style.setProperty(
+     '--board-aspect', (BBOX.w / BBOX.h).toFixed(4));
+ 
+@@ -120,10 +151,25 @@ function eraseCell(cell) {
+ 
+ function buildPalette() {
+   const palette = document.getElementById('palette');
++  if (!palette) {
++    console.error('buildPalette: #palette not found');
++    return;
++  }
++
++  if (!V || !V.pieceTypes) {
++    console.error('buildPalette: V or V.pieceTypes not initialized, V=' + (V ? 'exists' : 'null'));
++    return;
++  }
++
+   palette.innerHTML = '';
+   palette.classList.add('editor-palette');
+ 
+-  // Fila de blancas
++  // Blancas y negras van en un contenedor aparte de la goma: así el CSS las
++  // pone como dos columnas enfrentadas (paleta a la izquierda del tablero) o
++  // como dos filas (pantalla estrecha, paleta debajo) sin tocar el JS.
++  const cols = document.createElement('div');
++  cols.className = 'palette-cols';
++
+   const whiteRow = document.createElement('div');
+   whiteRow.className = 'palette-row';
+   for (const type of V.pieceTypes) {
+@@ -132,13 +178,12 @@ function buildPalette() {
+     btn.dataset.type = type;
+     btn.dataset.color = 'w';
+     btn.title = PIECE_NAMES[type] + ' blanca';
+-    btn.appendChild(makePieceNode(type, 'w', 12, 12));
++    setPieceContent(btn, type);
+     btn.addEventListener('click', () => setBrush(type, 'w', btn));
+     whiteRow.appendChild(btn);
+   }
+-  palette.appendChild(whiteRow);
++  cols.appendChild(whiteRow);
+ 
+-  // Fila de negras
+   const blackRow = document.createElement('div');
+   blackRow.className = 'palette-row';
+   for (const type of V.pieceTypes) {
+@@ -147,11 +192,12 @@ function buildPalette() {
+     btn.dataset.type = type;
+     btn.dataset.color = 'b';
+     btn.title = PIECE_NAMES[type] + ' negra';
+-    btn.appendChild(makePieceNode(type, 'b', 12, 12));
++    setPieceContent(btn, type);
+     btn.addEventListener('click', () => setBrush(type, 'b', btn));
+     blackRow.appendChild(btn);
+   }
+-  palette.appendChild(blackRow);
++  cols.appendChild(blackRow);
++  palette.appendChild(cols);
+ 
+   // Goma de borrar
+   const eraserRow = document.createElement('div');
+@@ -188,12 +234,17 @@ function fillVariantSelect() {
+     const o = document.createElement('option');
+     o.value = id;
+     o.textContent = name;
+-    if (id === V.id) o.selected = true;
++    if (V && id === V.id) o.selected = true;
+     sel.appendChild(o);
+   }
+ }
+ 
+-function onVariantChange() {
++// Ojo con el nombre: `onVariantChange` es el gancho global que setVariant()
++// llama al final (ver el final de setVariant en variants.js), y que ai.js usa
++// para rehacer sus tablas. Si el manejador del selector se llamara así, el
++// editor —que no carga ai.js— ocuparía ese hueco y se llamaría a sí mismo en
++// bucle hasta desbordar la pila.
++function aplicarModalidad() {
+   if (board.size > 0) {
+     if (!confirm('Cambiar de modalidad vaciará el tablero. ¿Continuar?')) return;
+   }
+@@ -394,8 +445,11 @@ function rowCells(b) {
+ }
+ 
+ // Inicialización
++// Asegurar que V está inicializado (debería estarlo por variants.js, pero por si acaso)
++if (!V) setVariant(DEFAULT_VARIANT || 'salas');
++
+ fillVariantSelect();
+-document.getElementById('variant').addEventListener('change', onVariantChange);
++document.getElementById('variant').addEventListener('change', aplicarModalidad);
+ 
+ const turnRadios = document.querySelectorAll('input[name="turn"]');
+ turnRadios.forEach(r => r.addEventListener('change', (e) => { turn = e.target.value; }));
+diff --git a/entrenamiento/ajusta.js b/entrenamiento/ajusta.js
+index 672e4af..acc2cd8 100644
+--- a/entrenamiento/ajusta.js
++++ b/entrenamiento/ajusta.js
+@@ -4,6 +4,14 @@
+ //
+ //   cat corp/*.jsonl | node ajusta.js [--reg=0.02] [--features=all] [--holdout=0.2]
+ //
++// LA MODALIDAD Y LA LISTA DE PIEZAS SE LEEN DEL CORPUS, no se pasan por
++// argumento: cada shard las escribe en su resumen (ver corpus.js). Así no hay
++// forma de ajustar el corpus de una modalidad interpretándolo con las piezas
++// de otra, que era el fallo que esperaba a quien reutilizase este script tal
++// cual —las piezas estaban escritas a mano, y en Dekle la cuarta componente
++// del vector es el unicornio, no el elefante—. Si se mezclan shards de
++// modalidades distintas, aborta.
++//
+ // Dos cosas que tune-values.js no hacía y que aquí son el objetivo:
+ //
+ //  1. SUBCONJUNTOS DE CARACTERÍSTICAS (--features). El ajuste actual mete
+@@ -34,47 +42,84 @@ const ITERATIONS = Number(arg('iters', 800));
+ const LEARNING_RATE = Number(arg('lr', 5));
+ const ETIQUETA = arg('nombre', FEATURES + '-r' + REG);
+ 
+-const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];
+ const MOBILITY_SCALE = 10;
+-// Peso de movilidad del motor VIGENTE (ai.js usa 4 desde el commit 22407e1):
+-// es el término fijo sobre el que la regresión ajusta el material, y debe
+-// coincidir con el motor que generó el corpus y que jugará el candidato.
+-const MOBILITY_DEFAULT = 4;
+ const K = 1 / 400;
+ 
+-// --- CENTRALITY_BASE sale de la geometría, hay que cargarla ---
+-const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
++// --- leer corpus: primero, porque de él salen la modalidad y las piezas ---
++const lineas = fs.readFileSync(0, 'utf8').trim().split('\n');
++const dataset = [];
++const resumenes = [];
++for (const l of lineas) {
++  if (!l.startsWith('{')) continue;
++  const o = JSON.parse(l);
++  if (o.resumen) resumenes.push(o.resumen);
++  else dataset.push({ diff: o.d, label: o.y });
++}
++if (!dataset.length) { console.error('corpus vacio'); process.exit(1); }
++if (!resumenes.length) {
++  console.error('corpus sin linea de resumen: no se sabe de que modalidad es' +
++    ' ni en que orden van las piezas. Regeneralo con corpus.js.');
++  process.exit(1);
++}
++
++// Todos los shards tienen que ser de la misma modalidad y con las piezas en el
++// mismo orden: si no, sus vectores de características no miden lo mismo y
++// sumarlos daría un ajuste sin sentido.
++const MODALIDAD = resumenes[0].modalidad;
++const PIECES = resumenes[0].piezas;
++if (!MODALIDAD || !PIECES) {
++  console.error('resumen antiguo, sin modalidad/piezas. Regeneralo con corpus.js.');
++  process.exit(1);
++}
++for (const r of resumenes) {
++  if (r.modalidad !== MODALIDAD || r.piezas.join() !== PIECES.join()) {
++    console.error('ABORTA: se estan mezclando shards de modalidades distintas (' +
++      MODALIDAD + ' y ' + r.modalidad + ')');
++    process.exit(1);
++  }
++}
++
++const mobTotal = PIECES.map(() => 0), mobCount = PIECES.map(() => 0);
++let partidas = 0;
++const shards = resumenes.length;
++for (const r of resumenes) {
++  partidas += r.usadas;
++  r.mobTotal.forEach((v, i) => mobTotal[i] += v);
++  r.mobCount.forEach((v, i) => mobCount[i] += v);
++}
++
++// --- CENTRALITY_BASE y los valores de hoy salen de la geometría de ESA
++// modalidad, que hay que cargar (el tablero de Trigonal no es el del resto) ---
++const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
+ const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
+   .map(f => fs.readFileSync(dir + '/' + f, 'utf8')).join('\n');
+-let CENTRALITY_BASE, PIECE_VALUE_REF;
++let CENTRALITY_BASE, PIECE_VALUE_REF, MODALIDAD_FULL, MOBILITY_DEFAULT;
+ eval(gameSrc + `
++setVariant(${JSON.stringify(MODALIDAD)});
+ CENTRALITY_BASE = CELLS.reduce((s, c) => s + centrality(c), 0) / CELLS.length;
+ PIECE_VALUE_REF = PV();
++MODALIDAD_FULL = V.full;
++// Peso de movilidad VIGENTE en esta modalidad: es el término fijo sobre el que
++// la regresión ajusta el material, y tiene que ser el mismo con el que se jugó
++// el corpus y con el que jugará el candidato.
++MOBILITY_DEFAULT = V.engine.mobility ?? 4;
+ `);
+ const ADVANCE_BASE = 0.5;
+ 
+-// --- leer corpus y sumar los resúmenes de todos los shards ---
+-const lineas = fs.readFileSync(0, 'utf8').trim().split('\n');
+-const dataset = [];
+-const mobTotal = PIECES.map(() => 0), mobCount = PIECES.map(() => 0);
+-let partidas = 0, shards = 0;
+-for (const l of lineas) {
+-  if (!l.startsWith('{')) continue;
+-  const o = JSON.parse(l);
+-  if (o.resumen) {
+-    shards++;
+-    partidas += o.resumen.usadas;
+-    o.resumen.mobTotal.forEach((v, i) => mobTotal[i] += v);
+-    o.resumen.mobCount.forEach((v, i) => mobCount[i] += v);
+-  } else {
+-    dataset.push({ diff: o.d, label: o.y });
+-  }
++// Comprobación de forma: el vector de cada posición tiene que traer una
++// componente de material y una de centralidad por pieza, más avance y
++// movilidad. Si no cuadra, el corpus no es de estas piezas.
++const N_FEAT = 2 * PIECES.length + 2;
++const raro = dataset.find(r => r.diff.length !== N_FEAT);
++if (raro) {
++  console.error('ABORTA: el corpus trae vectores de ' + raro.diff.length +
++    ' componentes y ' + MODALIDAD + ' (' + PIECES.join(',') + ') necesita ' + N_FEAT);
++  process.exit(1);
+ }
+-if (!dataset.length) { console.error('corpus vacio'); process.exit(1); }
+ 
+ // Centrado de la movilidad: restar a cada pieza la movilidad media de su
+ // tipo, para que la característica mida "mis piezas se mueven mejor de lo
+-// normal" y no "tengo más piezas" (que ya lo miden las seis de material).
++// normal" y no "tengo más piezas" (que ya lo mide el material).
+ const mobBase = PIECES.map((p, i) => (mobCount[i] ? mobTotal[i] / mobCount[i] : 0));
+ const mobIdx = 2 * PIECES.length + 1;
+ for (const row of dataset) {
+@@ -85,7 +130,7 @@ for (const row of dataset) {
+ 
+ // --- qué índices se dejan ajustar según --features ---
+ // El peón (índice 0) queda siempre fijo como ancla de escala.
+-const idxMat = [1, 2, 3, 4, 5];
++const idxMat = [...Array(PIECES.length).keys()].slice(1);
+ const idxPos = [...Array(PIECES.length).keys()].map(i => PIECES.length + i).concat([2 * PIECES.length]);
+ const idxMob = [mobIdx];
+ const ENTRENABLES = {
+@@ -153,13 +198,14 @@ const wFull = HOLDOUT > 0 ? fit(dataset, initial, ENTRENABLES) : wTrain;
+ // de centralidad y movilidad pasándolo al valor de cada pieza, y renormalizar
+ // el peón a 100)
+ function traducir(w) {
+-  const pawnIdx = 0;
++  const pawnIdx = 0;   // el peón va siempre primero (ver corpus.js)
++  const n = PIECES.length;
+   const scale = 100 / w[pawnIdx];
+   const s = w.map(v => v * scale);
+-  let material = s.slice(0, 6);
+-  let cent = s.slice(6, 12);
+-  let adv = s[12];
+-  let mob = s[13];
++  let material = s.slice(0, n);
++  let cent = s.slice(n, 2 * n);
++  let adv = s[2 * n];
++  let mob = s[mobIdx];
+   const mobPorJugada = mob / MOBILITY_SCALE;
+   material = material.map((v, i) => v - cent[i] * CENTRALITY_BASE - mobPorJugada * mobBase[i]);
+   material[pawnIdx] -= adv * ADVANCE_BASE;
+@@ -182,6 +228,7 @@ PIECES.forEach((p, i) => {
+ });
+ 
+ console.log(`=== ${ETIQUETA} ===`);
++console.log(`modalidad: ${MODALIDAD_FULL}   piezas: ${PIECES.join(' ')}`);
+ console.log(`corpus: ${dataset.length} posiciones de ${partidas} partidas (${shards} shards)`);
+ console.log(`ajustando: ${FEATURES}   reg=${REG}   iters=${ITERATIONS}`);
+ if (HOLDOUT > 0) {
+@@ -193,11 +240,20 @@ if (HOLDOUT > 0) {
+   console.log(`   (${test.length} posiciones de validacion, ${train.length} de entrenamiento)`);
+ }
+ console.log('material :', PIECES.map((p, i) => `${p}=${r.material[i].toFixed(1)}`).join(' '));
++console.log('hoy      :', PIECES.map(p => `${p}=${PIECE_VALUE_REF[p]}`).join(' '));
+ console.log('centrali.:', PIECES.map((p, i) => `${p}=${r.cent[i].toFixed(1)}`).join(' '));
+ console.log(`avance(P): ${r.adv.toFixed(1)}   movilidad: ${r.mobPorJugada.toFixed(2)} (hoy ${MOBILITY_DEFAULT})`);
+ 
+-// JSON directamente pegable en CFG_B de arena.js
++// Candidato para engine.pieceValues de esta modalidad en variants.js. Ojo:
++// es una SUGERENCIA. La regresión minimiza el error de predecir el resultado,
++// no la fuerza de juego; entra en variants.js solo después de ganar en la
++// arena contra los valores vigentes.
++console.log('\npieceValues: { ' + PIECES.map(p => `${p}: ${pv[p]}`).join(', ') + ', K: 0 },');
++
++// JSON directamente pegable en CFG_B de arena.js (con MODALIDAD=<esta>, que
++// arena.js necesita para poner el tablero y el juego de piezas correctos).
+ const cfg = { depth: 2, mobility: true, order: true, quiesce: true, pieceValues: pv };
+ if (Object.keys(posW).length) cfg.positionWeights = posW;
+ if (FEATURES === 'all' || FEATURES === 'matmob') cfg.mobilityWeight = +r.mobPorJugada.toFixed(2);
++console.log('MODALIDAD=' + MODALIDAD);
+ console.log('CFG=' + JSON.stringify(cfg));
+diff --git a/entrenamiento/aperturas.js b/entrenamiento/aperturas.js
+index b939e23..3f7db61 100644
+--- a/entrenamiento/aperturas.js
++++ b/entrenamiento/aperturas.js
+@@ -1,6 +1,14 @@
+ // aperturas.js — Genera el libro fijo de aperturas para arena.js.
+ //
+-//   node aperturas.js > libro.json
++//   node aperturas.js > libro-salas.json
++//   MODALIDAD=dekle node aperturas.js > libro-dekle.json
++//
++// UN LIBRO POR MODALIDAD, no uno compartido. Las aperturas son claves de
++// casilla, y ni el tablero ni las jugadas coinciden entre modalidades:
++// comprobado, de 100 aperturas de Salas solo 44 son legales en Dekle (las de
++// peón, que se mueve igual) y ninguna en Trigonal, que ni siquiera tiene el
++// mismo tablero. Un libro equivocado no revienta: sesga la muestra en
++// silencio. Por eso arena.js comprueba la legalidad del libro al arrancar.
+ //
+ // 400 aperturas únicas de 6 jugadas legales al azar, rechazando las que
+ // terminan la partida o desequilibran el material (capturas): cada par de la
+@@ -18,13 +26,21 @@ const path = require('path');
+ const SEED = Number(process.env.SEED || 20260721);
+ const N_APERTURAS = Number(process.env.N_APERTURAS || 400);
+ const OPENING_PLIES = Number(process.env.OPENING_PLIES || 6);
++const MODALIDAD = process.env.MODALIDAD || 'salas';
+ 
+-const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
++const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
+ const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
+   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
+   .join('\n');
+ 
+ const driverSrc = `
++if (!VARIANTS[${JSON.stringify(MODALIDAD)}]) {
++  process.stderr.write('modalidad desconocida: ${MODALIDAD}. Hay: ' +
++    Object.keys(VARIANTS).join(', ') + '\\n');
++  process.exit(1);
++}
++setVariant(${JSON.stringify(MODALIDAD)});
++
+ let _s = ${SEED} >>> 0;
+ Math.random = function () {
+   _s = (_s + 0x6D2B79F5) >>> 0;
+@@ -60,7 +76,8 @@ while (libro.length < ${N_APERTURAS}) {
+   libro.push(moves);
+ }
+ process.stdout.write(JSON.stringify(libro));
+-process.stderr.write('libro: ' + libro.length + ' aperturas de ' + ${OPENING_PLIES} + ' jugadas, semilla ' + ${SEED} + '\\n');
++process.stderr.write('libro[' + V.id + ']: ' + libro.length + ' aperturas de ' +
++  ${OPENING_PLIES} + ' jugadas, semilla ' + ${SEED} + '\\n');
+ `;
+ 
+ eval(gameSrc + '\n' + driverSrc);
+diff --git a/entrenamiento/arena.js b/entrenamiento/arena.js
+index 5a36a89..4765808 100644
+--- a/entrenamiento/arena.js
++++ b/entrenamiento/arena.js
+@@ -41,12 +41,41 @@ const CFG_A = process.env.CFG_A || '{"depth":2,"mobility":true,"order":true,"qui
+ const CFG_B = process.env.CFG_B || CFG_A;
+ const NAME_A = process.env.NAME_A || 'A';
+ const NAME_B = process.env.NAME_B || 'B';
++// Modalidad en la que se juega el torneo (ver VARIANTS en variants.js). Cada
++// una tiene su tablero, su juego de piezas y sus valores, así que un log solo
++// es comparable con otro de la MISMA modalidad; por eso va también a la
++// cabecera. Ojo con el libro de aperturas: es específico de la modalidad (ver
++// LIBRO más abajo).
++const MODALIDAD = process.env.MODALIDAD || 'salas';
+ // Libro de aperturas compartido (ver aperturas.js). Con LIBRO, el par número
+ // `par` juega siempre la apertura `par` del libro, sea cual sea la
+ // configuración: todas las ramas de una ablación se comparan sobre el mismo
+ // conjunto de posiciones de partida. Sin LIBRO, cada proceso las sortea.
+-const LIBRO = process.env.LIBRO
+-  ? JSON.stringify(JSON.parse(fs.readFileSync(process.env.LIBRO, 'utf8')))
++//
++// EL LIBRO ES DE UNA MODALIDAD CONCRETA, y usar el que no toca no da error
++// ruidoso: las jugadas son claves de casilla, y en Dekle el 44% de las
++// aperturas de Salas resultan legales por casualidad (las de peón, que se
++// mueve igual) mientras el 56% restante no lo es. Con el libro equivocado la
++// tanda no reventaría: se quedaría callada midiendo solo aperturas de peón.
++// Por eso openingFor() comprueba la legalidad de la primera apertura y aborta
++// si no cuadra, en vez de fiarse del nombre del fichero.
++//
++// POR DEFECTO SE COGE EL LIBRO DE LA MODALIDAD, `libro-<id>.json` al lado de
++// este script. Pasarlo a mano era la manera más fácil de medir con el libro
++// equivocado —el nombre no lo comprueba nadie—, y ahora hay que salirse del
++// camino para conseguirlo. Con LIBRO= (vacío) se juega sin libro, sorteando
++// las aperturas en cada proceso, como antes.
++const LIBRO_PATH = 'LIBRO' in process.env
++  ? (process.env.LIBRO || null)
++  : path.join(__dirname, 'libro-' + MODALIDAD + '.json');
++if (LIBRO_PATH && !fs.existsSync(LIBRO_PATH)) {
++  process.stderr.write('no existe el libro ' + LIBRO_PATH + '. Generalo con' +
++    ' MODALIDAD=' + MODALIDAD + ' node aperturas.js > libro-' + MODALIDAD + '.json' +
++    ' (o pasa LIBRO= vacio para sortear las aperturas)\n');
++  process.exit(1);
++}
++const LIBRO = LIBRO_PATH
++  ? JSON.stringify(JSON.parse(fs.readFileSync(LIBRO_PATH, 'utf8')))
+   : 'null';
+ 
+ // Reanudación: con SALIDA=<fichero>, arena.js escribe ahí (añadiendo) y al
+@@ -58,6 +87,21 @@ const SALIDA = process.env.SALIDA || null;
+ const hechos = new Set();
+ if (SALIDA && fs.existsSync(SALIDA)) {
+   for (const l of fs.readFileSync(SALIDA, 'utf8').split('\n')) {
++    // La clave de reanudación es solo `par/whiteIs`: no lleva la modalidad,
++    // así que reutilizar un fichero de otra modalidad no daría error, daría
++    // SILENCIO —todos los pares constarían como hechos y el proceso volvería
++    // enseguida sin jugar nada—. Por eso se compara contra la cabecera.
++    if (l.startsWith('# ')) {
++      try {
++        const cab = JSON.parse(l.slice(2));
++        if (cab.modalidad && cab.modalidad !== MODALIDAD) {
++          process.stderr.write('ABORTA: ' + SALIDA + ' es de la modalidad ' +
++            cab.modalidad + ' y esta tanda es de ' + MODALIDAD + '\n');
++          process.exit(1);
++        }
++      } catch { /* cabecera a medias de un corte */ }
++      continue;
++    }
+     if (!l.startsWith('{')) continue;
+     try {
+       const g = JSON.parse(l);
+@@ -88,6 +132,15 @@ Math.random = function () {
+   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+ };
+ 
++// La modalidad se fija ANTES de nada: cambia el tablero, el juego de piezas,
++// las tablas precalculadas y los valores por defecto de PV().
++if (!VARIANTS[${JSON.stringify(MODALIDAD)}]) {
++  process.stderr.write('modalidad desconocida: ${MODALIDAD}. Hay: ' +
++    Object.keys(VARIANTS).join(', ') + '\\n');
++  process.exit(1);
++}
++setVariant(${JSON.stringify(MODALIDAD)});
++
+ FIFTY_MOVE_LIMIT = ${FIFTY};
+ AI_LEVELS.A = ${CFG_A};
+ AI_LEVELS.B = ${CFG_B};
+@@ -110,6 +163,30 @@ function materialBalance(board, color) {
+ // compare lo mismo en ambos sentidos.
+ const LIBRO_APERTURAS = ${LIBRO};
+ 
++// El libro tiene que ser de ESTA modalidad. Se comprueba jugando las primeras
++// aperturas contra el generador de jugadas legales: si alguna no lo es, la
++// tanda se para aquí en vez de medir en silencio un subconjunto sesgado.
++//
++// Se miran 20 y no una porque el fallo no es todo o nada: entre dos
++// modalidades del mismo tablero coinciden las jugadas de peón, así que el 44%
++// de las aperturas de Salas resultan legales en Dekle. Con una sola muestra
++// habría casi una posibilidad entre dos de dar por bueno el libro que no es.
++if (LIBRO_APERTURAS) {
++  for (const ap of LIBRO_APERTURAS.slice(0, 20)) {
++    newGame();
++    for (const s of ap) {
++      const [from, to] = s.split('>');
++      const legales = movesForSide(game.board, game.turn, game.enPassant);
++      if (!legales.some(m => m.from === from && m.to === to)) {
++        process.stderr.write('ABORTA: el libro no es de la modalidad ' +
++          V.id + ' (la jugada ' + s + ' no es legal ahí)\\n');
++        process.exit(1);
++      }
++      makeMove(from, to);
++    }
++  }
++}
++
+ // Apertura del par indicado: la del libro si lo hay (compartida entre
+ // ramas), si no una sorteada sobre la marcha.
+ function openingFor(par) {
+@@ -198,10 +275,11 @@ const salidaFd = SALIDA ? fs.openSync(SALIDA, 'a') : null;
+ // Un log que no dice qué midió no sirve para nada dentro de un mes.
+ const CABECERA = '# ' + JSON.stringify({
+   fecha: new Date().toISOString(),
++  modalidad: MODALIDAD,
+   A: { nombre: NAME_A, cfg: JSON.parse(CFG_A) },
+   B: { nombre: NAME_B, cfg: JSON.parse(CFG_B) },
+   MAX_PLIES, FIFTY, OPENING_PLIES, SEED, FIRST, PAIRS,
+-  libro: process.env.LIBRO || null,
++  libro: LIBRO_PATH,
+ }) + '\n';
+ const ESCRIBE = salidaFd === null
+   ? (s) => process.stdout.write(s)
+@@ -211,7 +289,8 @@ const HECHOS = hechos;
+ // tramo se jugó en otra tanda (y con qué motor, si se hubiera cambiado)
+ ESCRIBE(CABECERA);
+ 
+-process.stderr.write(`arena: ${NAME_A} vs ${NAME_B} · pares ${FIRST}..${FIRST + PAIRS - 1}` +
++process.stderr.write(`arena[${MODALIDAD}]: ${NAME_A} vs ${NAME_B}` +
++  ` · pares ${FIRST}..${FIRST + PAIRS - 1}` +
+   ` · seed ${SEED}` + (SALIDA ? ` · ${hechos.size} partidas ya hechas en ${SALIDA}` : '') + '\n');
+ eval(gameSrc + '\n' + driverSrc);
+ if (salidaFd !== null) fs.closeSync(salidaFd);
+diff --git a/entrenamiento/corpus.js b/entrenamiento/corpus.js
+index fb1ba74..e8f70ec 100644
+--- a/entrenamiento/corpus.js
++++ b/entrenamiento/corpus.js
+@@ -17,12 +17,21 @@
+ // característica y que hay que sumar entre shards.
+ //
+ // Variables de entorno:
+-//   SEED     semilla del PRNG (distinta por shard)
+-//   GAMES    partidas concluyentes objetivo (por shard)
+-//   MINUTES  alternativa a GAMES: presupuesto de tiempo
+-//   LEVEL    nivel real de AI_LEVELS para el autojuego; si no, CFG
+-//   CFG      configuración de autojuego (JSON), por defecto profundidad 2
+-//   FIFTY    regla de los 50 movimientos durante el autojuego
++//   SEED      semilla del PRNG (distinta por shard)
++//   GAMES     partidas concluyentes objetivo (por shard)
++//   MINUTES   alternativa a GAMES: presupuesto de tiempo
++//   LEVEL     nivel real de AI_LEVELS para el autojuego; si no, CFG
++//   CFG       configuración de autojuego (JSON), por defecto profundidad 2
++//   FIFTY     regla de los 50 movimientos durante el autojuego
++//   MODALIDAD qué modalidad se autojuega (salas por defecto)
++//
++// LA LISTA DE PIEZAS YA NO ESTÁ ESCRITA AQUÍ. Cada modalidad tiene la suya
++// —Dekle cambia el elefante por el unicornio, Trigonal no tiene ninguna de las
++// dos—, así que el vector de características no mide lo mismo en todas. La
++// lista concreta, en el orden en que se escribieron las componentes, va en el
++// resumen final del shard: ajusta.js la lee de ahí y comprueba que todos los
++// shards que se le pasan juntos coincidan. Sin eso, concatenar el corpus de
++// dos modalidades daría un ajuste sin sentido y sin ningún aviso.
+ 'use strict';
+ const fs = require('fs');
+ const path = require('path');
+@@ -42,14 +51,29 @@ const SAMPLE_STRIDE = Number(process.env.SAMPLE_STRIDE || 8);
+ // ninguna partida da mate dentro del tope; sin esto se tiraría la mayoría del
+ // cómputo. 0 = comportamiento antiguo (descartar). Ver README de la fase.
+ const ADJ_MARGIN = Number(process.env.ADJ_MARGIN || 0);
++const MODALIDAD = process.env.MODALIDAD || 'salas';
+ 
+-const dir = '/Users/salasgar/Documents/git/Ajedrez-triangular';
++// Dónde están geometry/variants/rules/ai. Por defecto el repo; con MOTOR= se
++// apunta a otra copia, igual que en arena.js. Hace falta para que el servicio
++// de arranque automático pueda generar corpus: macOS no deja que un
++// LaunchAgent lea ~/Documents, así que trabaja sobre una copia del motor.
++const dir = process.env.MOTOR || '/Users/salasgar/Documents/git/Ajedrez-triangular';
+ const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js']
+   .map(f => fs.readFileSync(path.join(dir, f), 'utf8'))
+   .join('\n');
+ 
+ const driverSrc = `
+-const PIECES = ['P', 'N', 'B', 'E', 'R', 'Q'];
++if (!VARIANTS[${JSON.stringify(MODALIDAD)}]) {
++  process.stderr.write('modalidad desconocida: ${MODALIDAD}. Hay: ' +
++    Object.keys(VARIANTS).join(', ') + '\\n');
++  process.exit(1);
++}
++setVariant(${JSON.stringify(MODALIDAD)});
++
++// Las piezas de esta modalidad menos el rey (vale 0 y no se ajusta). El peón
++// va SIEMPRE el primero: fitValues lo deja fijo como ancla de la escala, y
++// tanto ajusta.js como tune-values.js dan por hecho el índice 0.
++const PIECES = ['P', ...V.pieceTypes.filter(t => t !== 'K' && t !== 'P')];
+ 
+ let _s = ${SEED} >>> 0;
+ Math.random = function () {
+@@ -165,12 +189,13 @@ while (budgetMs ? (Date.now() - t0 < budgetMs) : (usadas < ${GAMES})) {
+   }
+   usadas++;
+   if (usadas % 25 === 0) {
+-    process.stderr.write('  seed ${SEED}: ' + usadas + ' partidas · ' + posiciones +
+-      ' posiciones · ' + ((Date.now() - t0) / 60000).toFixed(1) + ' min\\n');
++    process.stderr.write('  ' + V.id + ' seed ${SEED}: ' + usadas + ' partidas · ' +
++      posiciones + ' posiciones · ' + ((Date.now() - t0) / 60000).toFixed(1) + ' min\\n');
+   }
+ }
+ 
+ process.stdout.write(JSON.stringify({ resumen: {
++  modalidad: V.id, piezas: PIECES,
+   seed: ${SEED}, usadas, adjudicadas, jugadas: jugadas_total, posiciones, descartadas,
+   mobTotal, mobCount, mins: +((Date.now() - t0) / 60000).toFixed(1),
+ } }) + '\\n');
+diff --git a/entrenamiento/entrenamiento-continuo.sh b/entrenamiento/entrenamiento-continuo.sh
+index b56a6e4..43e1f83 100755
+--- a/entrenamiento/entrenamiento-continuo.sh
++++ b/entrenamiento/entrenamiento-continuo.sh
+@@ -6,6 +6,18 @@
+ # y arena.js se salta al arrancar los pares que ya estén ahí: si el ordenador
+ # se apaga, al volver se reanuda por donde iba sin repetir ni perder partidas.
+ #
++# LAS RONDAS VAN UNA DETRÁS DE OTRA EN ESTE MISMO FICHERO, en el orden en que
++# se quieren ejecutar, que ya no es el de su número: la 15 va antes que la 14.
++# Una ronda terminada no se borra: se queda con sus conclusiones escritas al
++# lado, y al pasar por ella el guion la ve hecha y sigue de largo en segundos.
++# Así el fichero es a la vez el programa y el cuaderno de campo.
++#
++# TODAS LAS RONDAS HASTA LA 14 MIDIERON EL AJEDREZ DE SALAS Y NINGUNA LO DIJO:
++# no exportaban MODALIDAD, así que jugaban la de por defecto. Desde que hay
++# cinco modalidades eso ya no vale, y la ronda 15 en adelante llevan la
++# modalidad escrita en cada proceso, en el nombre de cada fichero y en la
++# cabecera de cada log. Un log sin modalidad es de Salas, por descarte.
++#
+ # RONDA 12: ESCALERA DE ELO DE LOS NIVELES.
+ #
+ # El selector de nivel de la interfaz promete "Fácil", "Difícil", "Experto"…
+@@ -32,7 +44,121 @@ mkdir -p r12
+ 
+ # Mismos topes que las rondas 10 y 11, para que los numeros sean comparables
+ # con todo lo medido hasta ahora.
+-export MOTOR="$(pwd)/motor" LIBRO=libro.json MAX_PLIES=80 FIFTY=40
++#
++# MOTOR: el servicio trabaja sobre la copia del motor que le deja
++# instalar-servicio.sh en su directorio (macOS no le deja leer ~/Documents).
++# Lanzado a mano desde el repo esa copia no existe, y entonces se usa el propio
++# repo: asi el guion se puede probar tal cual antes de instalarlo.
++if [ -d "$(pwd)/motor" ]; then
++  export MOTOR="$(pwd)/motor"
++else
++  export MOTOR="$(cd .. && pwd)"
++fi
++export LIBRO=libro.json MAX_PLIES=80 FIFTY=40
++
++# CUANTOS PROCESOS A LA VEZ. Es el unico mando para decidir cuanta maquina se
++# lleva el entrenamiento, y el bueno: cada proceso es de un solo hilo y come un
++# nucleo entero, asi que NUCLEOS=2 son dos nucleos ocupados de los ocho.
++#
++#   NUCLEOS=2 ./entrenamiento-continuo.sh      a mano
++#   NUCLEOS=2 ./instalar-servicio.sh           como servicio (queda en el plist)
++#
++# NO SE HACE BAJANDO LA BANDA DE PRIORIDAD, que es lo que parece razonable y es
++# una trampa: ProcessType=Background confina el proceso a los nucleos de
++# eficiencia y lo deja 6,9 veces mas lento (ver el plist en
++# instalar-servicio.sh). Cuatro procesos rapidos rinden mucho mas que seis
++# estrangulados. Con Nice 10 + LowPriorityIO, dos procesos ceden el paso al
++# trabajo en primer plano y aun asi corren a velocidad plena.
++#
++# Bajar NUCLEOS no cambia NADA de lo que se mide: las tandas son las mismas y
++# los mismos ficheros, solo que en mas oleadas. Lo unico que cambia es cuanto
++# tarda el reloj de pared.
++NUCLEOS=${NUCLEOS:-6}
++
++# HORARIO: usar muchos nucleos de noche y pocos de dia.
++#
++# El fichero horario-nucleos.txt, si existe, lleva una linea con tres numeros:
++#
++#   <instante limite en segundos desde 1970>  <nucleos antes>  <nucleos despues>
++#
++# ES UNA HORA ABSOLUTA A PROPOSITO, no un temporizador. Un `sleep 7h` se muere
++# con el ordenador y al encenderlo otra vez volveria a contar siete horas desde
++# cero, que es justo lo contrario de lo que se quiere. Una fecha en un fichero
++# sobrevive al apagon: al arrancar, el guion mira el reloj y sabe en que tramo
++# esta, tanto si se ha apagado cinco minutos como dos dias.
++#
++# Cuando el limite ya ha pasado, se queda en el segundo numero para siempre,
++# que es el comportamiento razonable: pasada la noche, el entrenamiento se
++# queda pequeño hasta que alguien diga otra cosa.
++HORARIO=horario-nucleos.txt
++nucleos_ahora() {
++  local linea
++  linea=$(grep -v '^#' $HORARIO 2>/dev/null | grep -v '^$' | head -1)
++  if [ -n "$linea" ]; then
++    local -a campos
++    campos=(${=linea})
++    if [ ${#campos} -ge 3 ]; then
++      if [ "$(date +%s)" -lt "$campos[1]" ]; then echo $campos[2]; else echo $campos[3]; fi
++      return
++    fi
++  fi
++  echo $NUCLEOS
++}
++
++# Lleva la cuenta de los PID a mano porque `jobs` no vale: en un zsh no
++# interactivo el control de trabajos esta apagado y la lista sale siempre
++# vacia, asi que un limitador escrito con `jobs -rp` los lanzaria todos de
++# golpe sin dar ningun error.
++LANZADOS=()
++poda_lanzados() {
++  local vivos=()
++  for p in $LANZADOS; do
++    if kill -0 $p 2>/dev/null; then vivos+=($p); fi
++  done
++  LANZADOS=($vivos)
++}
++
++# Espera a que quede sitio antes de lanzar otro proceso. Relee el horario en
++# cada vuelta, asi que si el limite cae en mitad de una fase, las oleadas que
++# quedan por lanzar ya salen con el cupo nuevo.
++espera_hueco() {
++  while true; do
++    poda_lanzados
++    if (( ${#LANZADOS} < $(nucleos_ahora) )); then break; fi
++    sleep 5
++  done
++}
++
++# Sustituye a `wait`. Ademas de esperar, HACE CUMPLIR EL CUPO sobre los
++# procesos que ya estan corriendo: si el limite del horario cae con ocho
++# arenas en marcha, esperar a que terminen dejaria el ordenador ocupado horas
++# despues de la hora convenida. Se cortan los ultimos lanzados, que es lo que
++# menos trabajo tira:
++#
++#   - una arena guarda cada partida en el disco segun la termina, asi que
++#     pierde como mucho la que estuviera jugando y se reanuda sola;
++#   - un shard de corpus pierde sus 20 minutos, porque su linea de resumen es
++#     lo ultimo que escribe y sin ella se rehace entero. Es el precio de
++#     devolver la maquina a su hora, y son minutos, no horas.
++#
++# Lo cortado no se pierde de vista: la modalidad no se dara por terminada y el
++# reintento de mas abajo (o el siguiente arranque del servicio) lo retoma.
++espera_a_todos() {
++  while true; do
++    poda_lanzados
++    if (( ${#LANZADOS} == 0 )); then break; fi
++    local tope=$(nucleos_ahora)
++    while (( ${#LANZADOS} > tope )); do
++      local p=$LANZADOS[-1]
++      pkill -P $p 2>/dev/null
++      kill $p 2>/dev/null
++      wait $p 2>/dev/null      # recogerlo aqui mismo; si no, queda de zombi y
++      LANZADOS[-1]=()          # kill -0 seguiria diciendo que sigue vivo
++    done
++    sleep 5
++  done
++  wait      # recoge los que hayan terminado solos
++}
+ 
+ # Las configuraciones son las de AI_LEVELS tal cual: aqui no se experimenta
+ # con parametros, se mide lo que el jugador recibe al elegir cada nivel.
+@@ -112,22 +238,442 @@ escalon() {
+     node arena.js >> r13/$nombre.err 2>&1
+ }
+ 
+-escalon n23 "$L2" "$L3" nivel2 nivel3 &
+-escalon n34 "$L3" "$L4" nivel3 nivel4 &
+-escalon n45 "$L4" "$L5" nivel4 nivel5 &
+-escalon n56 "$L5" "$L6" nivel5 nivel6 &
++espera_hueco; escalon n23 "$L2" "$L3" nivel2 nivel3 & LANZADOS+=($!)
++espera_hueco; escalon n34 "$L3" "$L4" nivel3 nivel4 & LANZADOS+=($!)
++espera_hueco; escalon n45 "$L4" "$L5" nivel4 nivel5 & LANZADOS+=($!)
++espera_hueco; escalon n56 "$L5" "$L6" nivel5 nivel6 & LANZADOS+=($!)
+ # PAR NO CONTIGUO, para comprobar que la escalera es UNA SOLA ESCALA. Encadenar
+ # escalones supone transitividad, y no tiene por que cumplirse: un estilo puede
+ # irle mejor a un rival que a otro, y la tasa de tablas cambia con la fuerza.
+ # Si el 2 contra el 5 no cuadra con la suma de n23+n34+n45, el elo acumulado es
+ # orientativo y no una escala.
+-escalon n25 "$L2" "$L5" nivel2 nivel5 &
+-wait
++espera_hueco; escalon n25 "$L2" "$L5" nivel2 nivel5 & LANZADOS+=($!)
++espera_a_todos
+ echo "RONDA 13 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r13/estado.txt
+ 
++# ---------------------------------------------------------------------------
++# RONDA 15: LOS VALORES DE LAS PIEZAS DE CADA MODALIDAD
++#
++# VA ANTES QUE LA 14, QUE SE QUEDÓ A MEDIAS. Es una decisión de prioridad, no
++# un abandono: la 14 afina las etiquetas del selector de nivel en una modalidad
++# que ya juega bien, y la 15 arregla que otras tres jueguen con valores de
++# pieza inventados. Lo segundo se nota jugando y lo primero no. La 14 sigue
++# entera al final del fichero y retoma sus tres ramas pendientes en cuanto la
++# 15 cierre; no hay nada comentado ni que acordarse de descomentar.
++#
++# EL PROBLEMA. De las cinco modalidades, solo el ajedrez de Salas tiene los
++# valores de las piezas medidos. Los de las otras tres están puestos a ojo, y
++# se nota en cómo están escritos en variants.js: la torre de 1998 «se copia
++# del elefante», la dama «se estima con la misma proporción», el unicornio de
++# Dekle vale 400 «como la torre» porque hay que poner algo. Son conjeturas
++# razonables, no medidas, y una conjetura razonable en el valor de una pieza
++# es exactamente el tipo de error que hace jugar mal a un motor por lo demás
++# correcto: cambia lo que cree que es una buena jugada en cada posición.
++#
++#   salas       P100 N265 B335 E358 R483 Q981   <- medida y confirmada (ronda 6)
++#   salas-1998  P100 N265 B335 R358 Q810        <- a ojo
++#   dekle       P100 N300 B320 U400 R400 Q800   <- a ojo
++#   trigonal    P100 N300 B400 R500 Q900        <- a ojo, valores del ajedrez normal
++#
++# Y no hay razón para esperar que se parezcan: el alfil de Trigonal va en
++# zigzag, el alfil de Dekle no está atado al color, y en 1998 el tablero tiene
++# 64 casillas en vez de 96, así que las mismas piezas tienen otro alcance.
++#
++# salas-2026 no entra: hereda el motor de salas (solo cambia la coronación de
++# flanco), y esa regla no toca el valor de ninguna pieza salvo, como mucho, el
++# del peón. Si alguna vez se quiere medir eso, es una ronda propia.
++#
++# QUÉ SE MIDE. El ciclo de ajuste completo, el mismo de la ronda 6, aplicado a
++# cada modalidad por separado:
++#
++#   fase 0  el libro de aperturas de la modalidad, si no está hecho
++#   fase 1  corpus de autojuego (caro, en shards paralelos)
++#   fase 2  la regresión sobre ese corpus (barata), dos veces:
++#             mat  solo el material (los pesos posicionales a cero, como hoy)
++#             all  material + centralidad + avance + movilidad
++#   fase 3  arena: cada candidato contra los valores VIGENTES de la modalidad
++#
++# La fase 3 es la que decide. La regresión minimiza el error al predecir el
++# resultado de una partida, que no es lo mismo que jugar mejor: en la ronda 6
++# el candidato de la regresión perdió contra los valores de entonces. Nada
++# entra en variants.js sin ganar antes en la arena.
++#
++# UNA MODALIDAD ENTERA CADA VEZ, no las tres a la vez. Con seis procesos
++# repartidos entre tres modalidades, las tres tardarían el triple y ninguna
++# daría una respuesta cerrada hasta el final. De la otra manera, cada día sale
++# una modalidad decidida y publicable.
++#
++# LOS DOS CANDIDATOS SE MIDEN POR SEPARADO Y CONTRA EL MISMO RIVAL. Si se
++# comparasen entre sí no se sabría cuál de los dos —si alguno— mejora lo que
++# hay; midiendo los dos contra los valores vigentes, las dos preguntas
++# (¿mejora el material?, ¿aportan algo los pesos posicionales?) se contestan
++# de una tanda.
++mkdir -p r15
++
++MODALIDADES_R15=(salas-1998 dekle trigonal)
++# El trabajo se parte SIEMPRE en estos trozos, haya los nucleos que haya: 8
++# shards de corpus y 4 procesos por rama de arena, que es lo que llena la
++# maquina entera cuando se le deja. Con el cupo bajo salen en mas oleadas.
++CORPUS_SHARDS=8           # 8 x 20 min = 2 h 40 min de CPU por modalidad
++CORPUS_MINUTOS=20
++CORPUS_CFG='{"depth":2,"order":true}'
++SHARDS_ARENA=4
++PARES_SHARD=53            # 4 x 53 = 212 pares = 424 partidas por rama
++OBJETIVO_R15=$((2 * SHARDS_ARENA * PARES_SHARD * 2))   # dos ramas, dos colores
++# Adjudicar por material las partidas que no acaban solas. Sin esto se tira la
++# mayor parte del computo: a este nivel casi ninguna partida da mate dentro del
++# tope de jugadas (ver corpus.js y el README).
++ADJ=300
++# Presupuesto de la arena: el del nivel 4, que es el que juega la mayoria de la
++# gente y con el que se midieron las rondas 13 y 14.
++FIJO_R15='"depth":24,"mobility":true,"order":true,"quiesce":true,"nodes":4500'
++
++# Coge la linea CFG= que imprime ajusta.js y le pega el presupuesto de la
++# arena, quedandose SOLO con lo ajustado (valores, pesos posicionales y peso de
++# movilidad). El CFG de ajusta.js viene con "depth":2, que es como se jugo el
++# corpus y no como se quiere medir: si se pasara tal cual, la arena compararia
++# ademas dos profundidades distintas y no se sabria a que atribuir la
++# diferencia.
++cfg_arena() {
++  node -e '
++    const fs = require("fs");
++    const l = fs.readFileSync(process.argv[1], "utf8").split("\n")
++      .find(x => x.startsWith("CFG="));
++    if (!l) { process.stderr.write("sin linea CFG= en " + process.argv[1] + "\n"); process.exit(1); }
++    const c = JSON.parse(l.slice(4));
++    const out = JSON.parse("{" + process.argv[2] + "}");
++    for (const k of ["pieceValues", "positionWeights", "mobilityWeight"]) {
++      if (c[k] !== undefined) out[k] = c[k];
++    }
++    process.stdout.write(JSON.stringify(out));
++  ' "$1" "$FIJO_R15"
++}
++
++for M in $MODALIDADES_R15; do
++ # HASTA TRES PASADAS POR MODALIDAD. Una pasada puede quedarse corta sin que
++ # haya nada roto: si el limite del horario cae en mitad de la fase 3, se
++ # cortan los procesos que sobran del cupo y faltaran partidas. Como todo se
++ # reanuda, la pasada siguiente solo juega lo que falte y cuesta lo que falte.
++ # El tope de tres es para no dar vueltas eternas si lo que falla es otra cosa;
++ # en ese caso la modalidad queda como INCOMPLETA en estado.txt y el servicio
++ # volvera a intentarlo la proxima vez que arranque.
++ for intento in 1 2 3; do
++  [ -f r15/$M-hecha.txt ] && break
++
++  # --- fase 0: el libro de aperturas de esta modalidad ---
++  # Las jugadas son claves de casilla y no valen de una modalidad a otra (ver
++  # aperturas.js). Se genera aparte y se renombra al final para que un corte a
++  # medias no deje un libro truncado que luego se daria por bueno.
++  if [ ! -s libro-$M.json ]; then
++    MODALIDAD=$M node aperturas.js > libro-$M.json.parcial 2>> r15/$M.err \
++      && mv libro-$M.json.parcial libro-$M.json
++  fi
++
++  # --- fase 1: el corpus (la parte cara) ---
++  # Un shard cuenta como hecho cuando tiene su linea de resumen al final: es lo
++  # ultimo que escribe corpus.js, asi que un fichero sin ella es de un proceso
++  # cortado a medias y se rehace entero.
++  #
++  # Los shards s1 y s2 de dekle y trigonal ya estaban hechos a mano el
++  # 2026-08-02 (10 min cada uno en vez de 20, misma configuracion de autojuego)
++  # y se reaprovechan: son 40 minutos de maquina y el nombre coincide. Que unos
++  # shards sean mas largos que otros no importa, se concatenan igual.
++  for i in {1..$CORPUS_SHARDS}; do
++    f=r15/corp-$M-adj$ADJ-s$i.jsonl
++    if [ -s $f ] && tail -c 2000 $f | grep -q '"resumen"'; then continue; fi
++    espera_hueco
++    SEED=$((15000 + i)) MINUTES=$CORPUS_MINUTOS ADJ_MARGIN=$ADJ MODALIDAD=$M \
++      CFG=$CORPUS_CFG node corpus.js > $f 2>> r15/$M.err &
++    LANZADOS+=($!)
++  done
++  espera_a_todos
++
++  # --- fase 2: la regresion (la parte barata) ---
++  # ajusta.js lee la modalidad y el orden de las piezas del propio corpus y
++  # aborta si se mezclan modalidades, asi que el glob no puede colar un shard
++  # que no toque.
++  for feat in mat all; do
++    inf=r15/ajuste-$M-$feat.txt
++    if [ ! -s $inf ]; then
++      cat r15/corp-$M-adj$ADJ-*.jsonl 2>/dev/null \
++        | node ajusta.js --features=$feat --holdout=0.2 --nombre=$M-$feat \
++          > $inf.parcial 2>> r15/$M.err && mv $inf.parcial $inf
++    fi
++  done
++
++  # --- fase 3: la arena (la que decide) ---
++  # Cada rama se parte en SHARDS_ARENA procesos con tramos de pares distintos;
++  # los ficheros -1 -2 -3 -4 los reagrupa `instalar-servicio.sh resultados`.
++  #
++  # EL REPARTO NO DEPENDE DE CUANTOS NUCLEOS HAYA, a proposito: si el numero de
++  # ficheros cambiara con el cupo, los nombres bailarian entre pasadas y ni la
++  # reanudacion ni la cuenta de partidas cuadrarian. El cupo decide cuantos
++  # corren a la vez, no en cuantos trozos se parte el trabajo.
++  for feat in mat all; do
++    cfgB=$(cfg_arena r15/ajuste-$M-$feat.txt) || continue
++    for k in {1..$SHARDS_ARENA}; do
++      espera_hueco
++      SALIDA=r15/$M-$feat-$k.log FIRST=$((1 + (k - 1) * PARES_SHARD)) PAIRS=$PARES_SHARD \
++        SEED=$((25000 + k)) MODALIDAD=$M LIBRO=libro-$M.json \
++        CFG_A="{$FIJO_R15}" CFG_B="$cfgB" NAME_A=vigente NAME_B=$feat \
++        node arena.js >> r15/$M.err 2>&1 &
++      LANZADOS+=($!)
++    done
++  done
++  espera_a_todos
++
++  # La modalidad no se da por hecha porque los procesos hayan vuelto, sino
++  # porque las partidas estan en el disco: si falto el corpus, si la regresion
++  # no dio candidato, si la arena revento o si el horario corto procesos a
++  # media faena, los logs no suman y se vuelve a intentar.
++  hechas=0
++  for f in r15/$M-mat-[1-9].log(N) r15/$M-all-[1-9].log(N); do
++    hechas=$((hechas + $(grep -c '^{' $f)))
++  done
++  if [ $hechas -ge $OBJETIVO_R15 ]; then
++    echo "RONDA 15 $M TERMINADA $(date '+%Y-%m-%d %H:%M') · $hechas partidas" >> r15/estado.txt
++    # Sin esta marca, cada relanzamiento del servicio tendria que releer los
++    # corpus y arrancar ocho arenas para descubrir que no queda nada por hacer.
++    date '+%Y-%m-%d %H:%M' > r15/$M-hecha.txt
++  else
++    echo "RONDA 15 $M pasada $intento: $hechas de $OBJETIVO_R15 partidas" \
++      "($(date '+%Y-%m-%d %H:%M'))" >> r15/estado.txt
++  fi
++ done
++done
++
++# ---------------------------------------------------------------------------
++# RONDA 16: LO QUE LA 15 DEJÓ ABIERTO, Y LOS VALORES DE SALAS v3
++#
++# QUÉ DEJÓ LA RONDA 15. Tres modalidades medidas y tres respuestas distintas:
++#
++#   trigonal    el candidato "all" ganó +75 elo [48, 103]  <- se aplicó
++#   dekle       el candidato "all" ganó +49 elo [22, 77]   <- sin aplicar
++#   salas-1998  ganaron LOS VALORES VIGENTES, +27 y +26 elo contra los dos
++#               candidatos: la regresión no encontró nada mejor que el ojo
++#
++# Y quedan dos cosas por hacer, que son esta ronda:
++#
++# 1) LO QUE GANÓ EN LA ARENA NO ES LO QUE SE PUBLICA. El candidato "all" lleva
++#    tres cosas —valores de pieza, peso de movilidad y pesos posicionales— y en
++#    variants.js solo caben las dos primeras: no hay hueco para positionWeights
++#    en el bloque engine, así que al aplicarlo se tiran por el camino. Nadie ha
++#    medido nunca esa mezcla concreta, y hay motivos para dudar: en las dos
++#    modalidades, la rama "mat" —valores solos, sin nada posicional— quedó en
++#    tablas (-5 elo en dekle, +7 en trigonal). Es perfectamente posible que la
++#    ganancia de "all" viniera casi entera de la centralidad de la dama (+22 y
++#    +7 centipeones) y del peso de movilidad, y no de los valores.
++#
++#    Trigonal ya está publicado así, sin haberlo comprobado. O sea que la fase
++#    1 no es un trámite: puede acabar en aplicar dekle, o en DESHACER trigonal.
++#
++# 2) SALAS v3 (id salas-v4) NO SE HA MEDIDO NUNCA. Se quedó fuera de la 15 y es
++#    donde más falta hace: su dama tiene las tres familias de rayos y vale
++#    Q=1380 porque alguien sumó a ojo las dos mitades. Es el número menos
++#    fundado de todo variants.js, y el de la pieza que más decide.
++#
++# QUÉ SE MIDE, EN ESTE ORDEN (lo barato y decisivo primero):
++#
++#   fase 1  dekle y trigonal: la mezcla PUBLICABLE del ganador de la 15
++#           (valores + movilidad, SIN pesos posicionales) contra los valores
++#           de antes de la ronda 15. Es lo único que de verdad se puede
++#           aplicar, así que es lo que hay que medir.
++#   fase 2  salas-v4: el ciclo completo de la 15 —libro, corpus, regresión
++#           mat/all, arena de los dos candidatos— y además su publicable.
++#   fase 3  salas-v4: barrido de la dama. Seis valores de Q alrededor de 1380,
++#           cambiando SOLO la dama, cada uno contra los valores vigentes.
++#   fase 4  salas-1998: sondeo por coordenadas. La regresión ya dijo lo suyo y
++#           perdió dos veces, así que aquí no se regresiona nada: se mueve UNA
++#           pieza cada vez, arriba y abajo, y se juega. La regresión contesta
++#           "qué valores predicen mejor el resultado"; esto contesta "con qué
++#           valores se juega mejor", que es la pregunta de verdad.
++#
++# POR QUÉ UNA PIEZA CADA VEZ Y NO UNA REGRESIÓN MEJOR. En la 15 los dos
++# candidatos de salas-1998 movían las cinco piezas a la vez: el "mat" las subía
++# un 5% en bloque y el "all" las bajaba un 19%. Perdieron los dos, y de una
++# derrota en bloque no se aprende en qué dirección tirar de cada pieza. Un
++# sondeo por coordenadas sí: cada rama contesta por su cuenta.
++#
++# EL AVISO ESTADÍSTICO VA AQUÍ, no en la sorpresa de mañana. Con 16 candidatos
++# a p<0,05 se espera casi una rama "significativa" por puro azar. Ninguna entra
++# en variants.js por ganar aquí: esto es un mapa para saber dónde mirar, y lo
++# que salga se confirma en una tanda propia (ronda 17) antes de aplicarse. Un
++# resultado se toma en serio si además es coherente con su vecino —si N=240
++# gana, N=292 debería perder—; una rama suelta rodeada de tablas es ruido.
++mkdir -p r16
++
++# Mismo presupuesto de arena que la 15 y la 14: nivel 4, 4.500 nodos. Los elos
++# de las tres rondas son comparables entre sí porque se juegan igual.
++FIJO_R16='"depth":24,"mobility":true,"order":true,"quiesce":true,"nodes":4500'
++# 8 procesos x 60 pares = 480 pares = 960 partidas por candidato (la 15 jugaba
++# 424 por rama). Con 960 el intervalo de confianza baja a unos ±18 elo, que es
++# lo que hace falta para creerse una diferencia de un solo valor de pieza.
++SHARDS_R16=8
++PARES_R16=60
++OBJ_R16=$((SHARDS_R16 * PARES_R16 * 2))
++
++# Juega un candidato entero y espera a que acabe.
++#
++# Antes de lanzar nada mira lo que ya hay en el disco: si el candidato está
++# completo se sale en el acto, así que repasar una ronda hecha cuesta segundos.
++# Si está a medias, arena.js se salta por su cuenta los pares ya jugados.
++arena16() {   # $1 etiqueta  $2 modalidad  $3 cfgA  $4 cfgB
++  local et=$1 M=$2 cfgA=$3 cfgB=$4 k hechas=0
++  for f in r16/$et-[1-9].log(N); do hechas=$((hechas + $(grep -c '^{' $f))); done
++  if [ $hechas -ge $OBJ_R16 ]; then return 0; fi
++  for k in {1..$SHARDS_R16}; do
++    espera_hueco
++    SALIDA=r16/$et-$k.log FIRST=$((1 + (k - 1) * PARES_R16)) PAIRS=$PARES_R16 \
++      SEED=$((26000 + k)) MODALIDAD=$M LIBRO=libro-$M.json \
++      CFG_A="$cfgA" CFG_B="$cfgB" NAME_A=vigente NAME_B=$et \
++      node arena.js >> r16/$M.err 2>&1 &
++    LANZADOS+=($!)
++  done
++  espera_a_todos
++}
++
++# Como cfg_arena, pero DEJANDO FUERA los pesos posicionales: construye la
++# configuración que de verdad se puede escribir en variants.js. Es toda la
++# gracia de la fase 1.
++cfg_publicable() {
++  node -e '
++    const fs = require("fs");
++    const l = fs.readFileSync(process.argv[1], "utf8").split("\n")
++      .find(x => x.startsWith("CFG="));
++    if (!l) { process.stderr.write("sin linea CFG= en " + process.argv[1] + "\n"); process.exit(1); }
++    const c = JSON.parse(l.slice(4));
++    const out = JSON.parse("{" + process.argv[2] + "}");
++    for (const k of ["pieceValues", "mobilityWeight"]) {
++      if (c[k] !== undefined) out[k] = c[k];
++    }
++    process.stdout.write(JSON.stringify(out));
++  ' "$1" "$FIJO_R16"
++}
++
++# --- fase 1: lo que de verdad se publica (dekle y trigonal) ---
++#
++# EL RIVAL VA ESCRITO A MANO, no se toma de variants.js. En trigonal es
++# obligatorio —sus valores ya se cambiaron al aplicar la 15, así que el motor
++# ya no sabe cuáles eran los de antes— y en dekle es por simetría: las dos
++# ramas tienen que medirse contra la misma referencia para poder compararse.
++VIEJO_DEKLE="{$FIJO_R16,\"pieceValues\":{\"P\":100,\"N\":300,\"B\":320,\"U\":400,\"R\":400,\"Q\":800,\"K\":0},\"mobilityWeight\":4}"
++VIEJO_TRIGONAL="{$FIJO_R16,\"pieceValues\":{\"P\":100,\"N\":300,\"B\":400,\"R\":500,\"Q\":900,\"K\":0},\"mobilityWeight\":4}"
++
++if [ -s r15/ajuste-dekle-all.txt ]; then
++  cfgB=$(cfg_publicable r15/ajuste-dekle-all.txt) \
++    && arena16 dekle-pub dekle "$VIEJO_DEKLE" "$cfgB"
++fi
++if [ -s r15/ajuste-trigonal-all.txt ]; then
++  cfgB=$(cfg_publicable r15/ajuste-trigonal-all.txt) \
++    && arena16 trigonal-pub trigonal "$VIEJO_TRIGONAL" "$cfgB"
++fi
++
++# --- fase 2: el ciclo completo de salas-v4 (Salas v3 de 2026) ---
++#
++# Idéntico al de la ronda 15, fase por fase, con sus mismos tamaños: el libro
++# de aperturas de la modalidad, ocho shards de corpus de autojuego, la
++# regresión en sus dos variantes y la arena de cada candidato contra lo
++# vigente. Al final, la mezcla publicable del candidato "all", por lo mismo
++# que la fase 1: es lo único que cabe en variants.js.
++M=salas-v4
++for intento in 1 2 3; do
++  [ -f r16/$M-hecha.txt ] && break
++
++  if [ ! -s libro-$M.json ]; then
++    MODALIDAD=$M node aperturas.js > libro-$M.json.parcial 2>> r16/$M.err \
++      && mv libro-$M.json.parcial libro-$M.json
++  fi
++
++  for i in {1..$CORPUS_SHARDS}; do
++    f=r16/corp-$M-adj$ADJ-s$i.jsonl
++    if [ -s $f ] && tail -c 2000 $f | grep -q '"resumen"'; then continue; fi
++    espera_hueco
++    SEED=$((16000 + i)) MINUTES=$CORPUS_MINUTOS ADJ_MARGIN=$ADJ MODALIDAD=$M \
++      CFG=$CORPUS_CFG node corpus.js > $f 2>> r16/$M.err &
++    LANZADOS+=($!)
++  done
++  espera_a_todos
++
++  for feat in mat all; do
++    inf=r16/ajuste-$M-$feat.txt
++    if [ ! -s $inf ]; then
++      cat r16/corp-$M-adj$ADJ-*.jsonl 2>/dev/null \
++        | node ajusta.js --features=$feat --holdout=0.2 --nombre=$M-$feat \
++          > $inf.parcial 2>> r16/$M.err && mv $inf.parcial $inf
++    fi
++  done
++
++  for feat in mat all; do
++    cfgB=$(cfg_arena r16/ajuste-$M-$feat.txt) || continue
++    arena16 $M-$feat $M "{$FIJO_R16}" "$cfgB"
++  done
++  if [ -s r16/ajuste-$M-all.txt ]; then
++    cfgB=$(cfg_publicable r16/ajuste-$M-all.txt) \
++      && arena16 $M-pub $M "{$FIJO_R16}" "$cfgB"
++  fi
++
++  hechas=0
++  for f in r16/$M-mat-[1-9].log(N) r16/$M-all-[1-9].log(N) r16/$M-pub-[1-9].log(N); do
++    hechas=$((hechas + $(grep -c '^{' $f)))
++  done
++  if [ $hechas -ge $((3 * OBJ_R16)) ]; then
++    echo "RONDA 16 $M TERMINADA $(date '+%Y-%m-%d %H:%M') · $hechas partidas" >> r16/estado.txt
++    date '+%Y-%m-%d %H:%M' > r16/$M-hecha.txt
++  else
++    echo "RONDA 16 $M pasada $intento: $hechas de $((3 * OBJ_R16)) partidas" \
++      "($(date '+%Y-%m-%d %H:%M'))" >> r16/estado.txt
++  fi
++done
++
++# --- fase 3: el barrido de la dama de salas-v4 ---
++#
++# Solo se mueve la dama; las otras cinco piezas se quedan en los valores
++# vigentes, que vienen medidos de la ronda 6 (salas v2 tiene las mismas piezas
++# salvo la dama). Seis puntos entre 1000 y 1800 alrededor del 1380 de hoy: no
++# es una búsqueda, es dibujar la curva. Si el óptimo está lejos del 1380 se ve
++# en la forma —un lado gana y el otro pierde—, y si está cerca salen seis
++# tablas, que también es una respuesta: el ojo acertó.
++q_v4() {   # $1 valor de la dama
++  echo "{$FIJO_R16,\"pieceValues\":{\"P\":100,\"N\":265,\"B\":335,\"E\":358,\"R\":483,\"Q\":$1,\"K\":0}}"
++}
++for q in 1000 1100 1200 1500 1650 1800; do
++  arena16 salas-v4-q$q salas-v4 "{$FIJO_R16}" "$(q_v4 $q)"
++done
++
++# --- fase 4: el sondeo por coordenadas de salas-1998 ---
++#
++# Base: P100 N265 B335 R358 Q810 (la R de 1998 es el elefante de 2026). Cada
++# rama mueve UNA pieza un ~10% arriba o abajo, salvo las dos últimas, que
++# escalan las cuatro piezas mayores a la vez sin tocar el peón: son la pregunta
++# "¿vale el peón más de lo que parece?" separada de la de cada pieza. El 5%
++# arriba en bloque ya se probó en la 15 (fue el candidato "mat") y perdió, así
++# que aquí solo se mira hacia abajo.
++pv_1998() {   # $1 N  $2 B  $3 R  $4 Q
++  echo "{$FIJO_R16,\"pieceValues\":{\"P\":100,\"N\":$1,\"B\":$2,\"R\":$3,\"Q\":$4,\"K\":0}}"
++}
++arena16 salas-1998-n240  salas-1998 "{$FIJO_R16}" "$(pv_1998 240 335 358 810)"
++arena16 salas-1998-n292  salas-1998 "{$FIJO_R16}" "$(pv_1998 292 335 358 810)"
++arena16 salas-1998-b305  salas-1998 "{$FIJO_R16}" "$(pv_1998 265 305 358 810)"
++arena16 salas-1998-b368  salas-1998 "{$FIJO_R16}" "$(pv_1998 265 368 358 810)"
++arena16 salas-1998-r325  salas-1998 "{$FIJO_R16}" "$(pv_1998 265 335 325 810)"
++arena16 salas-1998-r395  salas-1998 "{$FIJO_R16}" "$(pv_1998 265 335 395 810)"
++arena16 salas-1998-q735  salas-1998 "{$FIJO_R16}" "$(pv_1998 265 335 358 735)"
++arena16 salas-1998-q890  salas-1998 "{$FIJO_R16}" "$(pv_1998 265 335 358 890)"
++arena16 salas-1998-esc96 salas-1998 "{$FIJO_R16}" "$(pv_1998 254 322 344 778)"
++arena16 salas-1998-esc92 salas-1998 "{$FIJO_R16}" "$(pv_1998 244 308 329 745)"
++
++echo "RONDA 16 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r16/estado.txt
++
+ # ---------------------------------------------------------------------------
+ # RONDA 14: LA CURVA DE LA TEMPERATURA
+ #
++# ESTÁ A MEDIAS Y POR ESO HA BAJADO AQUÍ, detrás de la 15: tiene hechas t_poda,
++# t00_10 y t10_25 (400 partidas cada una) y le faltan t25_45, t45_70 y t70_150.
++# Al llegar aquí, las tres primeras se ven terminadas y el guion pasa de largo;
++# las tres que faltan arrancan solas. Las modalidades van primero porque un
++# valor de pieza inventado se nota jugando y una etiqueta de nivel mal
++# calibrada, mucho menos.
++#
+ # QUE ENSEÑO LA RONDA 13. Los escalones de arriba —los que solo cambian el
+ # presupuesto de nodos— salieron parejos y en la zona jugable:
+ #
+@@ -189,11 +735,11 @@ grado() {
+     node arena.js >> r14/$nombre.err 2>&1
+ }
+ 
+-grado t_poda  ''                    ',"temperature":0.0001' sin_temp t0 &
+-grado t00_10  ',"temperature":0.0001' ',"temperature":10'    t0   t10 &
+-grado t10_25  ',"temperature":10'     ',"temperature":25'    t10  t25 &
+-grado t25_45  ',"temperature":25'     ',"temperature":45'    t25  t45 &
+-grado t45_70  ',"temperature":45'     ',"temperature":70'    t45  t70 &
+-grado t70_150 ',"temperature":70'     ',"temperature":150'   t70  t150 &
+-wait
++espera_hueco; grado t_poda  ''                      ',"temperature":0.0001' sin_temp t0   & LANZADOS+=($!)
++espera_hueco; grado t00_10  ',"temperature":0.0001' ',"temperature":10'     t0       t10  & LANZADOS+=($!)
++espera_hueco; grado t10_25  ',"temperature":10'     ',"temperature":25'     t10      t25  & LANZADOS+=($!)
++espera_hueco; grado t25_45  ',"temperature":25'     ',"temperature":45'     t25      t45  & LANZADOS+=($!)
++espera_hueco; grado t45_70  ',"temperature":45'     ',"temperature":70'     t45      t70  & LANZADOS+=($!)
++espera_hueco; grado t70_150 ',"temperature":70'     ',"temperature":150'    t70      t150 & LANZADOS+=($!)
++espera_a_todos
+ echo "RONDA 14 TERMINADA $(date '+%Y-%m-%d %H:%M')" >> r14/estado.txt
+diff --git a/entrenamiento/instalar-servicio.sh b/entrenamiento/instalar-servicio.sh
+index fd4e62d..05bb2f1 100755
+--- a/entrenamiento/instalar-servicio.sh
++++ b/entrenamiento/instalar-servicio.sh
+@@ -4,6 +4,7 @@
+ # trabajo donde se quedó.
+ #
+ #   ./instalar-servicio.sh            instala y arranca
++#   NUCLEOS=2 ./instalar-servicio.sh  igual, pero ocupando solo dos nucleos
+ #   ./instalar-servicio.sh estado     ¿corre? ¿cuántas partidas lleva?
+ #   ./instalar-servicio.sh resultados analiza lo jugado hasta ahora
+ #   ./instalar-servicio.sh parar      lo detiene (sigue instalado)
+@@ -22,12 +23,23 @@
+ #     su fichero con SALIDA= y al arrancar se salta los pares que ya estén
+ #     dentro. Un apagón a mitad de partida solo pierde esa partida.
+ set -e
++# Hace falta para el `##` (una o más veces) del patrón que agrupa los shards de
++# una misma rama en `resultados`. Un zsh no interactivo no lo trae puesto, así
++# que sin esta línea el patrón no casaba con nada y cada shard se analizaba por
++# separado: tres marcadores de 140 partidas en vez de uno de 420, con el
++# intervalo de confianza casi al doble de ancho. No se notó antes porque las
++# rondas 12 a 14 tenían un solo fichero por rama.
++setopt extended_glob
+ cd "$(dirname "$0")"
+ REPO="$(cd .. && pwd)"
+ CASA="$HOME/Library/Application Support/ajedrez-triangular-entrenamiento"
+ ETIQUETA="com.salasgar.ajedreztriangular.entrenamiento"
+ PLIST="$HOME/Library/LaunchAgents/$ETIQUETA.plist"
+ NODE="$(command -v node)"
++# Procesos simultaneos del entrenamiento; cada uno ocupa un nucleo entero. Se
++# queda escrito en el plist, asi que el valor sobrevive a los reinicios y a
++# `parar`/`arrancar`: para cambiarlo, se reinstala con otro NUCLEOS.
++NUCLEOS="${NUCLEOS:-6}"
+ # qué mide cada tanda, para que el estado y los resultados se lean solos
+ typeset -A DESC_RONDA
+ DESC_RONDA=(
+@@ -37,8 +49,9 @@ DESC_RONDA=(
+   r12 "escalera de elo: cada nivel contra el siguiente"
+   r13 "escalera de elo de los niveles NUEVOS (por presupuesto de nodos)"
+   r14 "curva de la temperatura a presupuesto congelado (4.500 nodos)"
++  r15 "valores de las piezas de Salas 1998, Dekle y Trigonal, contra los puestos a ojo"
+ )
+-RONDAS=(r14 r13 r12 r11 r10 r9)
++RONDAS=(r15 r14 r13 r12 r11 r10 r9)
+ 
+ case "${1:-instalar}" in
+   estado)
+@@ -48,7 +61,17 @@ case "${1:-instalar}" in
+     else
+       echo "servicio: NO cargado"
+     fi
+-    echo "procesos de arena vivos: $(pgrep -f 'arena.js' | wc -l | tr -d ' ')"
++    echo "procesos vivos: $(pgrep -f '(arena|corpus).js' | wc -l | tr -d ' ')"
++    if [ -f "$CASA/horario-nucleos.txt" ]; then
++      linea=$(grep -v '^#' "$CASA/horario-nucleos.txt" | grep -v '^$' | head -1)
++      campos=(${=linea})
++      ahora=$(date +%s)
++      if [ "$ahora" -lt "$campos[1]" ]; then
++        echo "cupo: $campos[2] nucleos hasta las $(date -r $campos[1] '+%H:%M del %d/%m'), luego $campos[3]"
++      else
++        echo "cupo: $campos[3] nucleos (el tramo largo acabo a las $(date -r $campos[1] '+%H:%M del %d/%m'))"
++      fi
++    fi
+     for ronda in $RONDAS; do
+       [ -d "$CASA/$ronda" ] || continue
+       total=0
+@@ -62,16 +85,36 @@ case "${1:-instalar}" in
+       done
+       echo "$ronda ($DESC_RONDA[$ronda]): $total partidas"
+       echo "$linea"
++      # La ronda 15 empieza generando corpus, y durante esas horas no hay ni un
++      # log: sin esta linea el estado diria "0 partidas" y pareceria colgada.
++      # Un shard esta terminado cuando tiene su linea de resumen al final.
++      corp=0; listos=0
++      for f in "$CASA"/$ronda/*.jsonl(N); do
++        corp=$((corp + 1))
++        if tail -c 2000 "$f" | grep -q '"resumen"'; then listos=$((listos + 1)); fi
++      done
++      if [ $corp -gt 0 ]; then echo "   corpus: $listos de $corp shards terminados"; fi
++      for f in "$CASA"/$ronda/*-hecha.txt(N); do
++        echo "   $(basename $f .txt | sed 's/-hecha$//'): ciclo completo el $(cat $f)"
++      done
+     done
+     exit 0 ;;
+   resultados)
+     for ronda in $RONDAS; do
+       [ -d "$CASA/$ronda" ] || continue
+       echo "########## $ronda: $DESC_RONDA[$ronda] ##########"
+-      for rival in n23 n34 n45 n56 n25 e23 e34 e45 e56 d3 d4 mov2 mov3 mov5; do
+-        # con y sin sufijo de semilla: las rondas 9-11 parten cada rama en
+-        # varios procesos (mov2-0.log), la 12 usa uno solo (e23.log)
+-        archivos=("$CASA"/$ronda/$rival-*.log(N) "$CASA"/$ronda/$rival.log(N))
++      # Los pares se descubren mirando qué .log hay, no de una lista escrita
++      # aquí: esa lista se quedó en los nombres de las rondas 9 a 12, así que
++      # las rondas nuevas no salían en el informe aunque tuvieran cientos de
++      # partidas. El sufijo -<numero> agrupa los shards de una misma rama
++      # (rondas 9-11, que parten cada rama en varios procesos).
++      typeset -aU ramas
++      ramas=()
++      for f in "$CASA"/$ronda/*.log(N); do
++        ramas+=("${${$(basename $f .log)}%%-[0-9]##}")
++      done
++      for rival in $ramas; do
++        archivos=("$CASA"/$ronda/$rival-[0-9]*.log(N) "$CASA"/$ronda/$rival.log(N))
+         [ ${#archivos} -eq 0 ] && continue
+         # la etiqueta no describe ya la comparacion: desde que arena.js
+         # escribe cabecera, analiza.js imprime las dos configuraciones reales
+@@ -93,9 +136,40 @@ case "${1:-instalar}" in
+ esac
+ 
+ # --- copiar a la zona de trabajo accesible para el servicio ---
++#
++# ESTE PASO ES EL QUE HAY QUE ACORDARSE DE EJECUTAR. El servicio no lee el
++# repo: trabaja sobre estas copias. Una ronda escrita en
++# entrenamiento-continuo.sh y no copiada aquí no se ejecuta nunca, y el
++# síntoma no es un error sino silencio: launchd relanza cada dos minutos el
++# script VIEJO, que ve sus rondas ya terminadas y vuelve a salir. Le pasó a la
++# ronda 14, que se quedó con tres de sus seis pares durante horas mientras el
++# servicio giraba en vacío. Si añades una ronda, vuelve a lanzar este script.
++#
++# variants.js entra en la copia del motor desde que hay modalidades: sin él,
++# arena.js no arranca. Y los libros de aperturas van uno por modalidad, porque
++# las jugadas son claves de casilla y no valen de una a otra (ver aperturas.js).
++#
++# Y van TODAS las herramientas que la ronda usa, no solo arena.js: desde la
++# ronda 15 el guion hace el ciclo entero sin intervención —corpus, regresión y
++# arena—, así que también necesita corpus.js, ajusta.js y aperturas.js allí.
++# elo.js va porque analiza.js lo carga con require: sin él, la copia de
++# analiza.js que hay en $CASA no arranca.
+ mkdir -p "$CASA/motor" "$HOME/Library/LaunchAgents"
+-cp "$REPO"/geometry.js "$REPO"/rules.js "$REPO"/ai.js "$CASA/motor/"
+-cp arena.js analiza.js libro.json entrenamiento-continuo.sh "$CASA/"
++cp "$REPO"/geometry.js "$REPO"/variants.js "$REPO"/rules.js "$REPO"/ai.js "$CASA/motor/"
++cp arena.js analiza.js elo.js escalera.js corpus.js ajusta.js aperturas.js \
++   entrenamiento-continuo.sh "$CASA/"
++cp libro-*.json "$CASA/"
++# El horario de nucleos, si lo hay. Va aquí y no al plist porque cambia de
++# tramo con el reloj y el guion tiene que poder releerlo mientras corre.
++if [ -f horario-nucleos.txt ]; then cp horario-nucleos.txt "$CASA/"; fi
++
++# Gancho de git que mantiene docs/valores-piezas.pdf al día con los valores del
++# motor. Se instala aquí porque los ganchos no viajan dentro del repo y este es
++# el único script que ya se ejecuta al preparar la máquina.
++if [ -d "$REPO/.git/hooks" ]; then
++  cp pre-commit.sh "$REPO/.git/hooks/pre-commit"
++  chmod +x "$REPO/.git/hooks/pre-commit"
++fi
+ chmod +x "$CASA/entrenamiento-continuo.sh"
+ 
+ cat > "$PLIST" <<PLISTEOF
+@@ -130,6 +204,7 @@ cat > "$PLIST" <<PLISTEOF
+   <key>EnvironmentVariables</key>
+   <dict>
+     <key>PATH</key><string>$(dirname $NODE):/usr/bin:/bin:/usr/sbin:/sbin</string>
++    <key>NUCLEOS</key><string>$NUCLEOS</string>
+   </dict>
+ </dict>
+ </plist>
+@@ -140,5 +215,6 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST"
+ 
+ echo "Instalado y arrancado: $ETIQUETA"
+ echo "   trabaja en: $CASA"
++echo "   procesos:   $NUCLEOS a la vez (NUCLEOS=N para cambiarlo)"
+ echo "   estado:     ./instalar-servicio.sh estado"
+ echo "   resultados: ./instalar-servicio.sh resultados"
+diff --git a/index.html b/index.html
+index e261480..4c4e2b2 100644
+--- a/index.html
++++ b/index.html
+@@ -187,6 +187,11 @@
+     <script src="ai.js"></script>
+     <script src="ai-async.js"></script>
+     <script src="script.js"></script>
++    <!-- Exportar un problema como imagen. Se monta solo: añade el botón junto a
++         los de la pestaña «Problemas» si esa pestaña está en la página, y si no
++         no hace nada. Va aquí para que el botón aparezca en cuanto se enganche
++         problemas-ui.js, sin tener que tocar nada más. -->
++    <script src="problema-imagen.js"></script>
+     <script>
+         // Service worker: hace que la aplicacion se pueda instalar y jugar sin
+         // conexion. Solo funciona por https (o localhost); abriendo el fichero
+diff --git a/reparto/_ESTADO.md b/reparto/_ESTADO.md
+index c9a561f..96cf863 100644
+--- a/reparto/_ESTADO.md
++++ b/reparto/_ESTADO.md
+@@ -9,7 +9,11 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
+ sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
+ `hechos/` y este tablón hay que regenerarlo.
+ 
+-Regenerado: 2026-08-24T18:40Z · por la sesión s-20260824T180039-ac278f27 (cierre de la 01)
++Regenerado: 2026-08-24T18:57Z · por la sesión s-20260824T180039-ac278f27 (cierre de la 02)
++
++**Aviso vigente hasta que cierre la 04**: `origin/main` (299d176, con la línea PPT) va
++por delante del `main` local (70d0f37). No poner al día el `main` local ni pushear
++commits hechos sobre él: la reconciliación es la tarea 04.
+ 
+ ## Antes de hacer nada
+ 
+@@ -80,9 +84,9 @@ equivalencia de hoy está en `proyecto.md`.
+ | # | Tarea | Fichero | Precondición | Duración esperada | Banda | Salida (dueño único) | Disparo | Estado | Reclamo vivo (sid · caduca) |
+ |---|---|---|---|---|---|---|---|---|---|
+ | 01 | Vaciar el árbol compartido a git, un commit por trabajo | tareas/tarea-01-vaciado.md | ninguna | 3 h | ALTO | rama `vaciado-arbol` | manual | **LISTA** | |
+-| 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | EN CURSO | s-20260824T180039-ac278f27 · 20:19Z |
+-| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | BLOQUEADA | |
+-| 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | BLOQUEADA (falta 02) | |
++| 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | **LISTA** | |
++| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | PENDIENTE | |
++| 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | EN CURSO | s-20260824T180039-ac278f27 · 22:57Z |
+ | 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | BLOQUEADA | |
+ | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 2 h | MEDIO | `main` + `entrenamiento/` | manual | BLOQUEADA | |
+ | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | BLOQUEADA | |
+@@ -90,9 +94,11 @@ equivalencia de hoy está en `proyecto.md`.
+ | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
+ | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
+ 
+-Pueden ir en paralelo: mientras la 02 está en curso, nada más está libre (la 09 espera
+-firma). Cuando cierre la 04: la 05 primero; después la 06 y la 07 sí pueden ir a la
+-vez (no comparten ficheros), y la 10 con ellas si la 03 cerró.
++Libre ahora mismo: la **03** (MEDIO). Puede ir en paralelo con la 04 en curso: la 03
++trabaja en el worktree de `posiciones-ppt` y toca `variants.js`, que la 04 no toca —
++pero su merge final a `main` conviene hacerlo antes o después del push de la 04, no a
++la vez; quien llegue segundo, que refetchee. Cuando cierre la 04: la 05 primero;
++después la 06 y la 07 pueden ir a la vez, y la 10 con ellas si la 03 cerró.
+ 
+ ## Registro de finalizaciones
+ 
+@@ -100,6 +106,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
+ 
+ Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
+ 
++- LISTA · tarea 02 · 2026-08-24 18:55 · s-20260824T180039-ac278f27 · 3 PR mezcladas + 2 commits, 2 pruebas en verde · origin/main = 299d176
+ - LISTA · tarea 01 · 2026-08-24 18:35 · s-20260824T180039-ac278f27 · 7 commits, 0 hunks sin dueño, 13 js verificados · rama `vaciado-arbol` en origin
+ 
+ ## Incidencias de coordinación
+diff --git a/reparto/hechos/reclamos/02--s-20260824T180039-ac278f27.md b/reparto/hechos/reclamos/02--s-20260824T180039-ac278f27.md
+index 1771e07..40a8fef 100644
+--- a/reparto/hechos/reclamos/02--s-20260824T180039-ac278f27.md
++++ b/reparto/hechos/reclamos/02--s-20260824T180039-ac278f27.md
+@@ -4,3 +4,4 @@ abierto: 2026-08-24T18:19:01Z
+ caduca: 2026-08-24T20:19:01Z
+ latidos:
+ - 18:19:01Z reclamo abierto (misma sesión que cerró la 01; banda ALTA sobre tarea MEDIA por continuidad)
++- 18:23:27Z CERRADA (origin/main=299d176, pruebas en verde)
+diff --git a/rules.js b/rules.js
+index 924cca5..d50ceb1 100644
+--- a/rules.js
++++ b/rules.js
+@@ -169,6 +169,18 @@ function undoMove() {
+   if (game.histIndex > 0) restore(game.history[--game.histIndex]);
+ }
+ 
++// Primer índice del historial que pertenece a la posición que se está jugando
++// ahora. Normalmente es 0, pero una edición del tablero a mitad de partida
++// (applyEdit) rompe la cadena: las posiciones anteriores describen otra
++// partida y no deben contar ni para la repetición ni para la búsqueda de la
++// máquina. Se toma la última edición hasta la jugada actual, no hasta el final
++// del historial, para que al deshacer por debajo de una edición vuelva a valer
++// todo lo que había antes de ella.
++function lastEditIndex(upTo = game.histIndex) {
++  for (let i = upTo; i > 0; i--) if (game.history[i].edited) return i;
++  return 0;
++}
++
+ function redoMove() {
+   if (game.histIndex < game.history.length - 1) restore(game.history[++game.histIndex]);
+ }
+@@ -408,27 +420,110 @@ function finishMove(color, captured, isPawn) {
+   const next = rival(color);
+   game.turn = next;
+   game.clock = (captured || isPawn) ? 0 : game.clock + 1;
+-  const inCheck = isAttacked(game.board, findKing(game.board, next), color);
+-  const hasMoves = sideHasMoves(game.board, next);
+   // veces que la posición resultante ha aparecido ya en la partida (una
+   // repetición exige al menos 4 medias jugadas reversibles, de ahí la guarda)
+   let reps = 1;
+   if (game.clock >= 4) {
+     const key = positionKey(game.board, next, game.enPassant);
+-    for (let i = 0; i <= game.histIndex; i++) {
++    for (let i = lastEditIndex(); i <= game.histIndex; i++) {
+       if (game.history[i].posKey === key) reps++;
+     }
+   }
+-  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = color; }
++  evaluateStatus(color, reps);
++
++  // registrar en el historial (descartando las jugadas «rehacibles» futuras)
++  game.history = game.history.slice(0, game.histIndex + 1);
++  game.history.push(snapshot());
++  game.histIndex++;
++}
++
++// Decide el estado de la partida sobre la posición ya puesta en el tablero y
++// con el turno ya pasado. `mover` es quien acaba de mover (o de editar) y
++// `reps` las veces que la posición resultante ha aparecido ya.
++function evaluateStatus(mover, reps) {
++  const next = game.turn;
++  const inCheck = isAttacked(game.board, findKing(game.board, next), mover);
++  const hasMoves = sideHasMoves(game.board, next);
++  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = mover; }
+   else if (!hasMoves) { game.status = 'stalemate'; }
+   else if (reps >= 3) { game.status = 'repetition'; }   // aun con jaque: perpetuo
+   else if (deadPosition(game.board)) { game.status = 'material'; }
+   else if (game.clock >= FIFTY_MOVE_LIMIT) { game.status = 'fifty'; }
+   else if (inCheck) { game.status = 'check'; }
+   else { game.status = 'playing'; }
++}
+ 
+-  // registrar en el historial (descartando las jugadas «rehacibles» futuras)
++// --- edición del tablero a mitad de partida ---
++//
++// Una edición se guarda en el historial como un snapshot más, marcado con
++// `edited: true`. Así deshacer, rehacer, revisar y guardar la partida siguen
++// funcionando sin código aparte: «deshacer» sobre ese snapshot devuelve la
++// posición anterior a la edición, y serializeGame lo vuelca como cualquier
++// otra entrada. Lo que sí cambia es que la cadena de posiciones se rompe: de
++// ahí lastEditIndex(), que acota las búsquedas de repetición.
++
++// Reconstruye `capturedBy` comparando el material de la posición editada con
++// el de la posición inicial de la modalidad. No puede acertar el orden en que
++// se capturaron las piezas (esa información no está en el tablero), solo el
++// conjunto. Una pieza de más que no sea peón se entiende como coronación, y
++// no como un peón capturado. Si se coloca material que no existía al empezar,
++// el excedente simplemente no aparece en la lista.
++function capturedFromBoard(board) {
++  const cuenta = (b) => {
++    const m = new Map();
++    for (const p of b.values()) m.set(p.color + p.type, (m.get(p.color + p.type) || 0) + 1);
++    return m;
++  };
++  const inicial = cuenta(initialPosition());
++  const actual = cuenta(board);
++  const out = { w: [], b: [] };
++  for (const color of ['w', 'b']) {
++    let coronadas = 0;
++    for (const [k, n] of actual) {
++      if (k[0] !== color || k.slice(1) === 'P') continue;
++      coronadas += Math.max(0, n - (inicial.get(k) || 0));
++    }
++    for (const [k, n] of inicial) {
++      if (k[0] !== color) continue;
++      const type = k.slice(1);
++      let faltan = n - (actual.get(k) || 0);
++      if (type === 'P') faltan -= coronadas;
++      // las piezas que le faltan a un color las capturó el rival
++      for (let i = 0; i < faltan; i++) out[rival(color)].push({ type, color });
++    }
++  }
++  return out;
++}
++
++// ¿Se puede seguir jugando desde esta posición? Devuelve null si sí, o el
++// motivo (para enseñárselo al usuario) si no. Lo usan tanto el editor antes de
++// volver a la partida como la carga de una posición diseñada.
++function positionProblem(board, turn) {
++  const reyes = { w: 0, b: 0 };
++  for (const p of board.values()) if (p.type === 'K') reyes[p.color]++;
++  if (reyes.w !== 1 || reyes.b !== 1) {
++    return 'Tiene que haber un rey de cada color, y solo uno.';
++  }
++  if (isAttacked(board, findKing(board, rival(turn)), turn)) {
++    return 'El bando que no mueve está en jaque: esa posición no puede darse en una partida.';
++  }
++  return null;
++}
++
++// Aplica una posición editada a la partida en curso. `boardEntries` es un Map
++// o una lista de pares [key, pieza] tal cual sale del editor; conviene que las
++// piezas conserven su `moved`, porque de él dependen el enroque y el doble
++// avance del peón.
++function applyEdit(boardEntries, turn) {
++  game.board = new Map(Array.from(boardEntries, ([k, p]) => [k, { ...p }]));
++  game.turn = turn;
++  game.enPassant = null;    // el doble avance que la permitía ya no consta
++  game.clock = 0;           // el reloj de los 50 movimientos arranca de cero
++  game.lastMove = null;     // no hay jugada anterior que resaltar
++  game.winner = null;       // una partida terminada puede reabrirse editando
++  game.capturedBy = capturedFromBoard(game.board);
++  evaluateStatus(rival(turn), 1);   // sin repetición: la cuenta empieza aquí
+   game.history = game.history.slice(0, game.histIndex + 1);
+-  game.history.push(snapshot());
++  game.history.push({ ...snapshot(), edited: true });
+   game.histIndex++;
+ }
+diff --git a/style.css b/style.css
+index d4e9b44..ad553d6 100644
+--- a/style.css
++++ b/style.css
+@@ -765,6 +765,58 @@ h1 {
+   .piece.mueve { transition: none; }
+ }
+ 
++/* Insignia de captura (makeCaptureBadge en script.js): la pieza recien comida,
++   en miniatura sobre un circulo rojo, como superindice de la que la ha comido.
++   El rojo es el mismo del jaque y de la lista de capturadas. El borde blanco la
++   despega de la casilla amarilla del ultimo movimiento y de la pieza de
++   debajo. */
++.captura-disco { fill: #d84b3a; stroke: #fff; stroke-width: 1; }
++
++/* la miniatura va al 50%, asi que su contorno tambien se reduciria a la mitad:
++   se compensa para que las piezas negras sigan leyendose sobre el rojo. El
++   peon recupera aqui el tamano de las demas piezas (fuera del tablero va un 20%
++   mas pequeno): dentro de la insignia no hay jerarquia que ensenar, solo hay
++   que reconocer que ficha se ha ido. */
++.captura-mini .piece { stroke-width: 1.2; }
++.captura-mini .piece-P { font-size: 24px; }
++
++/* transform-box/origin: sin esto el origen de la escala es el (0,0) del
++   viewBox, no el centro de la insignia, y el pop sale disparado */
++.captura-marca, .captura-aura {
++  transform-box: fill-box;
++  transform-origin: center;
++}
++
++/* Entrada: solo la lleva la insignia de una jugada RECIEN hecha (la clase
++   .captura-nueva la pone script.js), no la de una captura que ya estaba ahi y
++   se vuelve a pintar al mover el raton por el analisis o al correr el reloj.
++   Sin `forwards` a proposito: cuando la animacion acaba —o si no llega a
++   arrancar— la insignia se queda en su tamano normal, que es el estado bueno. */
++.captura-nueva { animation: captura-pop 220ms ease-out; }
++@keyframes captura-pop {
++  from { transform: scale(0.35); }
++}
++
++/* onda que se abre y se apaga al aparecer la insignia; script.js la quita del
++   SVG al terminar. Solo se crea si la jugada es nueva. */
++.captura-aura {
++  fill: none;
++  stroke: #d84b3a;
++  stroke-width: 2.5;
++  animation: captura-onda 450ms ease-out forwards;
++}
++@keyframes captura-onda {
++  from { transform: scale(1);   opacity: 0.9; }
++  to   { transform: scale(2.2); opacity: 0; }
++}
++
++/* La insignia se queda: informa de que ha desaparecido una ficha, no adorna.
++   Lo que se va es el movimiento; la onda ni siquiera se crea (ver sinAnimacion
++   en script.js). */
++@media (prefers-reduced-motion: reduce) {
++  .captura-nueva { animation: none; }
++}
++
+ /* Tiempo consumido por cada bando. Discreto: informa, no compite con el
+    estado de la partida. */
+ .reloj {
+@@ -776,20 +828,31 @@ h1 {
+ 
+ /* --- editor de posiciones (editor.html) --- */
+ 
+-#board-col .editor-palette {
++/* La paleta va a la IZQUIERDA del tablero: es la columna que la mano recorre
++   antes de ir a la casilla, y así no le roba alto a #board-col, cuya altura
++   está calculada al milímetro. Blancas y negras, dos columnas enfrentadas; la
++   goma, debajo. */
++.editor-palette {
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   padding: 12px;
+   background: #1a1a1a;
+   border-radius: 6px;
+-  margin-top: 12px;
++  align-self: center;
++}
++
++.palette-cols {
++  display: flex;
++  gap: 8px;
+ }
+ 
+ .palette-row {
+   display: flex;
++  flex-direction: column;
+   gap: 4px;
+   justify-content: center;
++  align-items: center;
+   flex-wrap: wrap;
+ }
+ 
+@@ -824,6 +887,33 @@ h1 {
+   height: 32px;
+ }
+ 
++/* Color de la pieza dentro del botón: `color` para los glifos Unicode y `fill`
++   para los iconos SVG (elefante, unicornio), igual que en .promo-btn. La fila
++   negra necesita además fondo claro: #1d1d1d sobre el #2f2f2f del botón no se
++   vería, y aquí son siete botones permanentes, no un diálogo de paso. */
++.palette-btn.piece-w { color: #f4f4f4; fill: #f4f4f4; stroke: #222; }
++
++.palette-btn.piece-b {
++  color: #1d1d1d;
++  fill: #1d1d1d;
++  stroke: #ddd;
++  background: #cfcfcf;
++  border-color: #8a8a8a;
++}
++
++/* El fondo claro de la fila negra tapa el resalte de :hover y .active (misma
++   especificidad y va después), así que llevan versión propia, más clara para
++   que la pieza negra se siga viendo. */
++.palette-btn.piece-b:hover {
++  background: #aac4e2;
++  border-color: #6f9fd8;
++}
++
++.palette-btn.piece-b.active {
++  background: #8fb3e8;
++  border-color: #4a6a9e;
++}
++
+ .eraser-btn {
+   font-size: 20px;
+ }
+diff --git a/sw.js b/sw.js
+index 2802ac9..a15ce2e 100644
+--- a/sw.js
++++ b/sw.js
+@@ -11,7 +11,7 @@
+ // PARA PUBLICAR UN CAMBIO HAY QUE SUBIR VERSION. Si no, los navegadores que ya
+ // tengan la versión anterior seguirán sirviendo los ficheros viejos de su
+ // caché y no verán la actualización.
+-const VERSION = 'ajedrez-triangular-v4';
++const VERSION = 'ajedrez-triangular-v5';
+ 
+ const FICHEROS = [
+   './',
+@@ -26,6 +26,11 @@ const FICHEROS = [
+   './script.js',
+   './editor.html',
+   './editor.js',
++  './problemas.js',
++  './problemas-ui.js',
++  './problemas.css',
++  './problema-imagen.js',
++  './crear-problema.js',
+   './manifest.webmanifest',
+   './icono.svg',
+   './icono-192.png',
+diff --git a/tune-values.js b/tune-values.js
+index 15133cb..5a820e8 100644
+--- a/tune-values.js
++++ b/tune-values.js
+@@ -66,9 +66,12 @@ const N_GAMES = 1500;        // nº de partidas si no se da --minutes (~20 min e
+ // la casilla de destino queda a tiro, lo que basta para que el signo tenga
+ // sentido.
+ const SELF_PLAY_CFG = { depth: 2, order: true };
+-// valor de hoy del peso de movilidad (evaluate() en ai.js), punto de
+-// partida para MOBILITY_WEIGHT_TUNED
+-const MOBILITY_DEFAULT = 2;
++// Peso de movilidad de hoy: el término fijo sobre el que la regresión ajusta
++// el material, así que tiene que ser el que de verdad usa evaluate(). Lo pone
++// la modalidad (engine.mobility), y se rellena tras cargar variants.js —estaba
++// congelado en 2 desde antes de que la arena confirmara el 4, y con el número
++// equivocado el material sale sesgado.
++let MOBILITY_DEFAULT = 4;
+ // factor de normalización de la característica de movilidad, ver
+ // mobilityDiff() dentro de driverSrc
+ const MOBILITY_SCALE = 10;
+@@ -479,8 +482,16 @@ if (!VARIANTS[${JSON.stringify(CLI_VARIANT)}]) {
+   process.exit(1);
+ }
+ setVariant(${JSON.stringify(CLI_VARIANT)});
+-PIECES = V.pieceTypes.filter(t => t !== 'K');
+-console.log('Modalidad: ' + V.full);
++// El peón va SIEMPRE el primero. fitValues() deja fijo el índice 0 como ancla
++// de la escala y da por hecho que ese índice es el peón; el orden que trae la
++// modalidad (Object.keys de sus piezas) lo dejaba el último, así que el ancla
++// caía sobre la torre y el valor del peón —el que después normaliza a 100 toda
++// la tabla— quedaba suelto. Mismo orden que usa corpus.js, para que los
++// vectores de los dos caminos sean intercambiables.
++PIECES = ['P', ...V.pieceTypes.filter(t => t !== 'K' && t !== 'P')];
++MOBILITY_DEFAULT = V.engine.mobility ?? 4;
++console.log('Modalidad: ' + V.full + '   piezas: ' + PIECES.join(' ') +
++  '   movilidad de hoy: ' + MOBILITY_DEFAULT);
+ `;
+ 
+ eval(gameSrc + '\n' + prepSrc + '\n' + driverSrc);

@@ -9,7 +9,12 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-24T18:40Z · por la sesión s-20260824T180039-ac278f27 (cierre de la 01)
+Regenerado: 2026-08-24T19:40Z · por la sesión s-20260824T180039-ac278f27 (cierre de la 04)
+
+El árbol compartido está limpio sobre `main` = `origin/main` (e0dd26e): desde aquí las
+tareas de interfaz editan los ficheros directamente, con los reclamos del harness
+(`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de respaldo de la
+reconciliación; no usarlo, se tirará tras la 08.
 
 ## Antes de hacer nada
 
@@ -80,19 +85,20 @@ equivalencia de hoy está en `proyecto.md`.
 | # | Tarea | Fichero | Precondición | Duración esperada | Banda | Salida (dueño único) | Disparo | Estado | Reclamo vivo (sid · caduca) |
 |---|---|---|---|---|---|---|---|---|---|
 | 01 | Vaciar el árbol compartido a git, un commit por trabajo | tareas/tarea-01-vaciado.md | ninguna | 3 h | ALTO | rama `vaciado-arbol` | manual | **LISTA** | |
-| 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | EN CURSO | s-20260824T180039-ac278f27 · 20:19Z |
-| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | BLOQUEADA | |
-| 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | BLOQUEADA (falta 02) | |
-| 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | BLOQUEADA | |
+| 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | **LISTA** | |
+| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | PENDIENTE | |
+| 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | **LISTA** | |
+| 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | EN CURSO | s-20260824T180039-ac278f27 · 01:41Z |
 | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 2 h | MEDIO | `main` + `entrenamiento/` | manual | BLOQUEADA | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | BLOQUEADA | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | BLOQUEADA | |
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
 
-Pueden ir en paralelo: mientras la 02 está en curso, nada más está libre (la 09 espera
-firma). Cuando cierre la 04: la 05 primero; después la 06 y la 07 sí pueden ir a la
-vez (no comparten ficheros), y la 10 con ellas si la 03 cerró.
+Libre ahora mismo: la **03** (MEDIO), en paralelo con la 05 en curso (no comparten
+ficheros: la 03 va en el worktree de `posiciones-ppt` y `variants.js`). Cuando cierre
+la 05: la 06 y la 07 pueden ir a la vez, y la 10 cuando cierren la 03 y la 04 (la 04
+ya está).
 
 ## Registro de finalizaciones
 
@@ -100,6 +106,8 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 04 · 2026-08-24 19:35 · s-20260824T180039-ac278f27 · 5 choques resueltos, 4 pruebas en verde, árbol limpio · main = e0dd26e
+- LISTA · tarea 02 · 2026-08-24 18:55 · s-20260824T180039-ac278f27 · 3 PR mezcladas + 2 commits, 2 pruebas en verde · origin/main = 299d176
 - LISTA · tarea 01 · 2026-08-24 18:35 · s-20260824T180039-ac278f27 · 7 commits, 0 hunks sin dueño, 13 js verificados · rama `vaciado-arbol` en origin
 
 ## Incidencias de coordinación
