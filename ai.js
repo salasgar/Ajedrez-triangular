@@ -439,6 +439,8 @@ function scanPins(board, haces, color, foe, out) {
 // array pequeño con indexOf sale más barato que un Set.
 function findPins(board, kingCell, color, out) {
   out.length = 0;
+  // sin rey (modalidades kingless) no hay clavadas; ver isAttackedFast
+  if (!kingCell) return out;
   scanPins(board, kingCell.atk, color, rival(color), out);
   return out;
 }
@@ -616,6 +618,11 @@ function countPseudoMoves(board, cell, piece) {
 // el tipo de pieza que ataca por un rayo cambia con la distancia, y que un
 // salto compuesto no tiene por qué ser simétrico.
 function isAttackedFast(board, cell, byColor) {
+  // Modalidades sin rey (V.kingless, ver variants.js): aquí llega `cell`
+  // undefined porque kings[color] es null, y sin rey no hay jaque que
+  // detectar. CAMBIO MÍNIMO para que la búsqueda no casque; la evaluación
+  // específica de estas modalidades queda pendiente.
+  if (!cell) return false;
   for (const g of cell.atk) {
     const ray = g.ray;
     for (let i = 0; i < ray.length; i++) {

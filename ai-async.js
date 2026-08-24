@@ -12,7 +12,8 @@
 // Si la búsqueda gana dependencias nuevas, hay que añadirlas aquí.
 const AI_WORKER_FNS = [
   // rules.js
-  positionKey, slideMoves, pseudoMoves, attacks, findKing, isAttacked, rival,
+  positionKey, canCapture, slideMoves, pseudoMoves, attacks, findKing,
+  isAttacked, rival,
   legalMoves, rowCells, backRow, castlingLanding, isCastling, castleMoves,
   // ai.js
   PV, drawScore, movesForSide, applyMoveSim, deepCopyBoard, makeSim, unmakeSim,
@@ -43,6 +44,9 @@ function variantForWorker() {
     id: V.id, board: V.board, edgePromotion: V.edgePromotion,
     promotionChoices: V.promotionChoices, castling: V.castling || null,
     pieceTypes: V.pieceTypes, engine: V.engine, rows: V.rows || null,
+    // las modalidades de Piedra, papel y tijera: la matriz de capturas que
+    // consulta canCapture() y el flag de juego sin rey
+    captures: V.captures || null, kingless: V.kingless || false,
   };
 }
 
