@@ -609,13 +609,17 @@ function probNuevo() {
     return;
   }
   // No había ninguno a mano: se genera al momento y se avisa, porque puede
-  // tardar unos segundos (sobre todo los de tablas, que son los más raros).
+  // tardar unos segundos (sobre todo los de tablas, que son los más raros, y
+  // Difícil/Experto, donde encontrar un problema cuesta de media 19-68 s
+  // medido: usan su propio `msEspera` en vez de los 9 s por defecto).
   probFase = 'generando';
   probActual = null;
   probPara();
   probPinta();
   const tipos = tipo === 'cualquiera' ? probTiposNivel(nivel) : [tipo];
-  probPide(nivel, tipos, PROB_MS_PETICION, (p) => {
+  const cfgNivel = PROB_NIVELES[nivel];
+  const msPeticion = (cfgNivel && cfgNivel.msEspera) || PROB_MS_PETICION;
+  probPide(nivel, tipos, msPeticion, (p) => {
     if (!probEnPestana) return;
     if (!p) {
       probFase = 'vacio';

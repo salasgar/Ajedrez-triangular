@@ -91,6 +91,16 @@ function probMaxSoluciones(tipo, jugadas) {
 // descarta en silencio todo lo interesante y solo deja pasar lo que se resuelve
 // en una o dos; medido, la diferencia es entre no sacar ni un mate en 3 y
 // sacar uno cada pocos segundos.
+//
+// `msEspera` es cuánto deja esperar `problemas-ui.js` a una petición del
+// usuario cuando el almacén está vacío para ese nivel y tipo (ver
+// `PROB_MS_PETICION`). Solo hace falta en los niveles donde encontrar UN
+// problema tarda de verdad: medido el 2026-08-24 con
+// `entrenamiento/rendimiento.js`, sacar un problema cuesta de media entre 19 s
+// y 68 s en Difícil y Experto (tablas de tiempo por problema, `ms/prob`);
+// dejar el límite en los 9 s de Fácil/Medio hacía que el botón «Nuevo
+// problema» fallara casi siempre en esos dos niveles con «no ha salido
+// ningún problema», aunque el generador sí los produce si se le da tiempo.
 const PROB_NIVELES = {
   facil: {
     nombre: 'Fácil', jugadas: [1, 2],
@@ -102,7 +112,7 @@ const PROB_NIVELES = {
   },
   dificil: {
     nombre: 'Difícil', jugadas: [3, 3],
-    piezas: [1, 3], defensa: [1, 3], escapes: 3, tope: 250000,
+    piezas: [1, 3], defensa: [1, 3], escapes: 3, tope: 250000, msEspera: 45000,
   },
   // Experto acepta tres o cuatro jugadas en vez de exigir cuatro: los mates
   // en 4 forzados son rarísimos, y esperar a que salga uno dejaría el nivel
@@ -111,7 +121,7 @@ const PROB_NIVELES = {
   // dice las jugadas de verdad, así que no se promete nada que no se cumpla.
   experto: {
     nombre: 'Experto', jugadas: [3, 4],
-    piezas: [2, 3], defensa: [1, 3], escapes: 5, tope: 400000,
+    piezas: [2, 3], defensa: [1, 3], escapes: 5, tope: 400000, msEspera: 90000,
   },
 };
 
