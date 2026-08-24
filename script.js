@@ -335,6 +335,7 @@ function teclaEnCasilla(e, cell) {
 
 function onCellClick(cell) {
   if (reviewIndex !== null) return;   // revisando el historial: no se puede mover
+  if (typeof problemaBloquea === 'function' && problemaBloquea()) return;
   if (gameEnded()) return;
   if (aiConfig[game.turn] !== null) return;   // le toca al ordenador
 
@@ -350,6 +351,10 @@ function onCellClick(cell) {
         marcarParaAnimar();
         gamePaused = false;
         render();
+        if (typeof enModoProblema === 'function' && enModoProblema()) {
+          problemaTrasJugada();
+          return;
+        }
         scheduleAi();
       });
       render();   // repinta sin la selección mientras se elige
@@ -360,6 +365,10 @@ function onCellClick(cell) {
     // el humano mueve: si estaba en pausa, la partida se reanuda sola
     gamePaused = false;
     render();
+    if (typeof enModoProblema === 'function' && enModoProblema()) {
+      problemaTrasJugada();
+      return;
+    }
     scheduleAi();
     return;
   }
@@ -681,6 +690,9 @@ function render() {
   btnStop.disabled = !playing;
   btnPause.classList.toggle('active', gamePaused);
   btnPause.title = gamePaused ? 'Reanudar partida' : 'Pausar partida';
+  // deshacer con la barra de botones también debe refrescar el panel del
+  // problema, si la pestaña está cargada
+  if (typeof probPinta === 'function') probPinta();
 }
 
 function clearSelection() {

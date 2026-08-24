@@ -55,6 +55,11 @@
 
 #panel-problemas[hidden] { display: none; }
 
+/* style.css da a #panel `display: flex`, que pisa la regla [hidden] del
+   navegador: sin esto, ocultar el panel de la partida al cambiar de pestaña
+   no haría nada. */
+#panel[hidden] { display: none; }
+
 #prob-enunciado {
     font-size: 1.1rem;
     font-weight: bold;

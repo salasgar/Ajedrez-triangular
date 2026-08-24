@@ -10,6 +10,7 @@
     <link rel="apple-touch-icon" href="icono-192.png">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="problemas.css">
 </head>
 <body>
     <!-- Siluetas del elefante (Salas) y el unicornio (Dekle), referenciadas
@@ -43,6 +44,13 @@
         </symbol>
     </defs></svg>
     <h1>Ajedrez Triangular</h1>
+    <!-- Pestañas: la partida y los problemas comparten el tablero. Cambiar de
+         pestaña guarda la partida en curso y la restaura al volver
+         (problemas-ui.js). -->
+    <div id="tabs" role="tablist">
+        <button id="tab-partida" class="tab is-active" role="tab" aria-selected="true">Partida</button>
+        <button id="tab-problemas" class="tab" role="tab" aria-selected="false">Problemas</button>
+    </div>
     <div class="layout">
         <div id="board-col">
             <div id="board-wrap"></div>
@@ -201,6 +209,58 @@
                 </ul>
             </details>
         </aside>
+        <!-- Panel de la pestaña «Problemas». problemas-ui.js busca cada uno de
+             estos nodos por id al cargar: si falta alguno, la página revienta. -->
+        <aside id="panel-problemas" hidden>
+            <div id="prob-enunciado"></div>
+            <div id="prob-sub" class="prob-sub"></div>
+            <div id="prob-estado" class="prob-estado"></div>
+            <div id="prob-progreso" class="prob-progreso"></div>
+            <div class="prob-fila">
+                <button id="prob-nuevo">Problema nuevo</button>
+            </div>
+            <div class="save-row">
+                <button id="prob-reinicia">Reintentar</button>
+                <button id="prob-pista">Pista</button>
+                <button id="prob-solucion">Solución</button>
+            </div>
+            <div id="prob-linea"></div>
+            <div id="prob-box">
+                <label>Dificultad
+                    <select id="prob-nivel">
+                        <option value="facil" selected>Fácil</option>
+                        <option value="medio">Medio</option>
+                        <option value="dificil">Difícil</option>
+                        <option value="experto">Experto</option>
+                    </select>
+                </label>
+                <label>Tipo de problema
+                    <select id="prob-tipo">
+                        <option value="cualquiera" selected>Cualquiera</option>
+                        <option value="mate">Dar mate</option>
+                        <option value="gana">Ganar una pieza</option>
+                        <option value="corona">Coronar un peón</option>
+                        <option value="tablas">Salvar unas tablas</option>
+                    </select>
+                </label>
+                <div id="prob-almacen" class="prob-almacen"></div>
+            </div>
+            <div id="prob-save-box">
+                <label>Problemas guardados
+                    <select id="prob-guardados"></select>
+                </label>
+                <div class="save-row">
+                    <button id="prob-guardar">Guardar</button>
+                    <button id="prob-abrir">Abrir</button>
+                    <button id="prob-borrar">Borrar</button>
+                </div>
+                <div class="save-row">
+                    <button id="prob-exportar">Exportar</button>
+                    <button id="prob-importar">Importar</button>
+                </div>
+                <input type="file" id="prob-file" accept=".json,application/json" hidden>
+            </div>
+        </aside>
     </div>
     <script src="geometry.js"></script>
     <script src="variants.js"></script>
@@ -209,7 +269,11 @@
     <script src="saveload.js"></script>
     <script src="ai.js"></script>
     <script src="ai-async.js"></script>
+    <!-- El motor de problemas va ANTES de script.js y la pestaña DESPUÉS:
+         problemas-ui.js usa nodos y funciones que script.js crea al final. -->
+    <script src="problemas.js"></script>
     <script src="script.js"></script>
+    <script src="problemas-ui.js"></script>
     <!-- Exportar un problema como imagen. Se monta solo: añade el botón junto a
          los de la pestaña «Problemas» si esa pestaña está en la página, y si no
          no hace nada. Va aquí para que el botón aparezca en cuanto se enganche
