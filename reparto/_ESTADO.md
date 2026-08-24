@@ -9,7 +9,7 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-24T19:40Z · por la sesión s-20260824T180039-ac278f27 (cierre de la 04)
+Regenerado: 2026-08-24T21:40Z · por la sesión s-20260824T180039-ac278f27 (traspaso; la 06 queda A MEDIAS)
 
 El árbol compartido está limpio sobre `main` = `origin/main` (e0dd26e): desde aquí las
 tareas de interfaz editan los ficheros directamente, con los reclamos del harness
@@ -88,17 +88,17 @@ equivalencia de hoy está en `proyecto.md`.
 | 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | **LISTA** | |
 | 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | PENDIENTE | |
 | 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | **LISTA** | |
-| 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | EN CURSO | s-20260824T180039-ac278f27 · 01:41Z |
-| 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 2 h | MEDIO | `main` + `entrenamiento/` | manual | BLOQUEADA | |
-| 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | BLOQUEADA | |
+| 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | **LISTA** | |
+| 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | **A MEDIAS** (leer hechos/fallos/06) | |
+| 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | PENDIENTE | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | BLOQUEADA | |
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
 
-Libre ahora mismo: la **03** (MEDIO), en paralelo con la 05 en curso (no comparten
-ficheros: la 03 va en el worktree de `posiciones-ppt` y `variants.js`). Cuando cierre
-la 05: la 06 y la 07 pueden ir a la vez, y la 10 cuando cierren la 03 y la 04 (la 04
-ya está).
+Libres ahora mismo: la **03**, la **06** (a medias, se continúa por su fichero de
+fallo) y la **07** — MEDIO las tres, y no comparten ficheros entre sí: pueden llevarlas
+tres sesiones a la vez. La 08 espera a la 07 (y conviene que la 06 esté cerrada); la
+10, a la 03. La 09 sigue esperando las dos firmas de `autorizaciones.md`.
 
 ## Registro de finalizaciones
 
@@ -106,6 +106,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 05 · 2026-08-24 20:50 · s-20260824T180039-ac278f27 · 4 cambios html + 3 ganchos + 1 fallo CSS arreglado, verificado en Chrome · main = 792e745
 - LISTA · tarea 04 · 2026-08-24 19:35 · s-20260824T180039-ac278f27 · 5 choques resueltos, 4 pruebas en verde, árbol limpio · main = e0dd26e
 - LISTA · tarea 02 · 2026-08-24 18:55 · s-20260824T180039-ac278f27 · 3 PR mezcladas + 2 commits, 2 pruebas en verde · origin/main = 299d176
 - LISTA · tarea 01 · 2026-08-24 18:35 · s-20260824T180039-ac278f27 · 7 commits, 0 hunks sin dueño, 13 js verificados · rama `vaciado-arbol` en origin
