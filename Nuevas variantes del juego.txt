@@ -1,0 +1,55 @@
+Hay que hacer otras versiones nuevas del ajedrez triangular dentro de la misma app:
+
+
+* Versión "PIEDRA, PAPEL Y TIJERA":
+
+Hay 3 figuras diferentes: Piedra, Papel y Tijera.
+El objetivo es eliminar todas las piezas del contrincante.
+Todas las piezas se mueven igual que el rey del ajedrez (es decir, en cada turno se pueden mover a cualquier casilla con la que compartan una arista o un vértice).
+Una piedra solamente puede comerse a una tijera del adversario.
+Una tijera solamente puede comerse a un papel del adversario.
+Un papel solamente puede comerse a una piedra del adversario.
+Falta por determinar: el número de piezas iniciales de cada jugador y la posición inicial del tablero. Habrá que hacer distintas pruebas para comprobar de qué manera surgen partidas más interesantes (que no siempre ganen las blancas, que no siempre ganen las negras y que no siempre haya un empate). Una cosa que se puede probar es poner delante una fila entera de papeles (como si fueran los peones) y detrás una fila alternando piedras y tijeras (como si fueran el resto de figuras del ajedrez). 
+
+
+* Versión "PIEDRA, PAPEL, TIJERA, LAGARTO, SPOCK":
+
+Hay 5 figuras diferentes: Piedra, Papel, Tijera, Lagarto y Spock.
+Es un juego análogo a la versión "PIEDRA, PAPEL Y TIJERA", pero adaptando las típicas reglas de "Piedra, Papel, Tijera, Lagarto, Spock" (buscar en internet).
+
+
+* Versión "PIEDRA, PAPEL Y TIJERA + REY":
+
+Hay 4 figuras diferentes: Piedra, Papel, Tijera y Rey.
+El objetivo es dar jaque mate al rey del contrincante.
+Todas las piezas se mueven igual que el rey del ajedrez (es decir, en cada turno se pueden mover a cualquier casilla con la que compartan una arista o un vértice).
+El rey puede comerse a cualquier pieza del adversario.
+Cualquier pieza del adversario puede comerse al rey.
+Una piedra solamente puede comerse a una tijera del adversario o al rey adversario.
+Una tijera solamente puede comerse a un papel del adversario o al rey del adversario.
+Un papel solamente puede comerse a una piedra del adversario o al rey del adversario.
+Falta por determinar: el número de piezas iniciales de cada jugador y la posición inicial del tablero. Habrá que hacer distintas pruebas para comprobar de qué manera surgen partidas más interesantes (que no siempre ganen las blancas, que no siempre ganen las negras y que no siempre haya un empate).
+
+
+* Versión "PIEDRA, PAPEL, TIJERA, LAGARTO, SPOCK + REY":
+
+Hay 6 figuras diferentes: Piedra, Papel, Tijera, Lagarto, Spock y Rey.
+Es un juego análogo a la versión "PIEDRA, PAPEL Y TIJERA + REY"
+
+
+*** CONSIDERACIONES PARA TODAS LAS VERSIONES:
+
+1. En principio, piedra, papel y tijera deben valer lo mismo, ya que se mueven igual y no hay a priori ninguna ventaja de unas piezas sobre otras. Pero es posible que el valor de cada pieza se vaya modificando en función del número (o del porcentaje) de piedras, papeles y tijeras que queden en ese momento. Por ejemplo, si no quedan tijeras (o si quedan muy pocas), una piedra tendrá menos valor que un papel.
+
+2. Para cada una de estas versiones se pueden crear distintas variantes según la topología del tablero. Se pueden jugar en un tablero de casillas tirangulares, hexagonales, cuadradas, rectangulares (como los ladrillos de una pared o en cualquier otra disposición), cuadradas y triangulares (alternando filas de cuadrados con filas de triángulos), etc... Es decir, en cualquier teselación del plano.
+
+
+
+
+
+
+
+
+
+
+
