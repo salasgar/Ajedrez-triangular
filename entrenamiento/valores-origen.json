@@ -4,5 +4,9 @@
   "salas-v4": "estimados a ojo, pendientes de medir",
   "salas-1998": "estimados a ojo, pendientes de medir (ronda 15)",
   "dekle": "estimados a ojo, pendientes de medir (ronda 15)",
-  "trigonal": "medidos con regresión sobre autojuego y confirmados en la arena (ronda 15)"
+  "trigonal": "medidos con regresión sobre autojuego y confirmados en la arena (ronda 15)",
+  "rps": "planos de partida; el valor real lo pone la evaluación dinámica de ai.js",
+  "rpsls": "planos de partida; el valor real lo pone la evaluación dinámica de ai.js",
+  "rps-rey": "planos de partida; el valor real lo pone la evaluación dinámica de ai.js",
+  "rpsls-rey": "planos de partida; el valor real lo pone la evaluación dinámica de ai.js"
 }

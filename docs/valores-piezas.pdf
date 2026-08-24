@@ -9,7 +9,7 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>
 endobj
 4 0 obj
-<< /Length 8396 >>
+<< /Length 8988 >>
 stream
 BT 0 g /F2 18 Tf 1 0 0 1 40 782 Tm (Valores de las piezas por modalidad) Tj ET
 BT 0.45 g /F1 9 Tf 1 0 0 1 40 764 Tm (Ajedrez triangular · generado el 2026-08-24 a partir de variants.js) Tj ET
@@ -81,65 +81,71 @@ BT 0 g /F1 10 Tf 1 0 0 1 465.98571428571427 557 Tm (785) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 515.6 557 Tm (7.27) Tj ET
 BT 0.45 g /F1 8 Tf 1 0 0 1 44 545 Tm (tri9 \(81 casillas\) · medidos con regresión sobre autojuego y confirmados en la arena \(ronda 15\)) Tj ET
 0.8 G 0.3 w 40 541 m 555 541 l S
-BT 0 g /F2 10 Tf 1 0 0 1 44 527 Tm (Piedra, papel y tijera) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 192.6142857142857 527 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 239.04285714285714 527 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 285.4714285714286 527 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 527 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 527 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 424.75714285714287 527 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 471.18571428571425 527 Tm (-) Tj ET
-BT 0 g /F1 10 Tf 1 0 0 1 523.4 527 Tm (4) Tj ET
-BT 0.45 g /F1 8 Tf 1 0 0 1 44 515 Tm (hex4 \(96 casillas\) · sin anotar de dónde salen) Tj ET
-0.8 G 0.3 w 40 511 m 555 511 l S
-BT 0 g /F2 10 Tf 1 0 0 1 44 497 Tm (Piedra, papel, tijera, lagarto, Spock) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 192.6142857142857 497 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 239.04285714285714 497 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 285.4714285714286 497 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 497 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 497 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 424.75714285714287 497 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 471.18571428571425 497 Tm (-) Tj ET
-BT 0 g /F1 10 Tf 1 0 0 1 523.4 497 Tm (4) Tj ET
-BT 0.45 g /F1 8 Tf 1 0 0 1 44 485 Tm (hex4 \(96 casillas\) · sin anotar de dónde salen) Tj ET
-0.8 G 0.3 w 40 481 m 555 481 l S
-BT 0 g /F2 10 Tf 1 0 0 1 44 467 Tm (Piedra, papel y tijera con rey) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 192.6142857142857 467 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 239.04285714285714 467 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 285.4714285714286 467 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 467 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 467 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 424.75714285714287 467 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 471.18571428571425 467 Tm (-) Tj ET
-BT 0 g /F1 10 Tf 1 0 0 1 523.4 467 Tm (4) Tj ET
-BT 0.45 g /F1 8 Tf 1 0 0 1 44 455 Tm (hex4 \(96 casillas\) · sin anotar de dónde salen) Tj ET
-0.8 G 0.3 w 40 451 m 555 451 l S
-BT 0 g /F2 10 Tf 1 0 0 1 44 437 Tm (Piedra, papel, tijera, lagarto, Spock con rey) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 192.6142857142857 437 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 239.04285714285714 437 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 285.4714285714286 437 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 331.9 437 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 378.3285714285714 437 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 424.75714285714287 437 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 471.18571428571425 437 Tm (-) Tj ET
-BT 0 g /F1 10 Tf 1 0 0 1 523.4 437 Tm (4) Tj ET
-BT 0.45 g /F1 8 Tf 1 0 0 1 44 425 Tm (hex4 \(96 casillas\) · sin anotar de dónde salen) Tj ET
-0.8 G 0.3 w 40 421 m 555 421 l S
-BT 0 g /F2 11 Tf 1 0 0 1 40 395 Tm (Las piezas) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 380 Tm (P   peón) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 368 Tm (N   caballo) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 356 Tm (B   alfil) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 344 Tm (E   elefante) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 332 Tm (U   unicornio) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 320 Tm (R   torre) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 308 Tm (Q   dama) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 296 Tm (K   rey: vale 0 en todas las modalidades, porque no se puede capturar) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 284 Tm (movil.   lo que suma cada jugada disponible, no es una pieza) Tj ET
-BT 0 g /F2 11 Tf 1 0 0 1 40 262 Tm (Por qué no coinciden entre modalidades) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 247 Tm (Una pieza no vale lo mismo en dos tableros distintos. El alfil de Trigonal avanza en) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 235 Tm (zigzag; el de Dekle no está atado al color de la casilla; la torre de Salas v1 \(1998\) es la) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 223 Tm (pieza que en 2026 se llama elefante, y se mueve sobre 64 casillas en vez de 96. Los) Tj ET
-BT 0 g /F1 9 Tf 1 0 0 1 40 211 Tm (valores se miden modalidad por modalidad, no se traspasan.) Tj ET
+BT 0 g /F2 11 Tf 1 0 0 1 40 511 Tm (Piedra, papel y tijera) Tj ET
+BT 0.3 g /F1 9 Tf 1 0 0 1 40 497 Tm (Aquí todas las figuras salen valiendo lo mismo, porque ninguna es mejor que otra en el) Tj ET
+BT 0.3 g /F1 9 Tf 1 0 0 1 40 485 Tm (vacío: lo que decide es a cuántas presas y a cuántos depredadores tenga enfrente, y eso) Tj ET
+BT 0.3 g /F1 9 Tf 1 0 0 1 40 473 Tm (lo calcula la IA en cada posición \(ai.js\). Estos son solo los valores de partida.) Tj ET
+0.92 g 40 447 515 22 re f
+BT 0 g /F2 10 Tf 1 0 0 1 44 453 Tm (Modalidad) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 308.1 453 Tm (O) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 349.5 453 Tm (A) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 390.90000000000003 453 Tm (T) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 432.3 453 Tm (L) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 473.70000000000005 453 Tm (S) Tj ET
+BT 0 g /F2 9 Tf 1 0 0 1 511.96 453 Tm (movil.) Tj ET
+0.3 G 0.8 w 40 445 m 555 445 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 431 Tm (Piedra, papel y tijera) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 302.9 431 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 344.29999999999995 431 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 385.7 431 Tm (100) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 432.3 431 Tm (-) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 473.70000000000005 431 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 431 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 419 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
+0.8 G 0.3 w 40 415 m 555 415 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 401 Tm (Piedra, papel, tijera, lagarto, Spock) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 302.9 401 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 344.29999999999995 401 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 385.7 401 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 427.09999999999997 401 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 468.5 401 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 401 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 389 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
+0.8 G 0.3 w 40 385 m 555 385 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 371 Tm (Piedra, papel y tijera con rey) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 302.9 371 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 344.29999999999995 371 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 385.7 371 Tm (100) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 432.3 371 Tm (-) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 473.70000000000005 371 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 371 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 359 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
+0.8 G 0.3 w 40 355 m 555 355 l S
+BT 0 g /F2 10 Tf 1 0 0 1 44 341 Tm (Piedra, papel, tijera, lagarto, Spock con rey) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 302.9 341 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 344.29999999999995 341 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 385.7 341 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 427.09999999999997 341 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 468.5 341 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 523.4 341 Tm (4) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 329 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
+0.8 G 0.3 w 40 325 m 555 325 l S
+BT 0.45 g /F1 9 Tf 1 0 0 1 40 309 Tm (O piedra   ·   A papel   ·   T tijera   ·   L lagarto   ·   S Spock) Tj ET
+BT 0 g /F2 11 Tf 1 0 0 1 40 283 Tm (Las piezas) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 268 Tm (P   peón) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 256 Tm (N   caballo) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 244 Tm (B   alfil) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 232 Tm (E   elefante) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 220 Tm (U   unicornio) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 208 Tm (R   torre) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 196 Tm (Q   dama) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 184 Tm (K   rey: vale 0 en todas las modalidades, porque no se puede capturar) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 172 Tm (movil.   lo que suma cada jugada disponible, no es una pieza) Tj ET
+BT 0 g /F2 11 Tf 1 0 0 1 40 150 Tm (Por qué no coinciden entre modalidades) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 135 Tm (Una pieza no vale lo mismo en dos tableros distintos. El alfil de Trigonal avanza en) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 123 Tm (zigzag; el de Dekle no está atado al color de la casilla; la torre de Salas v1 \(1998\) es la) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 111 Tm (pieza que en 2026 se llama elefante, y se mueve sobre 64 casillas en vez de 96. Los) Tj ET
+BT 0 g /F1 9 Tf 1 0 0 1 40 99 Tm (valores se miden modalidad por modalidad, no se traspasan.) Tj ET
 endstream
 endobj
 5 0 obj
@@ -155,10 +161,10 @@ xref
 0000000058 00000 n 
 0000000115 00000 n 
 0000000251 00000 n 
-0000008699 00000 n 
-0000008796 00000 n 
+0000009291 00000 n 
+0000009388 00000 n 
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-8898
+9490
 %%EOF
