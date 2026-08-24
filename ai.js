@@ -873,7 +873,9 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
 // clonables (el Map del tablero, escalares y claves de posición).
 function searchState() {
   const posKeys = [], posHashes = [];
-  for (let i = 0; i <= game.histIndex; i++) {
+  // desde la última edición del tablero: lo anterior es otra partida y contarlo
+  // haría ver repeticiones que no existen (ver lastEditIndex en rules.js)
+  for (let i = lastEditIndex(); i <= game.histIndex; i++) {
     const s = game.history[i];
     posKeys.push(s.posKey);
     // clave 'h1,h2' de cada posición del historial, en el mismo formato que
@@ -893,7 +895,7 @@ function searchState() {
 function stateAtIndex(i) {
   const s = game.history[i];
   const posKeys = [], posHashes = [];
-  for (let j = 0; j <= i; j++) {
+  for (let j = lastEditIndex(i); j <= i; j++) {
     const sj = game.history[j];
     posKeys.push(sj.posKey);
     const [h1, h2] = computeHash(sj.board);

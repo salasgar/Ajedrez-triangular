@@ -169,6 +169,18 @@ function undoMove() {
   if (game.histIndex > 0) restore(game.history[--game.histIndex]);
 }
 
+// Primer índice del historial que pertenece a la posición que se está jugando
+// ahora. Normalmente es 0, pero una edición del tablero a mitad de partida
+// (applyEdit) rompe la cadena: las posiciones anteriores describen otra
+// partida y no deben contar ni para la repetición ni para la búsqueda de la
+// máquina. Se toma la última edición hasta la jugada actual, no hasta el final
+// del historial, para que al deshacer por debajo de una edición vuelva a valer
+// todo lo que había antes de ella.
+function lastEditIndex(upTo = game.histIndex) {
+  for (let i = upTo; i > 0; i--) if (game.history[i].edited) return i;
+  return 0;
+}
+
 function redoMove() {
   if (game.histIndex < game.history.length - 1) restore(game.history[++game.histIndex]);
 }
@@ -408,27 +420,110 @@ function finishMove(color, captured, isPawn) {
   const next = rival(color);
   game.turn = next;
   game.clock = (captured || isPawn) ? 0 : game.clock + 1;
-  const inCheck = isAttacked(game.board, findKing(game.board, next), color);
-  const hasMoves = sideHasMoves(game.board, next);
   // veces que la posición resultante ha aparecido ya en la partida (una
   // repetición exige al menos 4 medias jugadas reversibles, de ahí la guarda)
   let reps = 1;
   if (game.clock >= 4) {
     const key = positionKey(game.board, next, game.enPassant);
-    for (let i = 0; i <= game.histIndex; i++) {
+    for (let i = lastEditIndex(); i <= game.histIndex; i++) {
       if (game.history[i].posKey === key) reps++;
     }
   }
-  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = color; }
+  evaluateStatus(color, reps);
+
+  // registrar en el historial (descartando las jugadas «rehacibles» futuras)
+  game.history = game.history.slice(0, game.histIndex + 1);
+  game.history.push(snapshot());
+  game.histIndex++;
+}
+
+// Decide el estado de la partida sobre la posición ya puesta en el tablero y
+// con el turno ya pasado. `mover` es quien acaba de mover (o de editar) y
+// `reps` las veces que la posición resultante ha aparecido ya.
+function evaluateStatus(mover, reps) {
+  const next = game.turn;
+  const inCheck = isAttacked(game.board, findKing(game.board, next), mover);
+  const hasMoves = sideHasMoves(game.board, next);
+  if (inCheck && !hasMoves) { game.status = 'checkmate'; game.winner = mover; }
   else if (!hasMoves) { game.status = 'stalemate'; }
   else if (reps >= 3) { game.status = 'repetition'; }   // aun con jaque: perpetuo
   else if (deadPosition(game.board)) { game.status = 'material'; }
   else if (game.clock >= FIFTY_MOVE_LIMIT) { game.status = 'fifty'; }
   else if (inCheck) { game.status = 'check'; }
   else { game.status = 'playing'; }
+}
 
-  // registrar en el historial (descartando las jugadas «rehacibles» futuras)
+// --- edición del tablero a mitad de partida ---
+//
+// Una edición se guarda en el historial como un snapshot más, marcado con
+// `edited: true`. Así deshacer, rehacer, revisar y guardar la partida siguen
+// funcionando sin código aparte: «deshacer» sobre ese snapshot devuelve la
+// posición anterior a la edición, y serializeGame lo vuelca como cualquier
+// otra entrada. Lo que sí cambia es que la cadena de posiciones se rompe: de
+// ahí lastEditIndex(), que acota las búsquedas de repetición.
+
+// Reconstruye `capturedBy` comparando el material de la posición editada con
+// el de la posición inicial de la modalidad. No puede acertar el orden en que
+// se capturaron las piezas (esa información no está en el tablero), solo el
+// conjunto. Una pieza de más que no sea peón se entiende como coronación, y
+// no como un peón capturado. Si se coloca material que no existía al empezar,
+// el excedente simplemente no aparece en la lista.
+function capturedFromBoard(board) {
+  const cuenta = (b) => {
+    const m = new Map();
+    for (const p of b.values()) m.set(p.color + p.type, (m.get(p.color + p.type) || 0) + 1);
+    return m;
+  };
+  const inicial = cuenta(initialPosition());
+  const actual = cuenta(board);
+  const out = { w: [], b: [] };
+  for (const color of ['w', 'b']) {
+    let coronadas = 0;
+    for (const [k, n] of actual) {
+      if (k[0] !== color || k.slice(1) === 'P') continue;
+      coronadas += Math.max(0, n - (inicial.get(k) || 0));
+    }
+    for (const [k, n] of inicial) {
+      if (k[0] !== color) continue;
+      const type = k.slice(1);
+      let faltan = n - (actual.get(k) || 0);
+      if (type === 'P') faltan -= coronadas;
+      // las piezas que le faltan a un color las capturó el rival
+      for (let i = 0; i < faltan; i++) out[rival(color)].push({ type, color });
+    }
+  }
+  return out;
+}
+
+// ¿Se puede seguir jugando desde esta posición? Devuelve null si sí, o el
+// motivo (para enseñárselo al usuario) si no. Lo usan tanto el editor antes de
+// volver a la partida como la carga de una posición diseñada.
+function positionProblem(board, turn) {
+  const reyes = { w: 0, b: 0 };
+  for (const p of board.values()) if (p.type === 'K') reyes[p.color]++;
+  if (reyes.w !== 1 || reyes.b !== 1) {
+    return 'Tiene que haber un rey de cada color, y solo uno.';
+  }
+  if (isAttacked(board, findKing(board, rival(turn)), turn)) {
+    return 'El bando que no mueve está en jaque: esa posición no puede darse en una partida.';
+  }
+  return null;
+}
+
+// Aplica una posición editada a la partida en curso. `boardEntries` es un Map
+// o una lista de pares [key, pieza] tal cual sale del editor; conviene que las
+// piezas conserven su `moved`, porque de él dependen el enroque y el doble
+// avance del peón.
+function applyEdit(boardEntries, turn) {
+  game.board = new Map(Array.from(boardEntries, ([k, p]) => [k, { ...p }]));
+  game.turn = turn;
+  game.enPassant = null;    // el doble avance que la permitía ya no consta
+  game.clock = 0;           // el reloj de los 50 movimientos arranca de cero
+  game.lastMove = null;     // no hay jugada anterior que resaltar
+  game.winner = null;       // una partida terminada puede reabrirse editando
+  game.capturedBy = capturedFromBoard(game.board);
+  evaluateStatus(rival(turn), 1);   // sin repetición: la cuenta empieza aquí
   game.history = game.history.slice(0, game.histIndex + 1);
-  game.history.push(snapshot());
+  game.history.push({ ...snapshot(), edited: true });
   game.histIndex++;
 }
