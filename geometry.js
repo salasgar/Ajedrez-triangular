@@ -257,6 +257,17 @@ function setGeometry(id) {
   BOARD = spec;
   N = spec.size;
 
+  // Tableros de OTRAS teselaciones (cuadrados, hexágonos… ver
+  // tessellations.js): sus casillas no son triángulos de esta retícula, así
+  // que las construye su propio módulo y aquí solo se reasignan las
+  // estructuras del tablero activo. Esas casillas cumplen el mismo contrato
+  // (key, idx, pts, cx, cy, up, edgeNbrs, kingNbrs…), con las tablas de rayos
+  // triangulares vacías.
+  if (spec.teselacion) {
+    ({ CELLS, CELL_MAP, BBOX } = spec.teselacion());
+    return;
+  }
+
   // Un cuarto de vuelta antihorario en pantalla (y crece hacia abajo).
   const rot = spec.rotate & 3;
   const vertexXY = (alpha, beta) => {
