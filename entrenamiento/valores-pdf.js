@@ -51,10 +51,20 @@ MODALIDADES = Object.keys(VARIANTS).map(id => {
 // Orden de las columnas: el peon primero y la dama al final, que es como se
 // leen; en medio, de menos a mas valor en la modalidad de casa.
 const COLUMNAS = ['P', 'N', 'B', 'E', 'U', 'R', 'Q'];
+
+// Las modalidades tipo "Piedra, papel y tijera" no comparten ni una pieza con
+// las clasicas: metidas en la misma tabla, su fila entera serian rayas. Van a
+// una tabla aparte, con sus columnas en el orden del ciclo que se vencen.
+const COLUMNAS_PPT = ['O', 'A', 'T', 'L', 'S'];
+
 const NOMBRE_PIEZA = {
   P: 'peón', N: 'caballo', B: 'alfil', E: 'elefante',
   U: 'unicornio', R: 'torre', Q: 'dama', K: 'rey',
+  O: 'piedra', A: 'papel', T: 'tijera', L: 'lagarto', S: 'Spock',
 };
+
+// A que tabla va cada modalidad: la que tenga alguna figura de PPT, a la suya.
+const esPpt = m => m.piezas.some(c => COLUMNAS_PPT.includes(c));
 
 // --- escritura del PDF -------------------------------------------------------
 // Un PDF es una lista de objetos numerados, una tabla de posiciones (xref) que
@@ -144,35 +154,60 @@ y -= 26;
 const ANCHO_UTIL = ANCHO - 2 * MARGEN;
 const COL_NOMBRE = 132;
 const COL_MOV = 58;
-const COL_PIEZA = (ANCHO_UTIL - COL_NOMBRE - COL_MOV) / COLUMNAS.length;
 const ALTO_FILA = 22;
 
-function xDe(i) { return MARGEN + COL_NOMBRE + i * COL_PIEZA; }
+// Una tabla con las columnas que se le pasen; baja `y` lo que ocupe. Las de
+// PPT llevan nombres mucho mas largos, asi que la primera columna se ajusta.
+function tabla(modalidades, columnas, colNombre = COL_NOMBRE) {
+  const colPieza = (ANCHO_UTIL - colNombre - COL_MOV) / columnas.length;
+  const xDe = i => MARGEN + colNombre + i * colPieza;
 
-// cabecera
-p.rect(MARGEN, y - 6, ANCHO_UTIL, ALTO_FILA, 0.92);
-p.texto(MARGEN + 4, y, 'Modalidad', { fuente: 'F2', tam: 10 });
-COLUMNAS.forEach((c, i) => p.centrado(xDe(i), COL_PIEZA, y, c, { fuente: 'F2', tam: 10 }));
-p.centrado(MARGEN + ANCHO_UTIL - COL_MOV, COL_MOV, y, 'movil.', { fuente: 'F2', tam: 9 });
-y -= ALTO_FILA;
-p.linea(MARGEN, y + 14, MARGEN + ANCHO_UTIL, y + 14, { grosor: 0.8, gris: 0.3 });
+  // cabecera
+  p.rect(MARGEN, y - 6, ANCHO_UTIL, ALTO_FILA, 0.92);
+  p.texto(MARGEN + 4, y, 'Modalidad', { fuente: 'F2', tam: 10 });
+  columnas.forEach((c, i) => p.centrado(xDe(i), colPieza, y, c, { fuente: 'F2', tam: 10 }));
+  p.centrado(MARGEN + ANCHO_UTIL - COL_MOV, COL_MOV, y, 'movil.', { fuente: 'F2', tam: 9 });
+  y -= ALTO_FILA;
+  p.linea(MARGEN, y + 14, MARGEN + ANCHO_UTIL, y + 14, { grosor: 0.8, gris: 0.3 });
 
-// filas
-for (const m of MODALIDADES) {
-  p.texto(MARGEN + 4, y, m.nombre, { fuente: 'F2', tam: 10 });
-  COLUMNAS.forEach((c, i) => {
-    // Una raya cuando la modalidad no tiene esa pieza: un hueco en blanco se
-    // lee como "no lo sabemos", y esto es "no existe".
-    const tiene = m.piezas.includes(c);
-    const v = tiene ? String(m.valores[c]) : '–';
-    p.centrado(xDe(i), COL_PIEZA, y, v, { tam: 10, gris: tiene ? 0 : 0.6 });
-  });
-  p.centrado(MARGEN + ANCHO_UTIL - COL_MOV, COL_MOV, y, String(m.movilidad), { tam: 10 });
-  y -= 12;
-  const origen = ORIGEN[m.id] || 'sin anotar de dónde salen';
-  p.texto(MARGEN + 4, y, `${m.tablero} · ${origen}`, { tam: 8, gris: 0.45 });
-  y -= ALTO_FILA - 12 + 8;
-  p.linea(MARGEN, y + 14, MARGEN + ANCHO_UTIL, y + 14, { grosor: 0.3, gris: 0.8 });
+  // filas
+  for (const m of modalidades) {
+    p.texto(MARGEN + 4, y, m.nombre, { fuente: 'F2', tam: 10 });
+    columnas.forEach((c, i) => {
+      // Una raya cuando la modalidad no tiene esa pieza: un hueco en blanco se
+      // lee como "no lo sabemos", y esto es "no existe".
+      const tiene = m.piezas.includes(c);
+      const v = tiene ? String(m.valores[c]) : '–';
+      p.centrado(xDe(i), colPieza, y, v, { tam: 10, gris: tiene ? 0 : 0.6 });
+    });
+    p.centrado(MARGEN + ANCHO_UTIL - COL_MOV, COL_MOV, y, String(m.movilidad), { tam: 10 });
+    y -= 12;
+    const origen = ORIGEN[m.id] || 'sin anotar de dónde salen';
+    p.texto(MARGEN + 4, y, `${m.tablero} · ${origen}`, { tam: 8, gris: 0.45 });
+    y -= ALTO_FILA - 12 + 8;
+    p.linea(MARGEN, y + 14, MARGEN + ANCHO_UTIL, y + 14, { grosor: 0.3, gris: 0.8 });
+  }
+}
+
+tabla(MODALIDADES.filter(m => !esPpt(m)), COLUMNAS);
+
+// --- las de Piedra, papel y tijera ------------------------------------------
+const PPT = MODALIDADES.filter(esPpt);
+if (PPT.length) {
+  y -= 16;
+  p.texto(MARGEN, y, 'Piedra, papel y tijera', { fuente: 'F2', tam: 11 });
+  y -= 14;
+  for (const l of [
+    'Aquí todas las figuras salen valiendo lo mismo, porque ninguna es mejor que otra en el',
+    'vacío: lo que decide es a cuántas presas y a cuántos depredadores tenga enfrente, y eso',
+    'lo calcula la IA en cada posición (ai.js). Estos son solo los valores de partida.',
+  ]) { p.texto(MARGEN, y, l, { tam: 9, gris: 0.3 }); y -= 12; }
+  y -= 8;
+  tabla(PPT, COLUMNAS_PPT, 250);
+  y -= 2;
+  p.texto(MARGEN, y, COLUMNAS_PPT.map(c => `${c} ${NOMBRE_PIEZA[c]}`).join('   ·   '),
+    { tam: 9, gris: 0.45 });
+  y -= 14;
 }
 
 y -= 12;
@@ -214,6 +249,7 @@ fs.mkdirSync(path.dirname(SALIDA), { recursive: true });
 fs.writeFileSync(SALIDA, pdf);
 console.log(`escrito ${path.relative(REPO, SALIDA)} · ${MODALIDADES.length} modalidades, ${pdf.length} bytes`);
 for (const m of MODALIDADES) {
-  console.log('  ' + m.nombre.padEnd(22) +
-    COLUMNAS.filter(c => m.piezas.includes(c)).map(c => `${c}${m.valores[c]}`).join(' '));
+  const columnas = esPpt(m) ? COLUMNAS_PPT : COLUMNAS;
+  console.log('  ' + m.nombre.padEnd(46) +
+    columnas.filter(c => m.piezas.includes(c)).map(c => `${c}${m.valores[c]}`).join(' '));
 }
