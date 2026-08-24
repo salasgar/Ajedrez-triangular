@@ -165,6 +165,27 @@ fin por eliminación es el estado `wiped`. Las cinco figuras se dibujan como
 iconos SVG monocromos —igual que el elefante y el unicornio— para que tomen el
 color del bando.
 
+### Otras teselaciones del plano
+
+Las modalidades tipo Piedra, papel y tijera no dependen del triángulo: sus
+figuras se mueven a las casillas vecinas, y «vecina» lo define la teselación.
+[tessellations.js](tessellations.js) saca esa noción del código del tablero
+triangular y trae tres teselaciones más, cada una con una modalidad de
+demostración que **no sale en el selector** y se abre por URL:
+
+| Teselación | Casillas | Cómo abrirla |
+|---|---|---|
+| cuadrada (`square8`) | 8×8 | `index.html?modalidad=demo-cuadrado` |
+| hexagonal (`hexhex4`) | hexágono de 37 hexágonos | `index.html?modalidad=demo-hexagonal` |
+| ladrillos (`brick8`) | 8×8 a matajunta | `index.html?modalidad=demo-ladrillos` |
+
+Van ocultas a propósito —con `hidden: true` en su modalidad, que
+`variantList()` filtra— porque son un banco de pruebas de la geometría, no
+juegos terminados: cada bando lleva una fila con un rey y varios «guardias»,
+que se mueven todos igual, un paso a cualquier casilla vecina. El ladrillo es
+el caso interesante: al desplazar media casilla cada hilada, un cuadrado toca
+a seis vecinos en vez de a ocho, y el juego cambia sin tocar ninguna regla.
+
 ### Coronación de flanco
 
 En el hexágono, un peón que sube en línea recta se topa con el borde superior
@@ -402,6 +423,7 @@ está midiendo la nueva.
 |---|---|
 | [geometry.js](geometry.js) | Retícula triangular, los tres tableros, vecindades y coordenadas de pantalla. |
 | [variants.js](variants.js) | Las modalidades: dotación, movimiento de cada pieza, reglas del peón y parámetros del motor. |
+| [tessellations.js](tessellations.js) | Otras teselaciones del plano (cuadrada, hexagonal, ladrillos) y sus modalidades de demostración. |
 | [rules.js](rules.js) | Movimientos legales, jaque, mate, tablas y estado de la partida. |
 | [ai.js](ai.js) | Evaluación, negamax con alfa-beta, quiescence y niveles. |
 | [ai-async.js](ai-async.js) | Ejecuta la búsqueda en un Web Worker construido desde un Blob. |
@@ -424,10 +446,19 @@ implementación lenta y evidente**, en las cinco modalidades:
   coincidan **jugada a jugada** con la versión anterior al refactor.
 
 ```sh
-node entrenamiento/modalidades.js     # las cinco modalidades, por diferencia
+node entrenamiento/modalidades.js     # las cinco clásicas, por diferencia
 node entrenamiento/prueba-humo.js     # circuito completo sin navegador
 node entrenamiento/perft.js           # perft con dorados, ajedrez de Salas
+node test-rps.js                      # reglas de Piedra, papel y tijera
+node test-ia-rps.js                   # IA de esas modalidades (juega partidas: tarda)
+node test-modalidades.js              # que las doce modalidades arrancan
 ```
+
+La última es la que protege las mezclas: las modalidades se registran desde
+[variants.js](variants.js) y desde [tessellations.js](tessellations.js), que no
+se conocen entre sí, y al juntar ramas lo que se rompe no es una regla suelta
+sino una modalidad entera —o se cuela en el selector una demo que no debía
+salir.
 
 Esa segunda comprobación es la que importa de verdad en Dekle. `isAttackedFast`
 da por hecho que los rayos se pueden recorrer al revés, y ahí no se puede: como
