@@ -115,6 +115,17 @@ const PROB_NIVELES = {
   },
 };
 
+// Tipos disponibles en cada nivel. Las tablas solo se fuerzan en una jugada
+// (medido sobre decenas de miles de tiradas: el ahogado y el perpetuo forzados
+// no salen nunca), así que en los niveles altos serían un problema trivial que
+// además coparía el almacén por lo barato que es generarlo: fuera de Difícil y
+// Experto. Decisión del 2026-08-24, revocable en reparto/autorizaciones.md.
+function probTiposNivel(nivel) {
+  return (nivel === 'dificil' || nivel === 'experto')
+    ? PROB_TIPOS.filter(t => t !== 'tablas')
+    : PROB_TIPOS;
+}
+
 // --- utilidades ------------------------------------------------------------
 
 // Copia superficial del tablero. Las piezas se pueden compartir entre tableros

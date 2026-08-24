@@ -223,8 +223,17 @@ function probRepon() {
   if (probReponiendo || !probEnPestana) return;
   const nivel = probNivelEl.value;
   if (probAlmacenCuantos(nivel) >= PROB_ALMACEN_OBJETIVO) return;
+  // Se pide SOLO el tipo con menos ejemplares. Pidiendo «cualquiera», las
+  // tablas —cien veces más baratas de generar que un mate— acababan copando
+  // el almacén y «Problema nuevo» sacaba siempre lo mismo.
+  const tipos = probTiposNivel(nivel);
+  const lista = probAlmacen[probAlmacenClave(nivel)] || [];
+  const cuenta = {};
+  for (const t of tipos) cuenta[t] = 0;
+  for (const p of lista) if (cuenta[p.obj.tipo] !== undefined) cuenta[p.obj.tipo]++;
+  const escaso = tipos.reduce((a, b) => (cuenta[b] < cuenta[a] ? b : a));
   probReponiendo = true;
-  probPide(nivel, PROB_TIPOS, PROB_MS_FONDO, (p) => {
+  probPide(nivel, [escaso], PROB_MS_FONDO, (p) => {
     probReponiendo = false;
     if (p) { probAlmacenMete(p); probPintaAlmacen(); }
     // Se encadena la siguiente en un timer para no acaparar el worker ni
@@ -605,7 +614,7 @@ function probNuevo() {
   probActual = null;
   probPara();
   probPinta();
-  const tipos = tipo === 'cualquiera' ? PROB_TIPOS : [tipo];
+  const tipos = tipo === 'cualquiera' ? probTiposNivel(nivel) : [tipo];
   probPide(nivel, tipos, PROB_MS_PETICION, (p) => {
     if (!probEnPestana) return;
     if (!p) {
@@ -821,7 +830,21 @@ probFileEl.addEventListener('change', () => {
     probValida);
 });
 
+// Deshabilita en el selector los tipos que el nivel no ofrece (hoy, tablas en
+// Difícil y Experto). Si el tipo elegido deja de estar disponible, se vuelve a
+// «cualquiera» en vez de dejar seleccionada una opción gris.
+function probAjustaTipos() {
+  const tipos = probTiposNivel(probNivelEl.value);
+  for (const o of probTipoEl.options) {
+    if (o.value === 'cualquiera') continue;
+    o.disabled = !tipos.includes(o.value);
+  }
+  const sel = probTipoEl.selectedOptions[0];
+  if (sel && sel.disabled) probTipoEl.value = 'cualquiera';
+}
+
 probNivelEl.addEventListener('change', () => {
+  probAjustaTipos();
   probPintaAlmacen();
   probRepon();
 });
@@ -834,4 +857,5 @@ variantSelect.addEventListener('change', () => {
 });
 
 probAlmacenCarga();
+probAjustaTipos();
 probRefrescaGuardados();
