@@ -109,6 +109,306 @@ function centrality(cell) {
 // extremo contrario del propio carril).
 function pawnAdvance(cell, color) { return cell.pawnProg[color]; }
 
+// --- Evaluación de las modalidades Piedra, papel y tijera (V.captures) -----
+//
+// En estas modalidades todas las figuras se mueven igual, así que su valor no
+// puede venir de la tabla de movimientos: viene de la matriz de capturas y de
+// lo que quede vivo. Una piedra vale por las tijeras rivales que puede cazar
+// y vale menos cuantos más papeles rivales la cazan a ella; si no le queda
+// ninguna presa, cae a un suelo pequeño pero no nulo (sigue bloqueando y
+// ocupando espacio). Es la consideración 1 del diseñador («Nuevas variantes
+// del juego.txt»): el valor de cada pieza se modifica según el número de
+// piedras, papeles y tijeras que queden en cada momento.
+//
+// La fórmula, lineal y barata (los recuentos por tipo y color se hacen en la
+// misma pasada que ya da la movilidad):
+//
+//   valor(tipo) = RPS_VALOR_SUELO                     si presasVivas = 0
+//   valor(tipo) = max(RPS_VALOR_SUELO,
+//     RPS_VALOR_BASE + RPS_PESO_PRESA · presasVivas
+//                    − RPS_PESO_DEPREDADOR · depredadoresVivos)   si no
+//
+// donde presas/depredadores se cuentan entre las piezas RIVALES vivas. El rey
+// de las modalidades -rey queda fuera de los recuentos y conserva su
+// tratamiento especial de siempre (pieceValues.K, el jaque y el mate).
+//
+// Además, un término de amenazas: estar en el radio de un depredador rival es
+// peligro, y aquí «defender» no es lo del ajedrez —la matriz no es simétrica:
+// la pieza atacada normalmente NO puede comerse a su atacante—, sino tener
+// una pieza propia que pueda capturar al atacante si consuma la amenaza. Una
+// pieza atacada sin esa respuesta está colgada de verdad.
+//
+// PESOS PROVISIONALES a la espera de la arena (la sesión siguiente ajustará
+// posiciones iniciales y podrá tunearlos): todos con nombre y en un sitio.
+const RPS_VALOR_BASE = 60;        // valor de partida de una figura
+const RPS_PESO_PRESA = 12;        // + por cada pieza rival que puede capturar
+const RPS_PESO_DEPREDADOR = 4;    // − por cada pieza rival que puede capturarla
+const RPS_VALOR_SUELO = 25;       // mínimo: bloquear y ocupar espacio vale algo
+const RPS_AMENAZA = 0.2;          // fracción del valor perdida si un depredador
+                                  // la ataca pero el atacante tiene respuesta
+const RPS_AMENAZA_COLGADA = 0.6;  // fracción si nadie puede capturar al atacante
+// Término de caza (solo kingless): bonificación por tener depredadores cerca
+// de cada presa rival, decreciente con la distancia (0 en la otra punta del
+// tablero, el peso entero al lado). Sin él, dos motores prudentes maniobran
+// sin acercarse NUNCA: no hay regla de 50 jugadas que fuerce nada y las
+// partidas no terminan; con él, el bando que va ganando tiene un gradiente
+// que le lleva a acorralar (todas las piezas corren lo mismo, así que cazar
+// exige arrinconar, y eso a la profundidad de un nivel medio no sale sin
+// ayuda de la evaluación).
+const RPS_PESO_CAZA = 30;
+// Factor de «ya no puedo ganar» (solo kingless): la ventaja del bando que ya
+// no puede eliminar al rival (ver el techo en evaluateRps) se multiplica por
+// esto. No se recorta a tablas en seco porque eso aplana la evaluación y el
+// bando que SÍ puede ganar se queda sin gradiente que seguir.
+const RPS_SIN_VICTORIA = 0.1;
+
+// Tablas derivadas de V.captures, cacheadas en la propia modalidad (V viaja
+// clonada al worker con la caché o sin ella; se reconstruye sola):
+//   presas/depredadores por tipo SIN el rey (para el valor dinámico),
+//   capturadoPor con el rey (para las amenazas: el rey rival sí amenaza),
+//   bit/preyMask (máscaras por tipo para la posición muerta sin recorridos).
+function rpsInfo() {
+  if (V._rpsInfo) return V._rpsInfo;
+  const caps = V.captures;
+  const tipos = Object.keys(caps);
+  const bit = {}, preyMask = {}, capturadoPor = {};
+  tipos.forEach((t, i) => { bit[t] = 1 << i; capturadoPor[t] = []; });
+  for (const a of tipos) {
+    let m = 0;
+    for (const v of caps[a]) { m |= bit[v]; capturadoPor[v].push(a); }
+    preyMask[a] = m;
+  }
+  // máscara de los tipos que pueden capturar a cada tipo (para saber con dos
+  // AND si a una pieza le queda algún verdugo vivo)
+  const capturadoPorMask = {};
+  for (const t of tipos) {
+    let m = 0;
+    for (const a of capturadoPor[t]) m |= bit[a];
+    capturadoPorMask[t] = m;
+  }
+  const figuras = tipos.filter(t => t !== 'K');
+  const presas = {}, depredadores = {};
+  for (const t of figuras) {
+    presas[t] = caps[t].filter(v => v !== 'K');
+    depredadores[t] = capturadoPor[t].filter(a => a !== 'K');
+  }
+  // para el término de caza: diámetro del tablero (normaliza la distancia) y
+  // caché perezosa de distancias entre casillas, indexada por par de idx
+  let radio = 0;
+  for (const c of CELLS) radio = Math.max(radio, Math.hypot(c.cx, c.cy));
+  const nCells = CELLS.length;
+  return (V._rpsInfo = { tipos, figuras, bit, preyMask, capturadoPor,
+                         capturadoPorMask, presas, depredadores,
+                         diam: 2 * radio, nCells,
+                         dist: new Float32Array(nCells * nCells) });
+}
+
+// Distancia euclídea entre dos casillas, cacheada en la tabla de rpsInfo
+// (0 significa «sin calcular»: dos casillas distintas nunca distan 0).
+function rpsDist(info, a, b) {
+  const i = a.idx * info.nCells + b.idx;
+  let d = info.dist[i];
+  if (d === 0 && a !== b) {
+    d = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    info.dist[i] = d;
+  }
+  return d;
+}
+
+// Valor dinámico del tipo `t` dado el recuento de piezas rivales vivas por
+// tipo. Ver la fórmula y los pesos arriba. Sin ninguna presa viva el valor es
+// el suelo directamente: en estas modalidades los tipos extinguidos no
+// vuelven (no hay coronación), así que esa pieza no capturará nunca más y
+// solo le queda bloquear y ocupar espacio.
+function rpsValor(t, cntRival) {
+  const info = rpsInfo();
+  let presas = 0, depred = 0;
+  for (const v of info.presas[t]) presas += cntRival[v] || 0;
+  for (const a of info.depredadores[t]) depred += cntRival[a] || 0;
+  if (presas === 0) return RPS_VALOR_SUELO;
+  return Math.max(RPS_VALOR_SUELO,
+    RPS_VALOR_BASE + RPS_PESO_PRESA * presas - RPS_PESO_DEPREDADOR * depred);
+}
+
+// Posición muerta sin rey (la versión barata de deadPositionKingless, en
+// rules.js, con la que tiene que coincidir): la partida está muerta cuando
+// ningún bando puede ya eliminar al otro, es decir, cuando a AMBOS les queda
+// algún tipo vivo sin ningún verdugo vivo enfrente (los tipos extinguidos no
+// vuelven: no hay coronación). Una pasada y máscaras de tipo, sin Sets ni
+// bucles anidados: se paga en cada nodo de la búsqueda.
+function rpsDeadPosition(board) {
+  const info = rpsInfo();
+  let mw = 0, mb = 0;
+  for (const [, p] of board) {
+    if (p.color === 'w') mw |= info.bit[p.type]; else mb |= info.bit[p.type];
+  }
+  // un bando sin piezas no es posición muerta: es la victoria por
+  // eliminación ('wiped'), y de esa se ocupan la evaluación y el nodo sin
+  // jugadas (llamar a esto tablas haría que la búsqueda evitara rematar)
+  if (mw === 0 || mb === 0) return false;
+  let inmortalW = false, inmortalB = false;
+  for (const t of info.tipos) {
+    const b = info.bit[t];
+    if ((mw & b) && !(info.capturadoPorMask[t] & mb)) inmortalW = true;
+    if ((mb & b) && !(info.capturadoPorMask[t] & mw)) inmortalB = true;
+  }
+  return inmortalW && inmortalB;
+}
+
+// ¿Puede alguna pieza de `color` capturar a la pieza de tipo `tipo` que está
+// en la casilla `cell`? Mira desde la casilla hacia fuera con las tablas
+// inversas de saltos (todas las figuras RPS son saltadoras); es la noción de
+// «defensa» de estas modalidades: responder al atacante comiéndoselo.
+function rpsContraataque(board, cell, tipo, color) {
+  const info = rpsInfo();
+  for (const d of info.capturadoPor[tipo]) {
+    const desde = cell.leapAttackers[d];
+    if (!desde) continue;
+    for (const t of desde) {
+      const o = board.get(t.key);
+      if (o && o.color === color && o.type === d) return true;
+    }
+  }
+  return false;
+}
+
+// La evaluación de las modalidades con matriz de capturas: material con los
+// valores dinámicos de arriba, movilidad (contando solo destinos legales: a
+// diferencia de countPseudoMoves, aquí una casilla ocupada por un rival
+// incomible NO es jugada) y amenazas. Una única pasada por el tablero; los
+// valores se calculan al final a partir de los recuentos (a lo sumo 6 tipos).
+function evaluateRps(board, color, cfg) {
+  const info = rpsInfo();
+  const values = cfg.pieceValues || PV();
+  const mobilityWeight = cfg.mobilityWeight ?? 4;
+  const cnt = { w: {}, b: {} };          // piezas vivas por color y tipo
+  const ame = { w: {}, b: {} };          // amenazadas con respuesta posible
+  const col = { w: {}, b: {} };          // amenazadas sin respuesta (colgadas)
+  for (const t of info.tipos) {
+    cnt.w[t] = 0; cnt.b[t] = 0;
+    ame.w[t] = 0; ame.b[t] = 0;
+    col.w[t] = 0; col.b[t] = 0;
+  }
+  let mob = 0;                           // movilidad con signo (blancas − negras)
+  // posiciones por bando, solo si hace falta el término de caza (kingless)
+  const conCaza = V.kingless;
+  const cW = [], tW = [], cB = [], tB = [];
+  for (const [key, p] of board) {
+    const sw = p.color === 'w' ? 1 : -1;
+    cnt[p.color][p.type]++;
+    const cell = CELL_MAP.get(key);
+    if (conCaza) {
+      if (p.color === 'w') { cW.push(cell); tW.push(p.type); }
+      else { cB.push(cell); tB.push(p.type); }
+    }
+    if (cfg.mobility) {
+      const leaps = cell.leaps[p.type];
+      if (leaps) {
+        for (const t of leaps) {
+          const o = board.get(t.key);
+          if (!o || (o.color !== p.color && canCapture(p.type, o.type))) mob += sw;
+        }
+      } else {
+        mob += sw * countPseudoMoves(board, cell, p);   // por si acaso; no pasa hoy
+      }
+    }
+    // amenazas sobre las figuras (el rey no: de su seguridad se ocupa el
+    // jaque de la búsqueda): ¿hay un depredador rival a un salto?
+    if (p.type !== 'K') {
+      const foe = p.color === 'w' ? 'b' : 'w';
+      let amenazada = false, colgada = false;
+      for (const a of info.capturadoPor[p.type]) {
+        const desde = cell.leapAttackers[a];
+        if (!desde) continue;
+        for (const t of desde) {
+          const o = board.get(t.key);
+          if (!o || o.color !== foe || o.type !== a) continue;
+          amenazada = true;
+          if (!rpsContraataque(board, t, a, p.color)) { colgada = true; break; }
+        }
+        if (colgada) break;
+      }
+      if (colgada) col[p.color][p.type]++;
+      else if (amenazada) ame[p.color][p.type]++;
+    }
+  }
+  // quedarse sin piezas es la derrota ('wiped'); verlo ya en la hoja evita
+  // que la quietud puntúe una eliminación como simple material
+  if (V.kingless) {
+    let mias = 0, suyas = 0;
+    for (const t of info.tipos) {
+      if (color === 'w') { mias += cnt.w[t]; suyas += cnt.b[t]; }
+      else { mias += cnt.b[t]; suyas += cnt.w[t]; }
+    }
+    if (mias === 0) return -MATE;
+    if (suyas === 0) return MATE;
+  }
+  // todo se acumula desde las blancas y se cambia el signo al final
+  let score = cfg.mobility ? mobilityWeight * mob : 0;
+  for (const t of info.figuras) {
+    const vw = rpsValor(t, cnt.b);       // el valor blanco depende de lo negro
+    const vb = rpsValor(t, cnt.w);
+    score += cnt.w[t] * vw - cnt.b[t] * vb;
+    score -= RPS_AMENAZA * (ame.w[t] * vw - ame.b[t] * vb) +
+             RPS_AMENAZA_COLGADA * (col.w[t] * vw - col.b[t] * vb);
+  }
+  // el rey de las -rey, con su valor de tabla de siempre (0 por defecto)
+  if (cnt.w.K !== undefined) score += values.K * (cnt.w.K - cnt.b.K);
+  // caza: por cada presa, bonificación al bando rival según lo cerca que
+  // tenga su depredador más próximo (ver RPS_PESO_CAZA)
+  if (conCaza) {
+    let caza = 0;                        // blancas − negras
+    for (let i = 0; i < cW.length; i++) {
+      const cazadores = info.depredadores[tW[i]];
+      let dmin = Infinity;
+      for (let j = 0; j < cB.length; j++) {
+        if (cazadores.indexOf(tB[j]) < 0) continue;
+        const d = rpsDist(info, cW[i], cB[j]);
+        if (d < dmin) dmin = d;
+      }
+      if (dmin < Infinity) caza -= RPS_PESO_CAZA * (1 - dmin / info.diam);
+    }
+    for (let i = 0; i < cB.length; i++) {
+      const cazadores = info.depredadores[tB[i]];
+      let dmin = Infinity;
+      for (let j = 0; j < cW.length; j++) {
+        if (cazadores.indexOf(tW[j]) < 0) continue;
+        const d = rpsDist(info, cB[i], cW[j]);
+        if (d < dmin) dmin = d;
+      }
+      if (dmin < Infinity) caza += RPS_PESO_CAZA * (1 - dmin / info.diam);
+    }
+    score += caza;
+  }
+  // Rebaja de «ya no puedo ganar»: como los tipos no vuelven, un bando que no
+  // tenga verdugos vivos para TODOS los tipos rivales vivos jamás podrá
+  // eliminar al rival, y su mejor resultado posible son tablas — su ventaja
+  // se multiplica por RPS_SIN_VICTORIA en vez de contarse entera. Esto quita
+  // el incentivo perverso de conservar «rehenes» incapturables para inflar
+  // el material dinámico, y hace que quien va ganando evite los cambios que
+  // extinguen a sus propios verdugos. Se ESCALA en vez de recortar a tablas
+  // en seco: el recorte aplanaría la evaluación y dejaría al bando que SÍ
+  // puede ganar sin gradiente que seguir. (Si no puede ganar ninguno, la
+  // posición está muerta: rpsDeadPosition la puntúa como tablas en la
+  // búsqueda, y aquí queda una ventaja simbólica que no estorba.)
+  if (V.kingless) {
+    let mw = 0, mb = 0;
+    for (const t of info.tipos) {
+      if (cnt.w[t]) mw |= info.bit[t];
+      if (cnt.b[t]) mb |= info.bit[t];
+    }
+    let ganaW = true, ganaB = true;
+    for (const t of info.tipos) {
+      const b = info.bit[t];
+      if ((mb & b) && !(info.capturadoPorMask[t] & mw)) ganaW = false;
+      if ((mw & b) && !(info.capturadoPorMask[t] & mb)) ganaB = false;
+    }
+    if (!ganaW && score > 0) score *= RPS_SIN_VICTORIA;
+    if (!ganaB && score < 0) score *= RPS_SIN_VICTORIA;
+  }
+  return color === 'w' ? score : -score;
+}
+
 // Todas las jugadas legales de un color: [{from, to}], sin repeticiones.
 //
 // Hacen falta las dos comprobaciones porque legalMoves() SÍ repite destinos:
@@ -189,9 +489,14 @@ const TT_MASK = TT_SIZE - 1;
 // modalidades (el elefante de Salas y el unicornio de Dekle incluidos) en vez
 // de las de la activa: así los códigos no bailan al cambiar de modalidad, y da
 // igual que una modalidad no use alguno.
-const Z_CODE = { P: 0, N: 1, B: 2, E: 3, U: 4, R: 5, Q: 6, K: 7 };
+// (las cinco figuras de Piedra, papel y tijera incluidas: sin código propio,
+// zIndex daba NaN y TODAS las posiciones de esas modalidades compartían
+// firma — repeticiones falsas en cuanto el reloj pasaba de 4 y una TT que
+// mezclaba posiciones)
+const Z_CODE = { P: 0, N: 1, B: 2, E: 3, U: 4, R: 5, Q: 6, K: 7,
+                 O: 11, A: 12, T: 13, L: 14, S: 15 };
 const Z_UNMOVED = { P: 8, R: 9, K: 10 };
-const Z_PER_CELL = 22;   // 11 códigos × 2 colores
+const Z_PER_CELL = 32;   // 16 códigos × 2 colores
 
 function initZobrist() {
   let s = ZOBRIST_SEED >>> 0;
@@ -495,6 +800,13 @@ function genMoves(board, color, ep, kings, probe) {
 
 // Material (y movilidad, según nivel) desde el punto de vista de `color`.
 function evaluate(board, color, cfg) {
+  // Las modalidades con matriz de capturas (Piedra, papel y tijera) tienen
+  // evaluación propia: valores dinámicos y amenazas, ver evaluateRps. Con
+  // cfg.dynamicValues === false se desactiva y se cae al camino clásico con
+  // los valores planos de la modalidad (sirve para medir la dinámica contra
+  // la plana en la arena y en test-ia-rps.js). Las clásicas no tienen
+  // V.captures y siguen por aquí abajo, intactas.
+  if (V.captures && cfg.dynamicValues !== false) return evaluateRps(board, color, cfg);
   const values = cfg.pieceValues || PV();
   const posW = cfg.positionWeights;
   // 4 puntos por jugada disponible. Confirmado a prof. 2-3 que gana fuerza
@@ -645,14 +957,17 @@ function isAttackedFast(board, cell, byColor) {
   return false;
 }
 
-// Primer ocupante de cada rayo, si es rival: los únicos destinos de captura
-// de una pieza deslizante.
-function rayCaptures(board, color, rays, out) {
+// Primer ocupante de cada rayo, si es rival capturable: los únicos destinos
+// de captura de una pieza deslizante. El filtro de canCapture replica el de
+// slideMoves (rules.js): en las modalidades con matriz de capturas una pieza
+// incomible corta el rayo pero no es captura; sin matriz, canCapture es
+// siempre true y esto es lo de siempre.
+function rayCaptures(board, piece, rays, out) {
   for (const ray of rays) {
     for (const t of ray) {
       const occ = board.get(t.key);
       if (!occ) continue;
-      if (occ.color !== color) out.push(t);
+      if (occ.color !== piece.color && canCapture(piece.type, occ.type)) out.push(t);
       break;
     }
   }
@@ -683,13 +998,15 @@ function genCaptures(board, color, ep, kings, probe) {
     const cell = CELL_MAP.get(key);
     cands.length = 0;
     if (cell.rays[p.type]) {
-      rayCaptures(board, color, cell.rays[p.type], cands);
+      rayCaptures(board, p, cell.rays[p.type], cands);
     } else {
-      // saltadoras y peón: los destinos con pieza rival encima
+      // saltadoras y peón: los destinos con pieza rival capturable encima
+      // (canCapture filtra la matriz de las modalidades Piedra, papel y
+      // tijera; sin matriz es siempre true, como en pseudoMoves)
       const destinos = cell.leaps[p.type] || cell.pawnCap[color];
       for (const t of destinos) {
         const o = board.get(t.key);
-        if (o && o.color !== color) cands.push(t);
+        if (o && o.color !== color && canCapture(p.type, o.type)) cands.push(t);
       }
     }
     for (const t of cands) {
@@ -759,8 +1076,9 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
     if (++sx.nodos > sx.tope) { sx.agotado = true; return 0; }
   }
   const values = cfg.pieceValues || PV();
-  // tablas por la regla de los 50 movimientos (ver FIFTY_MOVE_LIMIT en rules.js)
-  if (clock >= FIFTY_MOVE_LIMIT) return drawScore(board, color, values);
+  // tablas por la regla de los 50 movimientos (ver FIFTY_MOVE_LIMIT en
+  // rules.js); en las modalidades sin rey NO aplica, igual que en finishMove
+  if (!V.kingless && clock >= FIFTY_MOVE_LIMIT) return drawScore(board, color, values);
 
   // clave completa del nodo: firma de piezas + turno + al paso
   let kh1 = sx.h1, kh2 = sx.h2;
@@ -783,6 +1101,11 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
     key = kh1 + ',' + kh2;
     if (keys.has(key)) return drawScore(board, color, values);
   }
+
+  // sin rey, la incapacidad mutua de captura es tablas (el 'material' de
+  // finishMove): sin esto la búsqueda perseguiría posiciones muertas
+  // creyendo que la ventaja de material sigue valiendo algo
+  if (V.kingless && rpsDeadPosition(board)) return drawScore(board, color, values);
 
   // en las hojas, los niveles que lo piden siguen explorando por capturas
   // (quiesce) en vez de evaluar tal cual, para no cortar a mitad de un
@@ -814,6 +1137,15 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
 
   const moves = genMoves(board, color, ep, sx.kings, sx.probe);
   if (moves.length === 0) {
+    if (V.kingless) {
+      // sin piezas es derrota por eliminación ('wiped'), puntuada como el
+      // mate (los más rápidos puntúan más); sin jugadas pero con piezas es
+      // ahogado, o sea tablas — exactamente como decide finishMove
+      for (const [, p] of board) {
+        if (p.color === color) return drawScore(board, color, values);
+      }
+      return -MATE - depth;
+    }
     // mate (los más rápidos puntúan más) o tablas por ahogado
     return isAttackedFast(board, CELL_MAP.get(sx.kings[color]), rival(color))
       ? -MATE - depth : drawScore(board, color, values);
@@ -1007,7 +1339,10 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   // solo a la evaluación.
   const cfgSig = JSON.stringify([cfg.pieceValues || null, cfg.positionWeights || null,
     cfg.mobilityWeight ?? 4, !!cfg.mobility, !!cfg.quiesce,
-    cfg.nodes || 0, cfg.temperature || 0, cfg.depth || 0]);
+    cfg.nodes || 0, cfg.temperature || 0, cfg.depth || 0,
+    // la evaluación dinámica de las modalidades RPS entra en la firma: dos
+    // configuraciones que solo difieren en esto no pueden compartir tabla
+    cfg.dynamicValues !== false]);
   if (cfgSig !== ttCfgSig) { ttCfgSig = cfgSig; ttGen++; }
   ttAge++;
 

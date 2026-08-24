@@ -429,17 +429,26 @@ function deadPosition(board) {
   return board.size === 2;   // los dos reyes y nada más
 }
 
-// Posición muerta de las modalidades sin rey (Piedra, papel y tijera): si
-// ninguna pieza viva de un bando puede capturar ya a ninguna del otro, y
-// viceversa, nadie puede eliminar a nadie y la partida son tablas. Es la
-// versión de «material insuficiente» que tiene sentido aquí (la clásica de
-// los dos reyes no aplica: no hay reyes).
+// Posición muerta de las modalidades sin rey (Piedra, papel y tijera): la
+// partida está muerta cuando NINGÚN bando puede ya eliminar al otro. Como los
+// tipos extinguidos no vuelven (no hay coronación), basta mirar los tipos
+// vivos: si a un bando le queda un tipo que ningún tipo vivo del rival puede
+// capturar, ese bando tiene piezas inmortales y nunca será eliminado; si eso
+// les pasa a los dos, ninguna serie de jugadas legales acaba en 'wiped' y la
+// partida son tablas. Es el análogo exacto del «material insuficiente» del
+// ajedrez (ninguna serie de jugadas legales lleva al mate), y cubre de paso
+// el caso antiguo de «nadie puede capturar a nadie»: sin él, dos ejércitos de
+// papeles enfrentados jugarían para siempre (no hay regla de 50 jugadas que
+// lo corte). [Cambio de la sesión de la IA, ver PR: antes solo se declaraba
+// muerta la incapacidad TOTAL de captura.]
 function deadPositionKingless(board) {
   const tipos = { w: new Set(), b: new Set() };
   for (const [, p] of board) tipos[p.color].add(p.type);
-  for (const a of tipos.w) for (const v of tipos.b) if (canCapture(a, v)) return false;
-  for (const a of tipos.b) for (const v of tipos.w) if (canCapture(a, v)) return false;
-  return true;
+  // ¿puede el bando `a` aspirar a eliminar al bando `v`? (todo tipo vivo de
+  // `v` tiene que ser capturable por algún tipo vivo de `a`)
+  const puedeEliminar = (a, v) =>
+    [...tipos[v]].every(tv => [...tipos[a]].some(ta => canCapture(ta, tv)));
+  return !puedeEliminar('w', 'b') && !puedeEliminar('b', 'w');
 }
 
 // Cierre común a toda jugada, ya aplicada sobre el tablero: pasa el turno,
