@@ -2,9 +2,14 @@
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PIECE_NAMES = { P: 'Peón', N: 'Caballo', B: 'Alfil', E: 'Elefante',
-  U: 'Unicornio', R: 'Torre', Q: 'Dama', K: 'Rey' };
-const PIECE_FEM = new Set(['R', 'Q']);
-const ICON_PIECES = { E: '#piece-elephant', U: '#piece-unicorn' };
+  U: 'Unicornio', R: 'Torre', Q: 'Dama', K: 'Rey',
+  O: 'Piedra', A: 'Papel', T: 'Tijera', L: 'Lagarto', S: 'Spock' };
+const PIECE_FEM = new Set(['R', 'Q', 'O', 'T']);
+const ICON_PIECES = {
+  E: '#piece-elephant', U: '#piece-unicorn',
+  O: '#piece-rock', A: '#piece-paper', T: '#piece-scissors',
+  L: '#piece-lizard', S: '#piece-spock',
+};
 
 let board = new Map();
 let turn = 'w';
@@ -341,7 +346,8 @@ function playPosition() {
       if (p.color === 'b') kingB = key;
     }
   }
-  if (!kingW || !kingB) {
+  // en las modalidades sin rey (Piedra, papel y tijera) no hay rey que exigir
+  if (!V.kingless && (!kingW || !kingB)) {
     showMessage('Error: se necesita un rey blanco y uno negro para jugar.', true);
     return;
   }

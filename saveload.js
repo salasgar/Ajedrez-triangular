@@ -82,7 +82,9 @@ function validateSave(data) {
           (p.color !== 'w' && p.color !== 'b')) return false;
       if (p.type === 'K') reyes++;
     }
-    if (reyes !== 2) return false;   // el mate no captura al rey: siempre 2
+    // el mate no captura al rey: siempre 2 (salvo en las modalidades sin rey,
+    // donde no hay ninguno que contar: ahí `piezas` ya rechaza el tipo 'K')
+    if (piezas.has('K') && reyes !== 2) return false;
     // toda jugada del historial (i >= 1) lleva su lastMove
     if (i > 0 && (!s.lastMove || typeof s.lastMove.from !== 'string' ||
         typeof s.lastMove.to !== 'string')) return false;

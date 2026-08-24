@@ -23,6 +23,24 @@
         <symbol id="piece-unicorn" viewBox="0 0 24 24">
             <path fill-rule="evenodd" d="M17.4 2.1L15.1 6.4L12.9 5.9L10.2 6.5L7.6 8.3L6.1 10.8L3.1 12.6L2.6 13.7L4.4 13.4L3.5 15.1L5.6 14.2L5.1 16.2L6.9 14.6L7.4 16.6L8.6 14.9L10.1 16.1L10.6 21.6L12.4 21.6L12.1 16.9L13.9 18.1L14.4 21.6L16.2 21.6L15.7 17.4L17.9 15.2L19.4 11.6L19.1 8.4L17.2 6.6ZM15.6 8.9Q16.4 8.9 16.4 9.7Q16.4 10.5 15.6 10.5Q14.8 10.5 14.8 9.7Q14.8 8.9 15.6 8.9Z"/>
         </symbol>
+        <!-- Las cinco figuras de Piedra, papel y tijera, también como silueta
+             monocroma (los emoji 🪨 📄 ✂️ 🦎 🖖 vienen coloreados de fábrica y
+             no distinguirían el bando). -->
+        <symbol id="piece-rock" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M12.2 3.4L18.6 6.2L21.2 12.4L18.2 18.8L12 20.8L5.6 18.6L2.9 12.2L5.8 6.4ZM12.6 3.9L13.7 4.35L11.4 11.9L14.2 19.9L13 20.3L9.9 12Z"/>
+        </symbol>
+        <symbol id="piece-paper" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M6 2.5L14.6 2.5L19 6.9L19 21.5L6 21.5ZM14.6 2.5L19 6.9L14.6 6.9ZM8.3 10L16.7 10L16.7 11.2L8.3 11.2ZM8.3 13.4L16.7 13.4L16.7 14.6L8.3 14.6ZM8.3 16.8L14.5 16.8L14.5 18L8.3 18Z"/>
+        </symbol>
+        <symbol id="piece-scissors" viewBox="0 0 24 24">
+            <path d="M5.4 2.4L7.6 2.2L13.3 10.9L11.8 12.8ZM18.6 2.4L16.4 2.2L10.7 10.9L12.2 12.8ZM11.8 12.2L8.9 15.4L10.3 16.6L12.9 13.3ZM12.2 12.2L15.1 15.4L13.7 16.6L11.1 13.3ZM12 11.4a1.3 1.3 0 0 1 0 2.6a1.3 1.3 0 0 1 0 -2.6ZM8.4 14.6a3.1 3.1 0 0 1 0 6.2a3.1 3.1 0 0 1 0 -6.2ZM8.4 16.2a1.5 1.5 0 0 0 0 3a1.5 1.5 0 0 0 0 -3ZM15.6 14.6a3.1 3.1 0 0 1 0 6.2a3.1 3.1 0 0 1 0 -6.2ZM15.6 16.2a1.5 1.5 0 0 0 0 3a1.5 1.5 0 0 0 0 -3Z"/>
+        </symbol>
+        <symbol id="piece-lizard" viewBox="0 0 24 24">
+            <path d="M12 1.6L14 3.2L13.3 5.4L17.5 7L20.6 5.9L21.3 7.7L17.8 9L13.9 8L14.5 12.6L18.3 15.7L17 17.2L13.8 14.6L13.4 16.4L14.6 19.3L13.9 22.4L12.1 21.9L12.7 19.4L11.2 16.2L10.9 14.4L7.2 17.1L5.9 15.5L9.6 12.7L9.4 8.1L6.3 9.1L2.9 7.8L3.7 6L6.7 7.1L10.7 5.5L10 3.3Z"/>
+        </symbol>
+        <symbol id="piece-spock" viewBox="0 0 24 24">
+            <path d="M6.1 13L6.1 6Q6.1 4.5 7.35 4.5Q8.6 4.5 8.6 6L8.6 13ZM8.9 13L8.9 4.6Q8.9 3.1 10.15 3.1Q11.4 3.1 11.4 4.6L11.4 13ZM12.9 13L12.9 4.6Q12.9 3.1 14.15 3.1Q15.4 3.1 15.4 4.6L15.4 13ZM15.7 13L15.7 6Q15.7 4.5 16.95 4.5Q18.2 4.5 18.2 6L18.2 13ZM6.1 12L18.2 12L18.2 17.5Q18.2 21.8 12.9 21.8Q7.4 21.8 6.4 17.2L6.1 15ZM6.3 15.8L3.2 13.2Q2 12.1 2.9 11.1Q3.7 10.3 4.8 11.2L7.5 13.4Z"/>
+        </symbol>
     </defs></svg>
     <h1>Ajedrez Triangular</h1>
     <div class="layout">
@@ -169,12 +187,16 @@
                 <p id="help-variant"></p>
                 <ul id="help-pieces"></ul>
                 <ul>
-                    <li><b>Captura al paso</b>: si un peón avanza dos casillas en su primer movimiento, un peón rival que ataque la casilla intermedia puede capturarlo justo en la jugada siguiente, ocupando esa casilla.</li>
+                    <!-- Estas reglas generales no aplican a todas las
+                         modalidades (las de Piedra, papel y tijera no tienen
+                         peones, y las sin rey no tienen jaque): script.js
+                         oculta o ajusta cada punto según la modalidad. -->
+                    <li id="help-enpassant"><b>Captura al paso</b>: si un peón avanza dos casillas en su primer movimiento, un peón rival que ataque la casilla intermedia puede capturarlo justo en la jugada siguiente, ocupando esa casilla.</li>
                     <!-- El trecho que recorre el rey depende de la modalidad;
                          lo rellena script.js a partir de V.castling. -->
                     <li id="help-castling"><b>Enroque</b>: si el rey y una de sus torres no se han movido y entre ambos no queda ninguna pieza, pueden enrocarse. <span id="help-castling-how"></span> No vale si el rey está en jaque ni si alguna de las casillas que recorre está atacada. <b>Para enrocarte, selecciona el rey y pulsa la casilla de tu torre</b> (se ilumina en morado): así no se confunde con un movimiento normal del rey.</li>
-                    <li>Jaque, jaque mate y ahogado funcionan como en el ajedrez clásico.</li>
-                    <li><b>Tablas</b>: además del ahogado, la partida acaba en tablas si la misma posición aparece por tercera vez o tras 50 jugadas de cada bando sin capturas ni movimientos de peón.</li>
+                    <li id="help-check">Jaque, jaque mate y ahogado funcionan como en el ajedrez clásico.</li>
+                    <li id="help-draws"><b>Tablas</b>: además del ahogado, la partida acaba en tablas si la misma posición aparece por tercera vez o tras 50 jugadas de cada bando sin capturas ni movimientos de peón.</li>
                     <li><a href="valores-piezas.html"><b>Valores de piezas</b></a>: parámetros de evaluación del motor en cada modalidad.</li>
                 </ul>
             </details>
