@@ -117,3 +117,15 @@ criterio, y eso no falla de golpe: sale mediocre y no se nota hasta mucho despu�
 - **El montaje lo hizo una sesión Fable el 2026-08-24** por decisión expresa de Juan
   Luis; el inventario previo es de la sesión Opus anterior y está en
   `traspaso-reparto-ajedrez.md`. No rediscutir ninguna de las dos cosas.
+- **Las tareas 11-13 entraron el 2026-08-25** (sesión Fable s-20260824T233011-d4d13c52),
+  a partir de cuatro problemas reportados por Juan Luis ese día. Dos de los cuatro
+  (mate-en-N resoluble en menos, y soluciones alternativas rechazadas) van juntos en
+  la 12 a propósito: ambos viven en el verificador de problemas.js y partirlos daría
+  dos escritores del mismo fichero. La 13 (IA en PPT) queda tras la 03 porque la 03
+  reescribe los setups de variants.js y medir la IA sobre setups provisionales es
+  medir en falso. Aclaración expresa de Juan Luis (2026-08-25) recogida en la 11: la
+  comida al paso se conserva en las modalidades con peones.
+- **La 14 (cosecha de problemas de partidas motor contra motor) es sugerencia de Juan
+  Luis del 2026-08-25** y va detrás de la 12 a propósito: la cosecha usa el
+  verificador que la 12 arregla, y hasta entonces problemas.js tiene otro dueño. No
+  se automatiza de momento: sería mover antes todo el protocolo al remoto.
