@@ -720,7 +720,10 @@ const DEFAULT_VARIANT = 'salas';
 let V = null;
 
 function variantList() {
-  return Object.keys(VARIANTS).map(id => ({ id, name: VARIANTS[id].name }));
+  // `hidden`: modalidades que no salen en los selectores (las demos de
+  // tessellations.js); se abren con ?modalidad=<id> en la URL.
+  return Object.keys(VARIANTS).filter(id => !VARIANTS[id].hidden)
+    .map(id => ({ id, name: VARIANTS[id].name }));
 }
 
 function setVariant(id) {
