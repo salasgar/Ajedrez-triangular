@@ -35,6 +35,21 @@ rpsls-rey · ciclo-K-giro        16       31%      6%     63%    386    75.3    
 rpsls-rey · eq-K-giro            12       17%      0%     83%    263    27.1     1.17
 ```
 
+Segunda tanda (2026-08-25, sesión s-20260824T233011-d4d13c52, con el visto bueno de
+Juan Luis para relanzar la arena; mismas condiciones, `PARTIDAS=16 NIVEL=3`):
+
+```
+rps · eq18-giro                 16       13%      6%     81%    400   105.3     1.09
+rps · fondo9-giro               16        6%     13%     81%    400    18.9     1.09
+rps · frente11-giro             16        6%     19%     75%    400    24.9     1.06
+rpsls · eq15-giro               16       19%      6%     75%    400    98.2     1.06
+rpsls · fondo10-giro            16        0%      6%     94%    399    27.1     1.22
+rpsls · frente11-giro           16       13%     19%     69%    400    30.7     0.97
+```
+
+(`rpsls · ciclo-giro` queda con 3 partidas: es de 20 piezas, descartada por criterio,
+y completarla habría sido gastar máquina en una descartada.)
+
 Nota sobre `plies=400/398`: es el tope de jugadas (`MAX_PLIES`); en `rps` y `rpsls` casi
 todas las partidas de candidatos de 20 piezas lo agotan, confirmando el descarte del
 traspaso. En las `-rey` no pasa (hay jaque mate), por eso ahí sí es válida una candidata
@@ -59,31 +74,31 @@ Aplicado en `variants.js`: nuevas listas `RPS_REY_FRONT`/`RPS_REY_BACK` y
 `-rey` reusaban las mismas listas que las sin rey; ahora mismo sus posiciones ganadoras
 no coinciden, así que hacía falta desacoplarlas).
 
-## Decisión NO tomada — falta medir
+## Decisión tomada para `rps` y `rpsls` (2026-08-25, segunda tanda)
 
-**`rps` y `rpsls` siguen con el setup provisional del 2026-08-24** (`base`, un muro de
-papeles con piedra/tijera alternada, negras en espejo). No es una decisión: es que no hay
-con qué decidir.
+**Se mantiene `base` como setup definitivo en las dos modalidades sin rey**, ahora con
+datos. `variants.js` no cambia: la provisional resulta ser la ganadora.
 
-La criba se paró antes de llegar a las candidatas que sobreviven al descarte de 20
-piezas:
-- `rps`: solo se midieron `base`, `base-desplazada`, `ciclo-espejo` (los tres de 20
-  piezas, los tres descartados). Faltan `eq18-giro`, `fondo9-giro`, `frente11-giro` y
-  `tijeras-flanco` (este último también de 20 piezas, descartado igual).
-- `rpsls`: solo se midieron `base`, `ciclo-espejo`, `ciclo-giro` (de 20 piezas,
-  descartados; `ciclo-giro` con solo 3 partidas, ni eso completo). Faltan `eq15-giro`,
-  `fondo10-giro`, `frente11-giro`.
+El razonamiento, en tres pasos:
 
-Con los datos de las `-rey` hay un indicio a vigilar: las candidatas «equilibrada»
-(`eq-K-giro`) y «solo fondo» (`fondo-K-giro`) midieron mal (interés 1.13 y 1.10; la de
-fondo con 100% tablas y partidas de 6 segundos, prácticamente degeneradas). Si ese patrón
-se repite en las sin rey, ni `eq18-giro`/`eq15-giro` ni `fondo9-giro`/`fondo10-giro`
-serían buena elección sin más — pero es una hipótesis, no una medición, y en las sin rey
-no hay alternativa «ciclo» porque esa es precisamente la que se descarta por el tope de
-jugadas. Puede hacer falta una candidata nueva (no está en la lista actual de
-`arena-rps.js`) para las dos modalidades sin rey.
+1. **La hipótesis del indicio se confirmó**: las candidatas «equilibrada», «solo fondo»
+   y «solo frente» miden mal también sin rey (69-94 % de tablas, interés 0.97-1.22),
+   igual que sus análogas en las `-rey`.
+2. **El criterio del descarte quedó obsoleto con los datos nuevos**: se descartaron las
+   de 20 piezas «por agotar el tope de jugadas», pero la segunda tanda muestra que en
+   las modalidades sin rey TODAS las candidatas agotan el tope siempre (plies medios
+   399-400 en las seis), tengan 9, 11, 15, 18 o 20 piezas. Agotar el tope no distingue
+   setups: es una propiedad de la modalidad (sin jaque mate, las partidas no acaban
+   solas) y los resultados salen de la adjudicación por material (`MARGEN=3`).
+3. **Con ese criterio caído, manda la pregunta original del encargo** («que no siempre
+   ganen blancas, ni negras, ni siempre empate»): `base` da el mejor reparto de toda la
+   tabla en las dos modalidades — `rps` 31/31/38 (interés 0.63, idéntico al de la
+   ganadora de `rps-rey`) y `rpsls` 31/19/50 (interés 0.81).
 
-Terminar esto exige correr la arena para esas candidatas, y la ficha de la tarea 03 lo
-prohíbe expresamente («Prohibido: relanzar procesos de arena») sin decisión de Juan
-Luis — son procesos que ocupan el Mac. Queda para quien retome la tarea 03, con su visto
-bueno.
+**Cuestión de diseño que queda abierta (fuera del alcance de la tarea 03):** que en las
+modalidades sin rey ninguna partida termine de forma natural es un rasgo de las reglas
+de la modalidad, no de la posición inicial — ninguna posición inicial lo va a arreglar.
+Si se quiere que estas partidas puedan acabar antes del tope (contra humanos no hay
+adjudicación por material que corte), habría que tocar las condiciones de victoria
+(por ejemplo: ganar al capturar N piezas, o al coronar una figura en la fila rival).
+Eso es decisión de Juan Luis y, si la toma, una tarea nueva del reparto.
