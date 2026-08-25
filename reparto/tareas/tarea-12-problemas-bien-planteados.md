@@ -86,6 +86,21 @@ corta y quien coja la 08 debe saberlo.
 - «entrenamiento/libro-trigonal 2.json» (con espacio) es un duplicado de conflicto de
   sincronización, no un dato: ignóralo, y no lo confundas con el bueno.
 - El scratchpad se purga a medianoche: todo dato intermedio, al repo.
+- El criterio de minimalidad YA estaba bien construido desde el commit original del
+  motor (`probGeneraUno`, `probCreaBusca` en crear-problema.js, `probJuzga` en
+  problemas-ui.js: los tres buscan de menos a más y/o reverifican en fresco, no
+  comparan contra la línea guardada). Generé y comprobé >500 problemas frescos de los
+  cuatro tipos y tres niveles sin encontrar ni el atajo (bug 1) ni el rechazo de una
+  alternativa válida (bug 2); no hace falta rediseñar nada ahí. Detalle completo,
+  scripts de repro y el bug real que sí apareció (desajuste de presupuesto entre
+  crear-problema.js y la reverificación en partida) en
+  `hechos/notas/s-20260824T235458-3ccd1290.md`.
+- No hay ningún almacén de problemas exportado en el repo: vive en el `localStorage`
+  del navegador de Juan Luis, inaccesible desde esta sesión. La re-verificación del
+  almacén se resuelve por diseño (todo lo que lo puebla pasa por el generador, ya
+  probado) más una comprobación de fondo nueva al importar un `.json` externo
+  (`probVerificaForzado`, problemas.js) — no al cargar el almacén completo, que sería
+  demasiado caro en cada apertura de la pestaña.
 
 ## Prohibido
 - Bajar el listón de unicidad (`probMaxSoluciones`) para «resolver» el fallo 2

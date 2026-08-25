@@ -9,16 +9,14 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T01:03Z · por la sesión s-20260824T235449-a524a145 (Juan Luis
-firmó las dos autorizaciones pendientes; también recoge la reanudación de la 03 y el
-arranque de la 09, ya en curso al reconciliar)
+Regenerado: 2026-08-25T01:34Z · por la sesión s-20260824T235504-fde8fd6d (cierre de la
+tarea 15: `editor.html` ya funciona sin conexión)
 
-El árbol compartido está sobre `main` = `origin/main` (`b102835`: ayuda de tablas sin
-mención de peón en rps-rey/rpsls-rey, tarea 11, sobre el `4a89655` de la 03 A MEDIAS).
-Las tareas de interfaz editan los ficheros directamente, con los reclamos del harness
-(`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de respaldo de la
-reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
-tire cuando quiera.
+El árbol compartido está sobre `main` = `origin/main` (`b62f941`: arreglo de la 15
+sobre el `b102835` de la tarea 11). Las tareas de interfaz editan los ficheros
+directamente, con los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un
+`stash@{0}` de respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—,
+queda libre para que Juan Luis lo tire cuando quiera.
 
 ## Antes de hacer nada
 
@@ -102,6 +100,7 @@ equivalencia de hoy está en `proyecto.md`.
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | EN CURSO | s-20260824T235458-3ccd1290 · 2026-08-25T05:54:58Z |
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260824T235417-04eac74c · 2026-08-25T05:54:24Z |
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | BLOQUEADA | |
+| 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
@@ -122,10 +121,15 @@ retirar los ocho ficheros de depuración del editor, y consolidar/retirar los du
 abierta 00:57:07Z, caduca 02:57:07Z).
 
 La tarea 08 (verificación) encontró 6/7 comprobaciones BIEN y 1 FALLA parcial: el editor
-de posiciones (`editor.html`) no funciona sin conexión por un desajuste entre las
-cadenas `?v=N` de sus `<script>` y las rutas sin versión que cachea `sw.js`. No se ha
-arreglado (prohibido en el alcance de la 08); detalle y candidatas de arreglo en
-`hechos/incidencias/s-20260824T235504-fde8fd6d.md`.
+de posiciones (`editor.html`) no funcionaba sin conexión por un desajuste entre las
+cadenas `?v=N` de sus `<script>` y las rutas sin versión que cachea `sw.js`. **Ya está
+arreglado** por la tarea 15 (nueva, abierta y cerrada por la misma sesión que hizo la
+08, con autorización expresa de Juan Luis): se quitaron las cadenas `?v=N` de
+`editor.html` (el `VERSION` de `sw.js` ya invalida la caché entera cuando cambia) y se
+subió `VERSION` a v8 para forzar la actualización en navegadores con caché vieja.
+Verificado offline con Playwright: tablero y selector de modalidad cargan sin errores;
+`index.html` sigue funcionando igual que antes. Detalle completo en
+`hechos/terminadas/15--s-20260824T235504-fde8fd6d.md`.
 
 Libres ahora mismo: **ninguna sin reclamo**. En curso: la **03** (reanudada), la **09**
 (limpieza, recién reclamada), la **12** (sid `3ccd1290`, caduca 05:54Z) y la **13** (sid
@@ -138,6 +142,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 15 · 2026-08-25 01:07 · s-20260824T235504-fde8fd6d · 2 ficheros (editor.html: quitadas las 9 cadenas `?v=N`; sw.js: VERSION v7→v8); verificado offline con Playwright: editor.html carga tablero + 9 opciones de modalidad, 0 errores; index.html sigue igual · main = b62f941
 - LISTA · tarea 08 · 2026-08-25 00:23 · s-20260824T235504-fde8fd6d · 7/7 comprobaciones en navegador (Playwright/Chromium headless), 6 BIEN (insignia de captura, editor de posiciones, pestaña Problemas, problemas en imagen, editar tablero, PPT+teselación) + 1 FALLA parcial (service worker: VERSION/FICHEROS bien, pero `editor.html` no sirve sin conexión) · informe + 30 capturas/JSON en salidas/08-verificacion/, incidencia en hechos/incidencias/s-20260824T235504-fde8fd6d.md · HEAD = b102835
 - LISTA · tarea 11 · 2026-08-25 00:03 · s-20260824T235449-a524a145 · 1 fichero modificado (script.js), 1 línea; arreglado `help-draws` para no mencionar peón en rps-rey/rpsls-rey (mantenía la mención heredada de `V.kingless` sin comprobar `V.pieces.P`); verificado en Chromium headless sobre las 4 PPT + salas de control · main = b102835
 - LISTA · tarea 06 · 2026-08-24 23:11 · s-20260824T214036-9bb6b2c2 · 2 ficheros modificados (problemas.js, problemas-ui.js) + 1 nuevo (entrenamiento/prueba-problemas.js); difícil/experto sí generan (el 0 medido era la ventana de medición, no el generador); arreglado el presupuesto real (`msEspera` por nivel) que hacía fallar «Nuevo problema» en difícil/experto; verificador independiente reconstruido, 44 problemas reverificados (32 fácil/medio + 12 difícil/experto), 0 fallos · main = 8336795
@@ -158,7 +163,8 @@ Derivado de `hechos/incidencias/`.
   decidir. También nota menor: al arrancar, `git status` traía el cierre de la 11 en
   marcha (sin impacto), y un choque de reserva del harness sobre `_ESTADO.md` con la
   sesión montadora (7369dfea), resuelto esperando a que liberase el fichero en vez de
-  forzar el desbloqueo.
+  forzar el desbloqueo. **Arreglado por la tarea 15** (misma sesión, autorizada por
+  Juan Luis): ver `hechos/terminadas/15--s-20260824T235504-fde8fd6d.md`.
 - s-20260824T233011-d4d13c52: ampliación con las tareas 11-14 (cuatro problemas + una
   sugerencia de Juan Luis, 2026-08-25); duplicados de sincronización con « 2» en el
   nombre detectados (libro-trigonal, tres scripts) — candidatos para la 09; hunks sin
