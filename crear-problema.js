@@ -21,9 +21,17 @@
 // cara se tira y se sortea otra, aquí la posición es la que el usuario ha
 // dibujado y hay que darle una respuesta. Aun así hay tope, porque un mate en 5
 // con veinte piezas no termina nunca y más vale decirlo que colgar la pestaña.
-// Del orden de unos segundos de espera en el peor caso, con la pestaña parada:
-// la búsqueda es síncrona, como la de la partida en curso (PROB_TOPE_VIVO).
-const PROB_CREA_TOPE = 1200000;
+// Del orden de unos segundos de espera en el peor caso, con la pestaña parada.
+//
+// Es LITERALMENTE PROB_TOPE_VIVO (problemas.js) y no un número aparte que hoy
+// coincide con él: si un problema se acepta aquí con más presupuesto del que
+// luego tiene la partida en vivo para reverificar cada jugada, ese problema
+// se queda sin poder jugarse —la búsqueda fresca de la primera jugada agota
+// el tope antes de concluir y se retira aunque resuelva de verdad (tarea 12
+// del reparto, bug reportado: «se la da por mala»)—. Que sea el mismo
+// nombre, y no dos constantes iguales por casualidad, es lo que impide que
+// alguien suba una y no la otra el día que haga falta más presupuesto.
+const PROB_CREA_TOPE = PROB_TOPE_VIVO;
 
 // Tope de jugadas del enunciado. Por encima de 5 la comprobación deja de ser
 // viable en el navegador con casi cualquier cantidad de material.

@@ -148,6 +148,38 @@ function probSolucionesIndep(board, sol, ep, obj, base, tope) {
   return out;
 }
 
+// Mismo probJuzga de problemas.js (lo que la UI llama tras CADA jugada del
+// que resuelve, en la partida en vivo), reconstruido con el camino lento:
+// misma forma, mismos parámetros, solo cambian los primitivos de abajo.
+function probJuzgaIndep(board, def, ep, obj, quedan, ini, tope) {
+  const sol = rival(def);
+  const ctx = probCtx(sol, obj, ini.base, tope);
+  const hd = probHijosIndep(board, ep, def);
+  const h0 = { board, ep, victima: ini.victima || null, corono: !!ini.corono };
+  const camino = obj.tipo === 'tablas' ? ini.camino : null;
+
+  const v = probVeredictoIndep(h0, hd, def, ini.tocada, camino, ctx);
+  if (v === 'exito') return { estado: 'exito' };
+  if (v === 'fracaso' || quedan <= 0) return { estado: 'fallo' };
+
+  let mejor = null, mejorN = 0, mejorLinea = null;
+  for (const h of hd) {
+    const cam = camino && camino.concat(positionKey(h.board, sol, h.ep));
+    const hs = probHijosIndep(h.board, h.ep, sol);
+    const w = probVeredictoIndep(h, hs, sol, ini.tocada, cam, ctx);
+    if (w === 'fracaso') return { estado: 'fallo' };
+    if (w === 'exito') { if (!mejor) { mejor = h; mejorN = 0; mejorLinea = []; } continue; }
+    let n = 0, linea = null;
+    for (let k = 1; k <= quedan && !linea; k++) {
+      linea = probNodoORIndep(hs, k, ini.tocada, cam, ctx);
+      if (linea) n = k;
+    }
+    if (!linea) return { estado: 'fallo' };
+    if (n > mejorN || !mejor) { mejor = h; mejorN = n; mejorLinea = linea; }
+  }
+  return { estado: 'sigue', mov: mejor.m, quedan: mejorN, linea: mejorLinea };
+}
+
 // --- generar problemas y volver a resolverlos con el árbol de arriba -------
 
 const variante = arg('variant', DEFAULT_VARIANT);
@@ -228,6 +260,75 @@ for (const nivel of niveles) {
         });
         continue;
       }
+
+      // 3) Si hay una PRIMERA jugada distinta de la guardada que también
+      // fuerza el objetivo, ¿la acepta probJuzga (la función que usa
+      // problemas-ui.js tras cada jugada del que resuelve en la partida en
+      // vivo), o se la da por mala? Tarea 12 del reparto, bug 2 reportado
+      // por Juan Luis: «el jugador acierta con una jugada que también
+      // resuelve y la app se la da por mala». Con solo una solución en el
+      // problema no hay nada que probar aquí (no hay alternativa), así que
+      // no cuenta como fallo si no se encuentra ninguna.
+      let alternativaRechazada = false;
+      if (p.obj.jugadas > 1) {
+        const legales = movesForSide(board, p.turn, null);
+        for (const m of legales) {
+          if (m.from === p.linea[0].from && m.to === p.linea[0].to) continue;
+          const b2 = new Map(board);
+          const victimaPrev = board.get(m.to) || null;
+          const pieza = board.get(m.from);
+          const ep2 = applyMoveSim(b2, m.from, m.to, null);
+          const corono = pieza.type === 'P' && !!CELL_MAP.get(m.to).promoFor[pieza.color];
+          const tocada = tipo === 'gana' && victimaPrev && victimaPrev.type === p.obj.pieza;
+          const quedan = p.obj.jugadas - 1;
+          const ctxAlt = probCtx(p.turn, p.obj, p.base, topeIndep);
+          const hd = probHijosIndep(b2, ep2, rival(p.turn));
+          let esAlternativa = false;
+          try {
+            const v0 = probVeredictoIndep({ board: b2, ep: ep2, victima: victimaPrev ? victimaPrev.type : null, corono },
+              hd, rival(p.turn), tocada, null, ctxAlt);
+            if (v0 === 'exito') esAlternativa = true;
+            else if (v0 !== 'fracaso') {
+              let todasPierden = hd.length > 0;
+              for (const h of hd) {
+                const hs = probHijosIndep(h.board, h.ep, p.turn);
+                let linea = null;
+                for (let k = 1; k <= quedan && !linea; k++) linea = probNodoORIndep(hs, k, tocada, null, ctxAlt);
+                if (!linea) { todasPierden = false; break; }
+              }
+              esAlternativa = todasPierden;
+            }
+          } catch (e) {
+            if (e !== PROB_ABORTO) throw e;
+            continue;   // sin concluir si ESTA jugada es alternativa: no se puede usar de prueba
+          }
+          if (!esAlternativa) continue;
+
+          const ini = {
+            base: p.base, tocada, corono,
+            victima: victimaPrev ? victimaPrev.type : null, camino: null,
+          };
+          let r;
+          try {
+            r = probJuzgaIndep(b2, rival(p.turn), ep2, p.obj, quedan, ini, topeIndep);
+          } catch (e) {
+            if (e !== PROB_ABORTO) throw e;
+            break;   // sin concluir: no se cuenta como fallo, pero tampoco se sigue probando este problema
+          }
+          if (r.estado === 'fallo') {
+            mal++;
+            alternativaRechazada = true;
+            fallos.push({
+              nivel, tipo, jugadas: p.obj.jugadas,
+              motivo: 'jugada alternativa ' + m.from + '-' + m.to + ' (no la guardada ' +
+                p.linea[0].from + '-' + p.linea[0].to + ') resuelve según una búsqueda fresca, ' +
+                'pero probJuzga la rechaza', p,
+            });
+          }
+          break;   // una alternativa comprobada por problema basta
+        }
+      }
+      if (alternativaRechazada) continue;
       ok++;
     }
     totalOk += ok; totalMal += mal; totalNoConcl += noConcl; totalCortos += corto;

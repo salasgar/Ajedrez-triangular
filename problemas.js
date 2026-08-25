@@ -44,7 +44,16 @@ const PROB_TOPE = 60000;
 // Presupuesto para las comprobaciones de la partida en curso (validar la
 // jugada del usuario, elegir la defensa). Aquí no se puede abandonar: la
 // posición ya está sobre la mesa y hay que contestar, así que va holgado.
-const PROB_TOPE_VIVO = 400000;
+//
+// Tiene que ser AL MENOS tan grande como el presupuesto con el que se
+// aceptó el problema al crearlo (crear-problema.js usa este mismo valor),
+// o un problema hecho a mano que costó caro demostrar como forzado podía
+// dejar de poder reverificarse en cuanto el usuario lo jugara: la búsqueda
+// fresca de cada jugada agotaba el tope antes de concluir, y esa jugada
+// —aunque de verdad resolviera— se retiraba con «no he podido comprobarla»
+// (tarea 12 del reparto: un mate en 3 con muchas piezas dibujado en el
+// editor podía necesitar más de las 400 000 jugadas examinadas de antes).
+const PROB_TOPE_VIVO = 1200000;
 
 // Cuánto material tiene que quedar en pie tras coronar para que la coronación
 // cuente. Sin esto valdrían las coronaciones que el rival contesta comiéndose
@@ -813,4 +822,42 @@ function probValida(p) {
   }
   if (reyes !== 2) return false;
   return p.linea.every(m => m && typeof m.from === 'string' && typeof m.to === 'string');
+}
+
+// Comprueba lo que promete el ENUNCIADO, no solo la forma: que el objetivo
+// se logre por fuerza en EXACTAMENTE `obj.jugadas` jugadas —ni menos, que
+// haría el enunciado falso («mate en 3» habiendo mate en 2), ni ninguna, y
+// dentro del número de soluciones que permite `probMaxSoluciones` (más de
+// las permitidas se acierta sin pensar). Es la misma comprobación que ya
+// hace por construcción el bucle de menos a más jugadas de `probGeneraUno`
+// y de `probCreaBusca`: aquí se repite como verificación EXPLÍCITA para el
+// único camino de entrada que no pasa por ninguno de los dos —un .json
+// importado desde fuera de esta build—, que es donde puede colarse un
+// problema que otra versión (u otra mano) montó sin esa garantía.
+//
+// Cara aposta: hace hasta `obj.jugadas` búsquedas Y/O completas. Solo se usa
+// en sitios de un solo problema y de una sola vez —importar un archivo—,
+// nunca en el bucle caliente de generación ni al cargar el almacén entero
+// (ahí ya está garantizado por construcción, y repetirlo por cada uno
+// congelaría la pestaña al abrirla).
+function probVerificaForzado(p, tope = PROB_TOPE_VIVO) {
+  let board;
+  try {
+    board = new Map(p.board.map(([k, pieza]) => [k, { ...pieza }]));
+  } catch {
+    return false;
+  }
+  try {
+    for (let n = 1; n < p.obj.jugadas; n++) {
+      const atajo = probSoluciones(board, p.turn, null, { ...p.obj, jugadas: n }, p.base, tope);
+      if (atajo.length) return false;   // hay una solución más corta: el enunciado miente
+    }
+    const sols = probSoluciones(board, p.turn, null, p.obj, p.base, tope);
+    if (!sols.length) return false;     // no está forzado de verdad
+    if (sols.length > probMaxSoluciones(p.obj.tipo, p.obj.jugadas)) return false;
+  } catch (e) {
+    if (e !== PROB_ABORTO) throw e;
+    return false;   // sin concluir: mejor descartarlo que dar un problema roto por bueno
+  }
+  return true;
 }

@@ -826,12 +826,25 @@ probBtnImportar.addEventListener('click', () => {
   probFileEl.value = '';
   probFileEl.click();
 });
+// Un .json importado no ha pasado por el bucle de menos-a-más jugadas del
+// generador ni del creador manual —puede venir de otra build, o de una mano
+// que lo editó—, así que aquí se comprueba también el FONDO (probValida solo
+// mira la forma): que el enunciado sea cierto y no admita más soluciones de
+// las que tocan. Es una comprobación cara, pero se hace una sola vez, sobre
+// un solo problema, en una acción que el usuario ya sabe que puede tardar
+// (igual que «Comprobar» en el editor).
+function probValidaImportado(p) {
+  return probValida(p) && probVerificaForzado(p);
+}
+
 probFileEl.addEventListener('change', () => {
   const file = probFileEl.files[0];
   if (!file) return;
   readSaveFile(file, (p) => { probMonta(p); probPinta(); },
-    () => alert('El archivo no es un problema válido de Ajedrez Triangular.'),
-    probValida);
+    () => alert('El archivo no es un problema válido de Ajedrez Triangular: ' +
+      'o está dañado, o el enunciado no se sostiene (no está forzado en esas ' +
+      'jugadas, o tiene más soluciones de las que tocan).'),
+    probValidaImportado);
 });
 
 // Deshabilita en el selector los tipos que el nivel no ofrece (hoy, tablas en
