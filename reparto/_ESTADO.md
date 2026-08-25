@@ -9,14 +9,14 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T02:08Z · por la sesión s-20260824T233011-d4d13c52 (cierre de la
-03: arena completa, `rps`/`rpsls` se quedan con `base` por datos; la 10 queda libre)
+Regenerado: 2026-08-25T02:38Z · por la sesión s-20260824T235458-3ccd1290 (cierre de la
+12: problemas bien planteados — la 14 queda libre)
 
-El árbol compartido está sobre `main` = `origin/main` (`b62f941`: arreglo de la 15
-sobre el `b102835` de la tarea 11). Las tareas de interfaz editan los ficheros
-directamente, con los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un
-`stash@{0}` de respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—,
-queda libre para que Juan Luis lo tire cuando quiera.
+El árbol compartido está sobre `main` = `origin/main` (`96af0f6`: cierre de la 12, sobre
+el `74cbb1a` de la 03). Las tareas de interfaz editan los ficheros directamente, con los
+reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
+respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que
+Juan Luis lo tire cuando quiera.
 
 ## Antes de hacer nada
 
@@ -97,9 +97,9 @@ equivalencia de hoy está en `proyecto.md`.
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | EN CURSO | s-20260825T005707-b78fd0ac · 2026-08-25T02:57:07Z |
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | PENDIENTE | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
-| 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | EN CURSO | s-20260824T235458-3ccd1290 · 2026-08-25T05:54:58Z |
+| 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | **LISTA** | |
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260824T235417-04eac74c · 2026-08-25T05:54:24Z |
-| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | BLOQUEADA | |
+| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | PENDIENTE | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
@@ -133,11 +133,22 @@ Verificado offline con Playwright: tablero y selector de modalidad cargan sin er
 `hechos/terminadas/15--s-20260824T235504-fde8fd6d.md`.
 
 Libres ahora mismo: la **10** (MEDIO; la 03 y la 04 ya están LISTAS, `variants.js` sin
-otro escritor). En curso: la **09** (limpieza, sid `b78fd0ac`, caduca 02:57Z), la **12**
-(sid `3ccd1290`, caduca 05:54Z) y la **13** (sid `04eac74c`, caduca 05:54Z). La 14
-sigue bloqueada hasta que cierre la 12. Nota: una sesión (`b3e52c0b`) reclamó este
-fichero hacia la 01:35Z y su reserva caducó sin escribir nada; si era el arranque de
-una regeneración, quedó en nada — este tablón ya recoge todo lo posterior.
+otro escritor) y la **14** (MEDIO; la 12 ya está LISTA), ninguna de las dos con
+reclamo todavía — mira `hechos/reclamos/` antes de darlas por libres, que este tablón
+puede ir un paso por detrás. En curso: la **09** (limpieza, sid `b78fd0ac`, caduca
+02:57Z) y la **13** (sid `04eac74c`, caduca 05:54Z). Nota: una sesión (`b3e52c0b`)
+reclamó este fichero hacia la 01:35Z y su reserva caducó sin escribir nada; si era el
+arranque de una regeneración, quedó en nada — este tablón ya recoge todo lo posterior.
+La 12 quedó LISTA el 2026-08-25T02:38Z (main = 96af0f6): los dos síntomas reportados
+—mate en N con mate en menos, y jugada alternativa dada por mala— no se reprodujeron
+en el código actual (generador, creador manual y `probJuzga` ya buscaban mínimo y
+reverificaban en fresco por diseño; >500 problemas frescos probados sin fallos). Sí
+se encontró y arregló un desajuste real de presupuesto entre crear-problema.js
+(verificaba con 1 200 000 nodos) y la reverificación en partida (`PROB_TOPE_VIVO`,
+400 000 → ahora igualados a 1 200 000), que podía dejar sin poder rejugarse un
+problema manual caro de demostrar. Añadida `probVerificaForzado` para la importación
+de `.json` externos. Detalle en `hechos/notas/s-20260824T235458-3ccd1290.md` y
+`hechos/terminadas/12--s-20260824T235458-3ccd1290.md`.
 
 ## Registro de finalizaciones
 
@@ -145,6 +156,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 12 · 2026-08-25 02:00 · s-20260824T235458-3ccd1290 · 4 ficheros modificados (problemas.js, crear-problema.js, problemas-ui.js, entrenamiento/prueba-problemas.js) + 4 nuevos en entrenamiento/; ningún fallo reproducido en el código actual (>500 problemas frescos, 0 atajos, 0 alternativas rechazadas); arreglado el desajuste de presupuesto crear-problema.js/partida en vivo (`PROB_TOPE_VIVO` 400 000→1 200 000); `probVerificaForzado` nueva, enganchada a la importación; prueba-problemas.js con tercera comprobación (alternativa vía `probJuzga`), 71 OK/0 mal · main = 96af0f6
 - LISTA · tarea 03 · 2026-08-25 01:55 · s-20260824T233011-d4d13c52 · 96 partidas nuevas de arena (6 candidatas × 16, 0 fallos); las 6 malas (69-94% tablas); decisión con números: `rps` y `rpsls` mantienen `base` (mejor de la tabla en ambas), `variants.js` sin cambios; resumen actualizado; 2 pruebas en verde · main = 74cbb1a (la mitad -rey la cerró s-20260824T214012-f5750bb7 en 53b32e6)
 - LISTA · tarea 15 · 2026-08-25 01:07 · s-20260824T235504-fde8fd6d · 2 ficheros (editor.html: quitadas las 9 cadenas `?v=N`; sw.js: VERSION v7→v8); verificado offline con Playwright: editor.html carga tablero + 9 opciones de modalidad, 0 errores; index.html sigue igual · main = b62f941
 - LISTA · tarea 08 · 2026-08-25 00:23 · s-20260824T235504-fde8fd6d · 7/7 comprobaciones en navegador (Playwright/Chromium headless), 6 BIEN (insignia de captura, editor de posiciones, pestaña Problemas, problemas en imagen, editar tablero, PPT+teselación) + 1 FALLA parcial (service worker: VERSION/FICHEROS bien, pero `editor.html` no sirve sin conexión) · informe + 30 capturas/JSON en salidas/08-verificacion/, incidencia en hechos/incidencias/s-20260824T235504-fde8fd6d.md · HEAD = b102835
@@ -178,3 +190,12 @@ Derivado de `hechos/incidencias/`.
   cerró → tarea 10 nueva; `libro-salas-v4.json` no salía en `git status` del
   inventario; el `sleep` en primer plano está bloqueado por el harness; `du` marca 0B
   en ficheros evictados por iCloud.
+- s-20260824T235458-3ccd1290: no de código — dos ficheros míos (`tareas/tarea-12-*.md`
+  y `hechos/notas/s-20260824T235458-3ccd1290.md`) quedaron commiteados sin querer
+  dentro del cierre de la 03 (`74cbb1a`), porque esa sesión hizo `git add reparto/`
+  mientras los míos estaban sin commitear ahí dentro. Contenido correcto (verificado
+  con `git diff HEAD`, cero diferencia), nada que corregir. Aviso: «`git add
+  reparto/` es seguro» no evita colar ficheros de OTRA tarea a medio escribir cuando
+  hay varias sesiones dentro de `reparto/` a la vez — sí evita colar ficheros de
+  fuera. Con la disciplina de un solo escritor por nombre de fichero el daño es nulo,
+  pero conviene saberlo.
