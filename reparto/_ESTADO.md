@@ -9,12 +9,12 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T12:31Z · por la sesión s-20260825T090655-e89d6030 (la 10 LISTA:
-dekle mide y entra en la ronda 15, trigonal se revierte por un bug de signo de un commit
-anterior al reparto; la 13 y la 14 están EN CURSO)
+Regenerado: 2026-08-25T18:20Z · por la sesión s-20260825T090854-1758bb65 (la 14 queda
+LISTA: 89 problemas cosechados de partidas reales, 0 rechazados en la reverificación
+completa; solo la 13 sigue EN CURSO)
 
-El árbol compartido está sobre `main` = `origin/main` (`56917bf`: cierre de la 10, sobre
-el `0230c03`/`0ed9a7d` de la 09). Las tareas de interfaz editan los ficheros directamente,
+El árbol compartido está sobre `main` = `origin/main` (`dc6081c`: tablón de la 10, sobre
+el `56917bf` de la propia 10). Las tareas de interfaz editan los ficheros directamente,
 con los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
 respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que
 Juan Luis lo tire cuando quiera.
@@ -104,16 +104,16 @@ equivalencia de hoy está en `proyecto.md`.
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | **LISTA** | |
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260825T090706-b85c3e30 · 2026-08-25T15:07:18Z |
-| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | EN CURSO | s-20260825T090854-1758bb65 · 2026-08-25T17:09:11Z |
+| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | **LISTA** | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**No queda ninguna tarea libre ahora mismo.** Las tres últimas activas son EN CURSO
-(13 y 14) o recién cerrada (10). Quien llegue: comprueba `hechos/reclamos/` por si
-alguna caducó mientras tanto.
+**No queda ninguna tarea libre ahora mismo.** Solo la 13 sigue EN CURSO (reclamo vivo
+hasta 2026-08-26T03:17Z); las demás están LISTAS. Quien llegue: comprueba
+`hechos/reclamos/` por si esa caducó mientras tanto.
 
 La 03 quedó LISTA el 2026-08-25T01:55Z (main = 74cbb1a): la segunda tanda de arena
 (96 partidas, con el visto bueno de Juan Luis) midió las 6 candidatas pendientes y
@@ -159,6 +159,24 @@ en verde. Detalle completo en `hechos/terminadas/10--s-20260825T090655-e89d6030.
 que se acabó commiteando al repo — para decidir se usaron siempre los ficheros de
 `entrenamiento/r15/` del repo, re-corriendo `node analiza.js` sobre ellos).
 
+**La 14 quedó LISTA el 2026-08-25T18:20Z**: `entrenamiento/cosecha-problemas.js`
+(nuevo, node, sin DOM) juega partidas motor contra motor y convierte en problema
+cualquier posición real donde el que mueve pueda forzar mate, ganar una pieza sin
+recaptura o tablas, reutilizando el mismo verificador Y/O del generador y, antes de
+guardar, el mismo camino que un `.json` importado (`probVerificaForzado`, tarea 12).
+Tanda real: 15 partidas modalidad `salas`, 1380 jugadas, **89 problemas nuevos en
+`entrenamiento/problemas-cosechados.json`, 0 rechazados** en la reverificación
+completa (85 fácil, 4 medio). `node entrenamiento/prueba-problemas.js` en verde
+(63 OK, 0 mal) como regresión del generador existente. **No toca `problemas-ui.js`,
+`crear-problema.js`, `index.html` ni `script.js`** (prohibido por la ficha): el
+almacén cosechado existe pero todavía no está enganchado al almacén en vivo del
+navegador — queda como tarea futura, a decidir por Juan Luis. El primer intento del
+script se disparó (>100 min en una sola partida: un filtro barato copiado del
+generador no distingue "pieza atacada" de "pieza sin defender" sobre posiciones
+reales) y se corrigió antes de la tanda real; detalle en
+`hechos/terminadas/14--s-20260825T090854-1758bb65.md`, en las «Trampas conocidas»
+de `tareas/tarea-14-cosecha-de-partidas.md` y en la incidencia de abajo.
+
 La ronda 14 del entrenamiento (curva de temperatura) **está completa** en disco (6
 pares, incluido `t_poda`), aunque una memoria del proyecto de hace tres semanas la daba
 «a medias». La tarea 10 no la tocó a propósito (no era su encargo); queda para que
@@ -192,6 +210,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 14 · 2026-08-25 18:20 · s-20260825T090854-1758bb65 · entrenamiento/cosecha-problemas.js nuevo (script + almacén); tanda real de 15 partidas modalidad salas (1380 jugadas): 89 problemas nuevos, 0 rechazados en la reverificación completa (85 fácil, 4 medio); node entrenamiento/prueba-problemas.js 63 OK/0 mal · entrenamiento/problemas-cosechados.json
 - LISTA · tarea 10 · 2026-08-25 12:29 · s-20260825T090655-e89d6030 · dekle entra (candidato "all" de la ronda 15, elo(A-B)=-28 [-56,-0] p=0.046: N298 B320 U378 R392 Q750, movilidad 7.63); trigonal revertido a valores a ojo (bug de signo del commit c388624c del 2026-08-04, que aplicó un candidato que en realidad perdió -76 elo); PDF regenerado, valores-origen.json y README de entrenamiento/ actualizados; node test-modalidades.js y node test-rps.js en verde · main = 56917bf
 - LISTA · tarea 09 · 2026-08-25 08:59 · s-20260825T085457-e6fe09b4 · 11 ficheros retirados (8 depuración del editor, 3 duplicados « 2» idénticos), 1 duplicado « 2» con cambios reales → incidencia; papelera lista para vaciar · reparto/_papelera/movidos-s-20260825T085457-e6fe09b4.ok-s-20260825T085457-e6fe09b4.md + incidencia s-20260825T085457-e6fe09b4-duplicado.md
 - LISTA · tarea 12 · 2026-08-25 02:00 · s-20260824T235458-3ccd1290 · 4 ficheros modificados (problemas.js, crear-problema.js, problemas-ui.js, entrenamiento/prueba-problemas.js) + 4 nuevos en entrenamiento/; ningún fallo reproducido en el código actual (>500 problemas frescos, 0 atajos, 0 alternativas rechazadas); arreglado el desajuste de presupuesto crear-problema.js/partida en vivo (`PROB_TOPE_VIVO` 400 000→1 200 000); `probVerificaForzado` nueva, enganchada a la importación; prueba-problemas.js con tercera comprobación (alternativa vía `probJuzga`), 71 OK/0 mal · main = 96af0f6
@@ -230,6 +249,18 @@ Derivado de `hechos/incidencias/`.
   nada más; la tarea 10 siguió con el reclamo válido, abierto antes. Lección para el
   tablón: no guardar el sid en un fichero de `/tmp` con nombre genérico entre dos
   llamadas de shell — ver regla 4 de «Antes de hacer nada», arriba.
+- s-20260825T090854-1758bb65 (tarea 14, segunda incidencia): el primer intento del
+  script de cosecha se disparó de verdad (>100 min de CPU al 99% en una sola partida
+  de prueba, matado a mano). Causa: el filtro barato "pieza a tiro" de `probPosicion`
+  no distingue una pieza atacada de una pieza sin defender, y sobre una posición real
+  (a diferencia de las que arma el generador) casi cualquier pieza desarrollada está
+  "a tiro" de algo; con el tope de nodos del generador (~150 000) cada intento sin
+  suerte agotaba el presupuesto entero, y `probSaldoQuieto` (quiescencia) ni siquiera
+  cuenta contra ese tope. Arreglado sin tocar `problemas.js`: filtro de pieza
+  realmente colgada (sin defensor), tope de cribado bajado a 6000 y un límite de
+  RELOJ nuevo de 3 s por jugada de partida. No de código compartido — nada llegó a
+  guardarse mal verificado, el almacén cosechado no existía todavía. Detalle en
+  `hechos/terminadas/14--s-20260825T090854-1758bb65.md`.
 - s-20260825T085457-e6fe09b4-duplicado: `scripts/nueva-sesion 2.sh` no era idéntico al
   original (usaba `git checkout -b` en vez de `git worktree add -b`); dejado sin mover
   por la tarea 09 a la espera de que Juan Luis decidiera. Resuelto por

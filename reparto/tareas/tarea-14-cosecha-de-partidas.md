@@ -87,6 +87,24 @@ reparto al remoto (ver proyecto.md, «No puede haber dos hechos/»).
 - Muestrear todas las posiciones de todas las partidas con verificación completa es
   carísimo: filtrar barato primero (¿cambió el material en las últimas jugadas?
   ¿hay jaques?) y verificar caro solo las que prometen.
+- **El filtro barato de `probPosicion` ("pieza a tiro") NO vale tal cual sobre
+  posiciones reales de partida** (descubierto 2026-08-25, sesión
+  `s-20260825T090854-1758bb65`): en el generador sirve porque la pieza objetivo ya
+  se coloca aislada; en una partida real casi cualquier pieza desarrollada está "a
+  tiro" de algo sin que signifique nada. Con el tope de nodos del generador
+  (`PROB_TOPE` ≈150 000) esto disparó la búsqueda cara en casi cada jugada: una
+  sola partida tardó más de 100 minutos sin terminar. Hace falta exigir además que
+  la pieza esté SIN DEFENDER (colgada de verdad), un presupuesto de cribado bajo
+  (unos 6000 nodos) y, sobre todo, un límite de RELOJ aparte (unos 3 s por jugada
+  de partida): `probSaldoQuieto` (la quiescencia dentro de `probVeredicto`) no
+  cuenta contra el tope de nodos y por sí sola puede tardar bastante en una
+  posición con muchas capturas posibles, así que el tope de nodos solo no basta
+  para acotar el tiempo real.
+- Exigir "colgada de verdad" (sin defensor) en vez de solo "a tiro" resuelve el
+  rendimiento pero sesga fuerte hacia jugadas=1 (85 de 89 en la primera tanda
+  real): un "gana en 2/3/4" que empieza con la pieza todavía defendida y se
+  destapa con jaques o desviaciones no lo coge este cribado. Limitación conocida,
+  no error; ver `hechos/terminadas/14--s-20260825T090854-1758bb65.md`.
 
 ## Prohibido
 - Meter en el almacén nada que no haya pasado el verificador completo de la 12.
