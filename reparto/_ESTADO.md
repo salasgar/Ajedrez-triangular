@@ -9,12 +9,13 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T08:59Z · por la sesión s-20260825T085457-e6fe09b4 (la 09 LISTA tras
-limpiar 11 ficheros; la 13 sigue RELEVABLE)
+Regenerado: 2026-08-25T12:31Z · por la sesión s-20260825T090655-e89d6030 (la 10 LISTA:
+dekle mide y entra en la ronda 15, trigonal se revierte por un bug de signo de un commit
+anterior al reparto; la 13 y la 14 están EN CURSO)
 
-El árbol compartido está sobre `main` = `origin/main` (`96af0f6`: cierre de la 12, sobre
-el `74cbb1a` de la 03). Las tareas de interfaz editan los ficheros directamente, con los
-reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
+El árbol compartido está sobre `main` = `origin/main` (`56917bf`: cierre de la 10, sobre
+el `0230c03`/`0ed9a7d` de la 09). Las tareas de interfaz editan los ficheros directamente,
+con los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
 respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que
 Juan Luis lo tire cuando quiera.
 
@@ -31,7 +32,11 @@ Juan Luis lo tire cuando quiera.
 3. Mira la hora de verdad: `date -u`.
 4. Genera tu identificador de sesión y no lo cambies:
    `sid="s-$(date -u +%Y%m%dT%H%M%S)-$(head -c4 /dev/urandom | od -An -tx1 | tr -d ' \n')"`
-   Nada de `$RANDOM`.
+   Nada de `$RANDOM`. **No lo guardes en un fichero de /tmp con nombre genérico entre
+   dos llamadas de shell**: varias sesiones de este reparto corren en la misma máquina y
+   pueden pisarte ese fichero (pasó el 2026-08-25, ver incidencia
+   `s-20260825T090854-1758bb65`). Genera y usa el sid en el mismo comando, o guárdalo en
+   el scratchpad aislado de tu propia sesión.
 5. Reclama tu tarea: crea `hechos/reclamos/NN--<sid>.md`, ejecuta
    `sleep 30 && ls reparto/hechos/reclamos/` —OJO: el `sleep` en primer plano está
    bloqueado por el harness; lánzalo con `run_in_background`— y cede si otra sesión
@@ -95,31 +100,69 @@ equivalencia de hoy está en `proyecto.md`.
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | **LISTA** | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | **LISTA** | |
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md (YA firmadas) | 1 h | BAJO | reparto/_papelera/ | manual | **LISTA** | |
-| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | PENDIENTE | |
+| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | **LISTA** | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | **LISTA** | |
-| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | RELEVABLE (reclamo de `04eac74c` caducado a las 05:54Z; ai*.js limpio, nada a medias) | |
-| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | PENDIENTE | |
+| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260825T090706-b85c3e30 · 2026-08-25T15:07:18Z |
+| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | EN CURSO | s-20260825T090854-1758bb65 · 2026-08-25T17:09:11Z |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
+**No queda ninguna tarea libre ahora mismo.** Las tres últimas activas son EN CURSO
+(13 y 14) o recién cerrada (10). Quien llegue: comprueba `hechos/reclamos/` por si
+alguna caducó mientras tanto.
+
 La 03 quedó LISTA el 2026-08-25T01:55Z (main = 74cbb1a): la segunda tanda de arena
 (96 partidas, con el visto bueno de Juan Luis) midió las 6 candidatas pendientes y
 todas salieron mal (69-94 % tablas); `rps` y `rpsls` **se quedan con `base`**, la mejor
-de la tabla en ambas, y `variants.js` no cambia. Decisión razonada, con la tabla
-completa, en `entrenamiento/rps-posiciones-resumen.md`. Queda abierta para Juan Luis
-una cuestión de diseño que NO es de posiciones: en las modalidades sin rey ninguna
-partida termina de forma natural (siempre se llega al tope de jugadas); arreglarlo
-sería tocar las condiciones de victoria — tarea nueva si él la pide. Quien coja la 10:
-`variants.js` está estable, ya no hay nadie escribiéndolo.
+de la tabla en ambas, y `variants.js` no cambia (más tarde sí lo tocó la 10, ver abajo).
+Decisión razonada, con la tabla completa, en `entrenamiento/rps-posiciones-resumen.md`.
+Queda abierta para Juan Luis una cuestión de diseño que NO es de posiciones: en las
+modalidades sin rey ninguna partida termina de forma natural (siempre se llega al tope
+de jugadas); arreglarlo sería tocar las condiciones de victoria — tarea nueva si él la
+pide.
 
-**Juan Luis firmó las dos autorizaciones pendientes en `autorizaciones.md`** (25-8-2026):
-retirar los ocho ficheros de depuración del editor, y consolidar/retirar los duplicados
-« 2» de sincronización. Eso desbloqueó la 09, que ya está reclamada (sid `b78fd0ac`,
-abierta 00:57:07Z, caduca 02:57:07Z).
+**La 09 quedó LISTA el 2026-08-25T08:59Z** (sid `e6fe09b4`, relevando el reclamo
+caducado de `b78fd0ac`): 11 ficheros retirados a `reparto/_papelera/` (8 de depuración
+del editor, 3 duplicados « 2» idénticos). Un duplicado más,
+`scripts/nueva-sesion 2.sh`, tenía un cambio real de implementación (`git checkout -b`
+sobre el árbol compartido, justo la operación que prohíbe `proyecto.md`) y se dejó para
+que Juan Luis decidiera; **decidido y cerrado el mismo día** por la sesión coordinadora
+`s-20260825T093251-fde516e1`: Juan Luis firmó autorización nueva y el fichero pasó
+también a `_papelera/` (no era una variante válida a conservar). Detalle en
+`hechos/terminadas/09--s-20260825T085457-e6fe09b4.md` y
+`hechos/incidencias/s-20260825T093251-fde516e1.md`.
+
+**La 10 quedó LISTA el 2026-08-25T12:29Z** (main = 56917bf). De los seis candidatos de
+la ronda 15 (dos por modalidad × tres modalidades sin medir), solo uno gana en la
+arena: `dekle`/`all` (elo(vigente-candidato) = -28 [-56, -0], p=0.046 — al límite, pero
+significativo con el mismo criterio que usó el resto del proyecto). Entra: `N298 B320
+U378 R392 Q750`, movilidad 7.63. Ni `dekle`/`mat` ni ningún candidato de `salas-1998`
+fueron significativos: sin cambios ahí.
+
+**Hallazgo importante, ya corregido:** `trigonal` llevaba desde el commit `c388624c`
+(2026-08-04, anterior a este reparto) con el candidato `all` de esa misma ronda 15
+aplicado en `variants.js` **pese a haber perdido** en su propia arena — el commit
+interpretó `elo(A-B): 76 [48, 104]` (A=vigente por delante) como que el candidato ganaba
++76 elo, cuando significa lo contrario: A anotó 60.7% de 424 partidas, el candidato
+perdió por 76 elo. Revertido a los valores a ojo (`P100 N300 B400 R500 Q900`, movilidad
+4). Tres semanas jugando con un alfil, una torre y una dama de Trigonal infravalorados
+sin que se notara. PDF regenerado, `valores-origen.json` y la sección de la ronda 15 del
+README de `entrenamiento/` actualizados, `node test-modalidades.js` y `node test-rps.js`
+en verde. Detalle completo en `hechos/terminadas/10--s-20260825T090655-e89d6030.md` y
+`hechos/incidencias/s-20260825T090655-e89d6030.md` (incluye además un aviso sobre
+`./instalar-servicio.sh resultados`: lee de un directorio en
+`~/Library/Application Support/` que quedó con un corpus más viejo y más pequeño que el
+que se acabó commiteando al repo — para decidir se usaron siempre los ficheros de
+`entrenamiento/r15/` del repo, re-corriendo `node analiza.js` sobre ellos).
+
+La ronda 14 del entrenamiento (curva de temperatura) **está completa** en disco (6
+pares, incluido `t_poda`), aunque una memoria del proyecto de hace tres semanas la daba
+«a medias». La tarea 10 no la tocó a propósito (no era su encargo); queda para que
+decida Juan Luis si se aplica.
 
 La tarea 08 (verificación) encontró 6/7 comprobaciones BIEN y 1 FALLA parcial: el editor
 de posiciones (`editor.html`) no funcionaba sin conexión por un desajuste entre las
@@ -132,13 +175,6 @@ Verificado offline con Playwright: tablero y selector de modalidad cargan sin er
 `index.html` sigue funcionando igual que antes. Detalle completo en
 `hechos/terminadas/15--s-20260824T235504-fde8fd6d.md`.
 
-Libres o relevables ahora mismo (comprobado a las 2026-08-25T08:45Z): la **10** (MEDIO)
-y la **14** (MEDIO), sin reclamo; y la **09** (BAJO) y la **13** (MEDIO), con reclamos
-caducados horas atrás, sin latidos, sin fallo escrito y sin trabajo a medias en el
-árbol (`ai*.js` limpio, `_papelera/` vacía): sus sesiones murieron en silencio. Quien
-las coja: reclamo nuevo con `releva a:` apuntando al caducado, como dice el protocolo.
-Mira `hechos/reclamos/` antes de dar nada por libre, que este tablón puede ir un paso
-por detrás.
 La 12 quedó LISTA el 2026-08-25T02:38Z (main = 96af0f6): los dos síntomas reportados
 —mate en N con mate en menos, y jugada alternativa dada por mala— no se reprodujeron
 en el código actual (generador, creador manual y `probJuzga` ya buscaban mínimo y
@@ -156,6 +192,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 10 · 2026-08-25 12:29 · s-20260825T090655-e89d6030 · dekle entra (candidato "all" de la ronda 15, elo(A-B)=-28 [-56,-0] p=0.046: N298 B320 U378 R392 Q750, movilidad 7.63); trigonal revertido a valores a ojo (bug de signo del commit c388624c del 2026-08-04, que aplicó un candidato que en realidad perdió -76 elo); PDF regenerado, valores-origen.json y README de entrenamiento/ actualizados; node test-modalidades.js y node test-rps.js en verde · main = 56917bf
 - LISTA · tarea 09 · 2026-08-25 08:59 · s-20260825T085457-e6fe09b4 · 11 ficheros retirados (8 depuración del editor, 3 duplicados « 2» idénticos), 1 duplicado « 2» con cambios reales → incidencia; papelera lista para vaciar · reparto/_papelera/movidos-s-20260825T085457-e6fe09b4.ok-s-20260825T085457-e6fe09b4.md + incidencia s-20260825T085457-e6fe09b4-duplicado.md
 - LISTA · tarea 12 · 2026-08-25 02:00 · s-20260824T235458-3ccd1290 · 4 ficheros modificados (problemas.js, crear-problema.js, problemas-ui.js, entrenamiento/prueba-problemas.js) + 4 nuevos en entrenamiento/; ningún fallo reproducido en el código actual (>500 problemas frescos, 0 atajos, 0 alternativas rechazadas); arreglado el desajuste de presupuesto crear-problema.js/partida en vivo (`PROB_TOPE_VIVO` 400 000→1 200 000); `probVerificaForzado` nueva, enganchada a la importación; prueba-problemas.js con tercera comprobación (alternativa vía `probJuzga`), 71 OK/0 mal · main = 96af0f6
 - LISTA · tarea 03 · 2026-08-25 01:55 · s-20260824T233011-d4d13c52 · 96 partidas nuevas de arena (6 candidatas × 16, 0 fallos); las 6 malas (69-94% tablas); decisión con números: `rps` y `rpsls` mantienen `base` (mejor de la tabla en ambas), `variants.js` sin cambios; resumen actualizado; 2 pruebas en verde · main = 74cbb1a (la mitad -rey la cerró s-20260824T214012-f5750bb7 en 53b32e6)
@@ -173,6 +210,30 @@ Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
 Derivado de `hechos/incidencias/`.
 
+- s-20260825T090655-e89d6030 (tarea 10): dos hallazgos. (1) `./instalar-servicio.sh
+  resultados` lee de `~/Library/Application Support/ajedrez-triangular-entrenamiento/`,
+  que se quedó con un corpus de la ronda 15 más viejo y más pequeño que el que acabó
+  commiteado al repo en la tarea 01; para decidir se usaron siempre los ficheros de
+  `entrenamiento/r15/` del repo, re-corriendo `node analiza.js` sobre ellos. (2) el
+  commit `c388624c` (2026-08-04, anterior a este reparto) aplicó a `variants.js` el
+  candidato de Trigonal de la ronda 15 pese a que PERDÍA en su propia arena —confusión
+  de signo en `elo(A-B)`—; revertido. Detalle completo en el fichero.
+- s-20260825T093251-fde516e1 (coordinadora, banda ALTO): resolvió la decisión pendiente
+  de la tarea 09 sobre `scripts/nueva-sesion 2.sh` (no era una variante válida a
+  conservar: usaba `git checkout -b` sobre el árbol compartido, la operación prohibida
+  por `proyecto.md`). Juan Luis firmó autorización nueva; movido a `_papelera/`.
+- s-20260825T090854-1758bb65 (tarea 14): guardó su sid recién generado en un fichero
+  genérico de `/tmp` para reutilizarlo entre dos comandos; otra sesión activa en la
+  misma máquina sobrescribió ese fichero con el suyo propio entre medias, y el segundo
+  comando escribió `hechos/reclamos/10--s-20260825T090706-b85c3e30.md` con un sid que no
+  es el autor real. Marcado `ABANDONADA (fichero inválido)` en ese reclamo, sin tocar
+  nada más; la tarea 10 siguió con el reclamo válido, abierto antes. Lección para el
+  tablón: no guardar el sid en un fichero de `/tmp` con nombre genérico entre dos
+  llamadas de shell — ver regla 4 de «Antes de hacer nada», arriba.
+- s-20260825T085457-e6fe09b4-duplicado: `scripts/nueva-sesion 2.sh` no era idéntico al
+  original (usaba `git checkout -b` en vez de `git worktree add -b`); dejado sin mover
+  por la tarea 09 a la espera de que Juan Luis decidiera. Resuelto por
+  `s-20260825T093251-fde516e1`, ver arriba.
 - s-20260824T235504-fde8fd6d: la tarea 08 (verificación) encontró un fallo real —no de
   coordinación, de código—: `editor.html` no funciona sin conexión (9 `<script
   src="...?v=N">` que `sw.js` no cachea con esa query string; `index.html` sí funciona

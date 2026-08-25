@@ -28,6 +28,13 @@ está firmada, se para y lo dice. No hay ninguna otra manera de desbloquearla.
       real se queda escrita en `hechos/incidencias/` antes de tocar nada.
       Firma y fecha: Juan Luis Salas García, 25-8-2026
 
+- [x] **Retirar `scripts/nueva-sesion 2.sh`** (moverlo a `reparto/_papelera/`): duplicado
+      « 2» con cambios reales, excluido de la firma anterior por no ser idéntico. Es la
+      variante antigua (`git checkout -b` sobre el árbol compartido, prohibido en este
+      repo); `scripts/nueva-sesion.sh` la supersede entera. Diferencia documentada en
+      `hechos/incidencias/s-20260825T085457-e6fe09b4-duplicado.md`.
+      Firma y fecha: Juan Luis Salas García, 25-8-2026
+
 ## Decisiones tomadas por delegación que Juan Luis puede revocar aquí
 
 El 2026-08-24 Juan Luis delegó expresamente las decisiones en la sesión montadora.
