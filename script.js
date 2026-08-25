@@ -1880,7 +1880,7 @@ function buildRuleMinis() {
       'pueda capturar a ninguna del otro (y viceversa).'
     : '<b>Tablas</b>: además del ahogado, la partida acaba en tablas si la ' +
       'misma posición aparece por tercera vez o tras 50 jugadas de cada bando ' +
-      'sin capturas ni movimientos de peón.';
+      'sin capturas' + (V.pieces.P ? ' ni movimientos de peón' : '') + '.';
 
   const ul = document.getElementById('help-pieces');
   ul.innerHTML = '';
