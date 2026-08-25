@@ -18,7 +18,7 @@ está firmada, se para y lo dice. No hay ninguna otra manera de desbloquearla.
       `editor-test.html`, `editor-v2.html`, `editor-with-logs.html`, `test-init.js`,
       `test-load.html`. Suman ~35 KB, ningún traspaso los reclama y parecen restos del
       worktree `fix-position-editor`, pero nadie lo ha confirmado.
-      Firma y fecha:
+      Firma y fecha: Juan Luis Salas García, 25-8-2026
 
 - [ ] **Consolidar y retirar los duplicados « 2» de la sincronización**:
       `scripts/cerrar-sesion 2.sh`, `scripts/listar-sesiones 2.sh`,
@@ -26,7 +26,7 @@ está firmada, se para y lo dice. No hay ninguna otra manera de desbloquearla.
       los comparará primero con el original y solo retirará (a `reparto/_papelera/`)
       los que sean idénticos o estén contenidos en el original; cualquier diferencia
       real se queda escrita en `hechos/incidencias/` antes de tocar nada.
-      Firma y fecha:
+      Firma y fecha: Juan Luis Salas García, 25-8-2026
 
 ## Decisiones tomadas por delegación que Juan Luis puede revocar aquí
 

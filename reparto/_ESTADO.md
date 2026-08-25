@@ -9,9 +9,9 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T00:29Z · por la sesión s-20260824T235504-fde8fd6d (cierre de la
-tarea 08: verificación en navegador completa; también recoge el cierre de la 11 y el
-arranque de la 12 y la 13, ya en curso cuando esta sesión reconcilió)
+Regenerado: 2026-08-25T01:03Z · por la sesión s-20260824T235449-a524a145 (Juan Luis
+firmó las dos autorizaciones pendientes; también recoge la reanudación de la 03 y el
+arranque de la 09, ya en curso al reconciliar)
 
 El árbol compartido está sobre `main` = `origin/main` (`b102835`: ayuda de tablas sin
 mención de peón en rps-rey/rpsls-rey, tarea 11, sobre el `4a89655` de la 03 A MEDIAS).
@@ -90,14 +90,14 @@ equivalencia de hoy está en `proyecto.md`.
 |---|---|---|---|---|---|---|---|---|---|
 | 01 | Vaciar el árbol compartido a git, un commit por trabajo | tareas/tarea-01-vaciado.md | ninguna | 3 h | ALTO | rama `vaciado-arbol` | manual | **LISTA** | |
 | 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | **LISTA** | |
-| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA + visto bueno de Juan Luis para relanzar la arena | 2 h (queda) | MEDIO | rama `posiciones-ppt` → `main` | manual | A MEDIAS | |
+| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA + visto bueno de Juan Luis para relanzar la arena | 2 h (queda) | MEDIO | rama `posiciones-ppt` → `main` | manual | EN CURSO (reanudada, visto bueno dado) | s-20260824T233011-d4d13c52 · 2026-08-25T08:38:00Z |
 | 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | **LISTA** | |
 | 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | **LISTA** | |
 | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | **LISTA** | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | **LISTA** | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | **LISTA** | |
-| 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
-| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
+| 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | EN CURSO | s-20260825T005707-b78fd0ac · 2026-08-25T02:57:07Z |
+| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA (falta 03 LISTA; está EN CURSO) | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | EN CURSO | s-20260824T235458-3ccd1290 · 2026-08-25T05:54:58Z |
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260824T235417-04eac74c · 2026-08-25T05:54:24Z |
@@ -107,27 +107,30 @@ Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-Estado de la 03 (2026-08-24T23:26Z, detalle en `hechos/fallos/03--s-20260824T214012-f5750bb7.md`):
-`rps-rey` y `rpsls-rey` cerrados y publicados (main = 53b32e6, ya bajo el `b102835`
-actual); `rps` y `rpsls` sin medir, a la espera del visto bueno de Juan Luis para
-relanzar la arena (ocupa su Mac). Quien la retome: NO repetir lo de las -rey; empezar
-por la lista de candidatas pendientes del fallo. Ojo del mismo fallo: un git en segundo
-plano puede perder el directorio de trabajo — comprobar `pwd`/rutas absolutas antes de
-rebases en worktrees.
+Estado de la 03: `rps-rey` y `rpsls-rey` ya cerrados y publicados (main = 53b32e6, ya
+bajo el `b102835` actual); `rps` y `rpsls` seguían sin medir a la espera del visto bueno
+de Juan Luis para relanzar la arena. **Ese visto bueno ya se dio** (2026-08-25T00:37Z,
+«Lanza la arena esa de la tarea 03») y la sesión `s-20260824T233011-d4d13c52` reanudó la
+03 a las 00:38Z: 2 procesos node en paralelo (tope prudente, la tanda anterior de 4 ya
+notaba en el Mac), midiendo `rps` (eq18-giro, fondo9-giro, frente11-giro) y `rpsls`
+(eq15-giro, fondo10-giro, frente11-giro) sobre la criba ya hecha; NO repite lo de las
+-rey. Caduca 2026-08-25T08:38:00Z (se estirará si hace falta; son horas de máquina).
 
-**El reparto entero está entregado** (tareas 01-08 y 11, todas LISTA), **salvo la 09**,
-que espera la firma de Juan Luis en `autorizaciones.md` (y salvo la 12/13, en curso, y
-la 10/14, bloqueadas — esas cuatro no formaban parte del reparto original, entraron
-después). La tarea 08 (verificación) encontró 6/7 comprobaciones BIEN y 1 FALLA
-parcial: el editor de posiciones (`editor.html`) no funciona sin conexión por un
-desajuste entre las cadenas `?v=N` de sus `<script>` y las rutas sin versión que cachea
-`sw.js`. No se ha arreglado (prohibido en el alcance de la 08); detalle y candidatas de
-arreglo en `hechos/incidencias/s-20260824T235504-fde8fd6d.md`.
+**Juan Luis firmó las dos autorizaciones pendientes en `autorizaciones.md`** (25-8-2026):
+retirar los ocho ficheros de depuración del editor, y consolidar/retirar los duplicados
+« 2» de sincronización. Eso desbloqueó la 09, que ya está reclamada (sid `b78fd0ac`,
+abierta 00:57:07Z, caduca 02:57:07Z).
 
-En curso ahora mismo: la **12** (sid `3ccd1290`, caduca 05:54Z) y la **13** (sid
-`04eac74c`, caduca 05:54Z), ambas MEDIO, sin ficheros en común entre sí. La 09 sigue
-esperando las dos firmas de `autorizaciones.md`; la 10 espera a la 03 LISTA; la 14, a
-la 12.
+La tarea 08 (verificación) encontró 6/7 comprobaciones BIEN y 1 FALLA parcial: el editor
+de posiciones (`editor.html`) no funciona sin conexión por un desajuste entre las
+cadenas `?v=N` de sus `<script>` y las rutas sin versión que cachea `sw.js`. No se ha
+arreglado (prohibido en el alcance de la 08); detalle y candidatas de arreglo en
+`hechos/incidencias/s-20260824T235504-fde8fd6d.md`.
+
+Libres ahora mismo: **ninguna sin reclamo**. En curso: la **03** (reanudada), la **09**
+(limpieza, recién reclamada), la **12** (sid `3ccd1290`, caduca 05:54Z) y la **13** (sid
+`04eac74c`, caduca 05:54Z). La 10 y la 14 siguen bloqueadas hasta que cierren la 03 y la
+12 respectivamente.
 
 ## Registro de finalizaciones
 
