@@ -9,8 +9,8 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T02:38Z · por la sesión s-20260824T235458-3ccd1290 (cierre de la
-12: problemas bien planteados — la 14 queda libre)
+Regenerado: 2026-08-25T08:45Z · por la sesión s-20260824T233011-d4d13c52 (la 09 y la 13
+pasan a RELEVABLES: sus sesiones murieron con los reclamos caducados y nada a medias)
 
 El árbol compartido está sobre `main` = `origin/main` (`96af0f6`: cierre de la 12, sobre
 el `74cbb1a` de la 03). Las tareas de interfaz editan los ficheros directamente, con los
@@ -94,11 +94,11 @@ equivalencia de hoy está en `proyecto.md`.
 | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | **LISTA** | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | **LISTA** | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | **LISTA** | |
-| 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | EN CURSO | s-20260825T005707-b78fd0ac · 2026-08-25T02:57:07Z |
+| 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md (YA firmadas) | 1 h | BAJO | reparto/_papelera/ | manual | RELEVABLE (reclamo de `b78fd0ac` caducado a las 02:57Z sin latidos ni trabajo hecho) | |
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | PENDIENTE | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | **LISTA** | |
-| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260824T235417-04eac74c · 2026-08-25T05:54:24Z |
+| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | RELEVABLE (reclamo de `04eac74c` caducado a las 05:54Z; ai*.js limpio, nada a medias) | |
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | PENDIENTE | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
@@ -132,13 +132,13 @@ Verificado offline con Playwright: tablero y selector de modalidad cargan sin er
 `index.html` sigue funcionando igual que antes. Detalle completo en
 `hechos/terminadas/15--s-20260824T235504-fde8fd6d.md`.
 
-Libres ahora mismo: la **10** (MEDIO; la 03 y la 04 ya están LISTAS, `variants.js` sin
-otro escritor) y la **14** (MEDIO; la 12 ya está LISTA), ninguna de las dos con
-reclamo todavía — mira `hechos/reclamos/` antes de darlas por libres, que este tablón
-puede ir un paso por detrás. En curso: la **09** (limpieza, sid `b78fd0ac`, caduca
-02:57Z) y la **13** (sid `04eac74c`, caduca 05:54Z). Nota: una sesión (`b3e52c0b`)
-reclamó este fichero hacia la 01:35Z y su reserva caducó sin escribir nada; si era el
-arranque de una regeneración, quedó en nada — este tablón ya recoge todo lo posterior.
+Libres o relevables ahora mismo (comprobado a las 2026-08-25T08:45Z): la **10** (MEDIO)
+y la **14** (MEDIO), sin reclamo; y la **09** (BAJO) y la **13** (MEDIO), con reclamos
+caducados horas atrás, sin latidos, sin fallo escrito y sin trabajo a medias en el
+árbol (`ai*.js` limpio, `_papelera/` vacía): sus sesiones murieron en silencio. Quien
+las coja: reclamo nuevo con `releva a:` apuntando al caducado, como dice el protocolo.
+Mira `hechos/reclamos/` antes de dar nada por libre, que este tablón puede ir un paso
+por detrás.
 La 12 quedó LISTA el 2026-08-25T02:38Z (main = 96af0f6): los dos síntomas reportados
 —mate en N con mate en menos, y jugada alternativa dada por mala— no se reprodujeron
 en el código actual (generador, creador manual y `probJuzga` ya buscaban mínimo y
