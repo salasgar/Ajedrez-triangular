@@ -13,14 +13,14 @@ está firmada, se para y lo dice. No hay ninguna otra manera de desbloquearla.
 
 ## Acciones que requieren firma
 
-- [ ] **Retirar los ocho ficheros de depuración del editor** (moverlos a
+- [X] **Retirar los ocho ficheros de depuración del editor** (moverlos a
       `reparto/_papelera/`): `check-init.html`, `diagnose.html`, `editor-debug.html`,
       `editor-test.html`, `editor-v2.html`, `editor-with-logs.html`, `test-init.js`,
       `test-load.html`. Suman ~35 KB, ningún traspaso los reclama y parecen restos del
       worktree `fix-position-editor`, pero nadie lo ha confirmado.
       Firma y fecha: Juan Luis Salas García, 25-8-2026
 
-- [ ] **Consolidar y retirar los duplicados « 2» de la sincronización**:
+- [X] **Consolidar y retirar los duplicados « 2» de la sincronización**:
       `scripts/cerrar-sesion 2.sh`, `scripts/listar-sesiones 2.sh`,
       `scripts/nueva-sesion 2.sh` y `entrenamiento/libro-trigonal 2.json`. La tarea 09
       los comparará primero con el original y solo retirará (a `reparto/_papelera/`)
