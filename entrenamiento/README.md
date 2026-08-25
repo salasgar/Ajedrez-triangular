@@ -484,6 +484,46 @@ arena se salta los pares que ya estén en su log, y una modalidad no se da por
 terminada porque los procesos hayan vuelto sino porque las 840 partidas están
 en el disco (`r15/<modalidad>-hecha.txt`).
 
+### Resultado (tarea 10 del reparto, 2026-08-25)
+
+Cerró el 2026-08-04 con corpus completo (8 shards, ~350.000 posiciones por
+modalidad) y 424 partidas de arena por candidato (margen de adjudicación
+300 cp). `A` es siempre la configuración vigente en `variants.js` antes de la
+tarea, `B` el candidato de la regresión:
+
+| modalidad | candidato | elo(A-B) | IC 95% | p | ¿entra? |
+|---|---|---|---|---|---|
+| `dekle` | `all` (con pesos posicionales) | -28 | [-56, -0] | 0.046 | **sí, al límite** |
+| `dekle` | `mat` (solo material) | -4 | [-31, 23] | 0.76 | no |
+| `salas-1998` | `all` | +20 | [-4, 43] | 0.10 | no |
+| `salas-1998` | `mat` | +21 | [-2, 45] | 0.07 | no |
+| `trigonal` | `all` | +76 | [48, 104] | <0.0001 | no (pierde claro) |
+| `trigonal` | `mat` | 0 | [-27, 27] | 1.00 | no (empate exacto) |
+
+Solo `dekle` entra: `N298 B320 U378 R392 Q750`, movilidad 7.63 (antes
+`N300 B320 U400 R400 Q800`, movilidad 4). El resto se queda con sus valores a
+ojo — `salas-1998` porque ninguno de los dos candidatos fue significativo, y
+`trigonal` porque su candidato `all` pierde con claridad (el `mat` empata
+exacto) y su regresión ya avisaba: logloss de validación **peor**, no mejor,
+que los valores a ojo (`ajuste-trigonal-all.txt`, la única de las seis con esa
+marca).
+
+**Trigonal llevaba desde el 2026-08-04 con el candidato perdedor aplicado.**
+El commit `c388624c` («Ronda 15: valores de Trigonal Chess medidos y
+confirmados en arena») leyó `elo(A-B): 76 [48, 104]` —A por delante, o sea el
+candidato perdiendo por 76 elo— como si el candidato hubiera ganado +76, y lo
+aplicó a `variants.js`. Revertido en esta tarea: valores a ojo de vuelta
+(`N300 B360→400 R469→500 Q785→900`… ver el diff). Tres semanas jugando
+Trigonal con un alfil, una torre y una dama infravalorados sin que se notara
+—precisamente el tipo de error que la nota de la tabla de arriba avisa que es
+«de los que peor se ven y peor sientan»—.
+
+Detrás de la 15 en el guion viene la ronda 14 (curva de temperatura): **ya
+está completa**, los 6 pares incluido `t_poda`, aunque quedó registrada como
+«a medias» en una memoria de hace tres semanas. No se toca aquí —no es el
+encargo de esta tarea—; sus resultados están en `r14/` para quien decida
+aplicarlos.
+
 ## Ronda 11: ¿baja el peso de movilidad con la profundidad? NO
 
 1.162 partidas, movilidad 4 contra 2, **mismo libro, mismas aperturas, mismos

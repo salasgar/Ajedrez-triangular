@@ -445,10 +445,16 @@ const VARIANTS = {
       ['P', '<b>Peón ♟</b>: como el de Salas, con la <b>coronación de flanco</b> —que es regla suya, y de donde la toma prestada el ajedrez de Salas—: al quedarse sin casilla de enfrente contra el borde, avanza en diagonal aunque no haya nada que capturar.'],
     ],
     engine: {
-      // Punto de partida, sin ajustar: se copian los de Salas y el unicornio
-      // se estima entre caballo y torre. Pendiente de tune-values.js.
-      pieceValues: { P: 100, N: 300, B: 320, U: 400, R: 400, Q: 800, K: 0 },
-      mobility: 4,
+      // Ajustados en la ronda 15: regresión sobre autojuego, confirmados en
+      // la arena contra los valores a ojo (424 partidas, tarea 10 del
+      // reparto). El candidato "all" (con pesos posicionales) ganó,
+      // elo(vigente-candidato) = -28 [-56, -0], p=0.046 — al límite, pero
+      // fuera de cero. El candidato "mat" (solo material) no fue
+      // significativo y no entra. Los pesos posicionales no se guardan
+      // aquí: se aplican como cfg en la arena, pero el valor de pieza limpio
+      // es el que entra en variants.js.
+      pieceValues: { P: 100, N: 298, B: 320, U: 378, R: 392, Q: 750, K: 0 },
+      mobility: 7.63,
     },
   },
 
@@ -529,13 +535,20 @@ const VARIANTS = {
       ['P', '<b>Peón ♟</b>: avanza un paso por su carril hacia el rival y captura en las tres diagonales de delante. Desde la tercera posición puede avanzar dos (que, como advierte el autor, se solapa con una de sus capturas).'],
     ],
     engine: {
-      // Ajustados en la ronda 15: regresión sobre autojuego a profundidad 2
-      // (fase barata), confirmados en la arena contra los valores clásicos.
-      // El candidato "all" (con pesos posicionales) ganó +76 elo [48, 104].
-      // Los pesos posicionales no se guardan aquí: se aplican como cfg en la
-      // arena, pero el valor de pieza limpio es el que entra en variants.js.
-      pieceValues: { P: 100, N: 277, B: 360, R: 469, Q: 785, K: 0 },
-      mobility: 7.27,
+      // Sin ajustar: valores a ojo, los del ajedrez normal. REVERTIDO el
+      // 2026-08-25 (tarea 10 del reparto): el commit c388624c (2026-08-04)
+      // aplicó aquí el candidato "all" de la ronda 15 leyendo mal su propio
+      // resultado de arena. El informe decía "elo(A-B): 76 [48, 104]" con
+      // A=vigente, B=candidato — A por delante, es decir el candidato PERDIÓ
+      // por 76 elo (A anotó 60.7% de 424 partidas) — y el commit lo leyó
+      // como que el candidato ganaba +76 y lo aplicó. Confirmado re-corriendo
+      // `node analiza.js 300` sobre los mismos logs de entrenamiento/r15/:
+      // mismo resultado, candidato "all" pierde con IC limpio fuera de cero; el
+      // candidato "mat" tampoco entra (empate exacto, elo 0, p=1.0). Ningún
+      // candidato de Trigonal gana en la ronda 15: se mantienen los valores
+      // a ojo hasta la siguiente medición.
+      pieceValues: { P: 100, N: 300, B: 400, R: 500, Q: 900, K: 0 },
+      mobility: 4,
     },
   },
 };
