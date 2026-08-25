@@ -9,8 +9,8 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T01:34Z · por la sesión s-20260824T235504-fde8fd6d (cierre de la
-tarea 15: `editor.html` ya funciona sin conexión)
+Regenerado: 2026-08-25T02:08Z · por la sesión s-20260824T233011-d4d13c52 (cierre de la
+03: arena completa, `rps`/`rpsls` se quedan con `base` por datos; la 10 queda libre)
 
 El árbol compartido está sobre `main` = `origin/main` (`b62f941`: arreglo de la 15
 sobre el `b102835` de la tarea 11). Las tareas de interfaz editan los ficheros
@@ -88,14 +88,14 @@ equivalencia de hoy está en `proyecto.md`.
 |---|---|---|---|---|---|---|---|---|---|
 | 01 | Vaciar el árbol compartido a git, un commit por trabajo | tareas/tarea-01-vaciado.md | ninguna | 3 h | ALTO | rama `vaciado-arbol` | manual | **LISTA** | |
 | 02 | Integrar la línea PPT en `main` (PR #2 → #3 → #1) | tareas/tarea-02-integrar-ppt.md | ninguna | 1 h | MEDIO | `main` en `origin` | manual | **LISTA** | |
-| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA + visto bueno de Juan Luis para relanzar la arena | 2 h (queda) | MEDIO | rama `posiciones-ppt` → `main` | manual | EN CURSO (reanudada, visto bueno dado) | s-20260824T233011-d4d13c52 · 2026-08-25T08:38:00Z |
+| 03 | Cerrar la arena de posiciones PPT e integrarla | tareas/tarea-03-arena-ppt.md | 02 LISTA | 2 h | MEDIO | rama `posiciones-ppt` → `main` | manual | **LISTA** | |
 | 04 | Reconciliar el vaciado con el `main` nuevo | tareas/tarea-04-reconciliacion.md | 01 y 02 LISTAS | 2 h | ALTO | `main` + salidas/04-reconciliacion/ | manual | **LISTA** | |
 | 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | **LISTA** | |
 | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | **LISTA** | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | **LISTA** | |
 | 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | **LISTA** | |
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | EN CURSO | s-20260825T005707-b78fd0ac · 2026-08-25T02:57:07Z |
-| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA (falta 03 LISTA; está EN CURSO) | |
+| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | PENDIENTE | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | EN CURSO | s-20260824T235458-3ccd1290 · 2026-08-25T05:54:58Z |
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260824T235417-04eac74c · 2026-08-25T05:54:24Z |
@@ -106,14 +106,15 @@ Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-Estado de la 03: `rps-rey` y `rpsls-rey` ya cerrados y publicados (main = 53b32e6, ya
-bajo el `b102835` actual); `rps` y `rpsls` seguían sin medir a la espera del visto bueno
-de Juan Luis para relanzar la arena. **Ese visto bueno ya se dio** (2026-08-25T00:37Z,
-«Lanza la arena esa de la tarea 03») y la sesión `s-20260824T233011-d4d13c52` reanudó la
-03 a las 00:38Z: 2 procesos node en paralelo (tope prudente, la tanda anterior de 4 ya
-notaba en el Mac), midiendo `rps` (eq18-giro, fondo9-giro, frente11-giro) y `rpsls`
-(eq15-giro, fondo10-giro, frente11-giro) sobre la criba ya hecha; NO repite lo de las
--rey. Caduca 2026-08-25T08:38:00Z (se estirará si hace falta; son horas de máquina).
+La 03 quedó LISTA el 2026-08-25T01:55Z (main = 74cbb1a): la segunda tanda de arena
+(96 partidas, con el visto bueno de Juan Luis) midió las 6 candidatas pendientes y
+todas salieron mal (69-94 % tablas); `rps` y `rpsls` **se quedan con `base`**, la mejor
+de la tabla en ambas, y `variants.js` no cambia. Decisión razonada, con la tabla
+completa, en `entrenamiento/rps-posiciones-resumen.md`. Queda abierta para Juan Luis
+una cuestión de diseño que NO es de posiciones: en las modalidades sin rey ninguna
+partida termina de forma natural (siempre se llega al tope de jugadas); arreglarlo
+sería tocar las condiciones de victoria — tarea nueva si él la pide. Quien coja la 10:
+`variants.js` está estable, ya no hay nadie escribiéndolo.
 
 **Juan Luis firmó las dos autorizaciones pendientes en `autorizaciones.md`** (25-8-2026):
 retirar los ocho ficheros de depuración del editor, y consolidar/retirar los duplicados
@@ -131,10 +132,12 @@ Verificado offline con Playwright: tablero y selector de modalidad cargan sin er
 `index.html` sigue funcionando igual que antes. Detalle completo en
 `hechos/terminadas/15--s-20260824T235504-fde8fd6d.md`.
 
-Libres ahora mismo: **ninguna sin reclamo**. En curso: la **03** (reanudada), la **09**
-(limpieza, recién reclamada), la **12** (sid `3ccd1290`, caduca 05:54Z) y la **13** (sid
-`04eac74c`, caduca 05:54Z). La 10 y la 14 siguen bloqueadas hasta que cierren la 03 y la
-12 respectivamente.
+Libres ahora mismo: la **10** (MEDIO; la 03 y la 04 ya están LISTAS, `variants.js` sin
+otro escritor). En curso: la **09** (limpieza, sid `b78fd0ac`, caduca 02:57Z), la **12**
+(sid `3ccd1290`, caduca 05:54Z) y la **13** (sid `04eac74c`, caduca 05:54Z). La 14
+sigue bloqueada hasta que cierre la 12. Nota: una sesión (`b3e52c0b`) reclamó este
+fichero hacia la 01:35Z y su reserva caducó sin escribir nada; si era el arranque de
+una regeneración, quedó en nada — este tablón ya recoge todo lo posterior.
 
 ## Registro de finalizaciones
 
@@ -142,6 +145,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 03 · 2026-08-25 01:55 · s-20260824T233011-d4d13c52 · 96 partidas nuevas de arena (6 candidatas × 16, 0 fallos); las 6 malas (69-94% tablas); decisión con números: `rps` y `rpsls` mantienen `base` (mejor de la tabla en ambas), `variants.js` sin cambios; resumen actualizado; 2 pruebas en verde · main = 74cbb1a (la mitad -rey la cerró s-20260824T214012-f5750bb7 en 53b32e6)
 - LISTA · tarea 15 · 2026-08-25 01:07 · s-20260824T235504-fde8fd6d · 2 ficheros (editor.html: quitadas las 9 cadenas `?v=N`; sw.js: VERSION v7→v8); verificado offline con Playwright: editor.html carga tablero + 9 opciones de modalidad, 0 errores; index.html sigue igual · main = b62f941
 - LISTA · tarea 08 · 2026-08-25 00:23 · s-20260824T235504-fde8fd6d · 7/7 comprobaciones en navegador (Playwright/Chromium headless), 6 BIEN (insignia de captura, editor de posiciones, pestaña Problemas, problemas en imagen, editar tablero, PPT+teselación) + 1 FALLA parcial (service worker: VERSION/FICHEROS bien, pero `editor.html` no sirve sin conexión) · informe + 30 capturas/JSON en salidas/08-verificacion/, incidencia en hechos/incidencias/s-20260824T235504-fde8fd6d.md · HEAD = b102835
 - LISTA · tarea 11 · 2026-08-25 00:03 · s-20260824T235449-a524a145 · 1 fichero modificado (script.js), 1 línea; arreglado `help-draws` para no mencionar peón en rps-rey/rpsls-rey (mantenía la mención heredada de `V.kingless` sin comprobar `V.pieces.P`); verificado en Chromium headless sobre las 4 PPT + salas de control · main = b102835
