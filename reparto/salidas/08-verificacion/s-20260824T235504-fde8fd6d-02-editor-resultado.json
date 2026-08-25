@@ -1,0 +1,38 @@
+{
+  "nombre": "prueba-08-1787616829398",
+  "before": {
+    "variant": "salas-v4",
+    "turn": "b",
+    "boardSize": 1,
+    "boardEntries": [
+      [
+        "-2,0,3",
+        {
+          "type": "Q",
+          "color": "w",
+          "moved": true
+        }
+      ]
+    ]
+  },
+  "after": {
+    "variant": "salas-v4",
+    "turn": "b",
+    "boardSize": 1,
+    "boardEntries": [
+      [
+        "-2,0,3",
+        {
+          "type": "Q",
+          "color": "w",
+          "moved": true
+        }
+      ]
+    ]
+  },
+  "igual": true,
+  "msgAfterSave": "Posición «prueba-08-1787616829398» guardada.",
+  "afterClear": 0,
+  "borradoOk": true,
+  "consoleErrors": []
+}

@@ -1,0 +1,56 @@
+{
+  "swInfo": {
+    "soportado": true,
+    "scope": "http://localhost:8099/",
+    "cacheKeys": [
+      "ajedrez-triangular-v7"
+    ],
+    "cachedCount": 22
+  },
+  "swInfo2": {
+    "cacheName": "ajedrez-triangular-v7",
+    "items": [
+      "/",
+      "/index.html",
+      "/style.css",
+      "/geometry.js",
+      "/variants.js",
+      "/tessellations.js",
+      "/rules.js",
+      "/ai.js",
+      "/ai-async.js",
+      "/saveload.js",
+      "/script.js",
+      "/editor.html",
+      "/editor.js",
+      "/problemas.js",
+      "/problemas-ui.js",
+      "/problemas.css",
+      "/problema-imagen.js",
+      "/crear-problema.js",
+      "/manifest.webmanifest",
+      "/icono.svg",
+      "/icono-192.png",
+      "/icono-512.png"
+    ]
+  },
+  "offlineOk": false,
+  "offlineError": "TimeoutError: page.waitForSelector: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator('svg polygon.cell') to be visible\n",
+  "offlineState": {
+    "titulo": "Diseñar una posición",
+    "hayPaleta": true,
+    "celdas": 0
+  },
+  "indexOfflineOk": true,
+  "consoleErrors": [
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'",
+    "pageerror: Unexpected token '<'"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "badge": {
+    "count": 1,
+    "fill": "rgb(216, 75, 58)",
+    "stroke": "rgb(255, 255, 255)",
+    "miniExists": true
+  },
+  "lastMoveInfo": {
+    "from": "2,-3,3",
+    "to": "2,2,-2",
+    "isCapture": true
+  },
+  "consoleErrors": []
+}

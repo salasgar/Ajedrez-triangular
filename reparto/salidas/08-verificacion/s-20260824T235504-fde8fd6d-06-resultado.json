@@ -1,0 +1,77 @@
+{
+  "ppt": {
+    "rps": {
+      "variantId": "rps",
+      "variantName": "Piedra, papel y tijera",
+      "cells": 96,
+      "wCount": 23,
+      "bCount": 20,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    },
+    "rpsls": {
+      "variantId": "rpsls",
+      "variantName": "Piedra, papel, tijera, lagarto, Spock",
+      "cells": 96,
+      "wCount": 25,
+      "bCount": 20,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    },
+    "rps-rey": {
+      "variantId": "rps-rey",
+      "variantName": "Piedra, papel y tijera con rey",
+      "cells": 96,
+      "wCount": 24,
+      "bCount": 20,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    },
+    "rpsls-rey": {
+      "variantId": "rpsls-rey",
+      "variantName": "Piedra, papel, tijera, lagarto, Spock con rey",
+      "cells": 96,
+      "wCount": 26,
+      "bCount": 20,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    }
+  },
+  "demos": {
+    "demo-cuadrado": {
+      "variantId": "demo-cuadrado",
+      "variantName": "Demo: teselación cuadrada",
+      "cellsDom": 64,
+      "wCount": 10,
+      "bCount": 8,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    },
+    "demo-hexagonal": {
+      "variantId": "demo-hexagonal",
+      "variantName": "Demo: teselación hexagonal",
+      "cellsDom": 37,
+      "wCount": 6,
+      "bCount": 4,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    },
+    "demo-ladrillos": {
+      "variantId": "demo-ladrillos",
+      "variantName": "Demo: teselación de ladrillos",
+      "cellsDom": 64,
+      "wCount": 10,
+      "bCount": 8,
+      "wColor": "rgb(253, 253, 253)",
+      "bColor": "rgb(28, 28, 28)",
+      "colorsDiffer": "rgb(28, 28, 28)"
+    }
+  },
+  "consoleErrors": []
+}

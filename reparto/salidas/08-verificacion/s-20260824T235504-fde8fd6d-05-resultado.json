@@ -1,0 +1,44 @@
+{
+  "estadoJugado": {
+    "histIndex": 6,
+    "turn": "w",
+    "boardSize": 40
+  },
+  "entradaEditor": {
+    "bannerVisible": true,
+    "bannerTexto": "Editando la partida en curso — jugada 6",
+    "variantDisabled": true,
+    "btnPlayHidden": true,
+    "btnResumeHidden": false,
+    "btnSaveSituationHidden": false,
+    "boardSize": 40
+  },
+  "keyABorrar": "0,-3,4",
+  "trasBorrarEnEditor": false,
+  "trasVolver": {
+    "boardHasKey": false,
+    "sheetEditVisible": true,
+    "histIndex": 7,
+    "edited": true
+  },
+  "trasDeshacer": {
+    "boardHasKey": true,
+    "histIndex": 6
+  },
+  "trasRehacer": {
+    "boardHasKey": false,
+    "histIndex": 7
+  },
+  "nombreGuardado": "partida-08-1787617142952",
+  "listaTrasGuardar": [
+    "",
+    "partida-08-1787617142952"
+  ],
+  "trasRecargar": {
+    "boardHasKey": false,
+    "sheetEditVisible": true,
+    "histIndex": 7,
+    "turn": "w"
+  },
+  "consoleErrors": []
+}

@@ -9,14 +9,11 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-24T23:58Z · por la sesión s-20260824T233011-d4d13c52 (ampliación:
-tareas 11-14; 03 A MEDIAS)
+Regenerado: 2026-08-25T00:30Z · por la sesión s-20260824T235504-fde8fd6d (cierre de la 08)
 
-El árbol compartido está sobre `main` = `origin/main` (53b32e6: los setups medidos de
-`rps-rey`/`rpsls-rey` de la 03, sobre el 8336795 de la 06). Las tareas de interfaz
-editan los ficheros directamente, con los reclamos del harness (`.claude/sesiones/`)
-como siempre. Queda un `stash@{0}` de respaldo de la reconciliación; no usarlo, se
-tirará tras la 08.
+El árbol compartido está sobre `main` = `origin/main` (b102835: incluye ya el cierre de
+la 11 sobre el 53b32e6 de la 03 A MEDIAS). Las tareas de interfaz editan los ficheros
+directamente, con los reclamos del harness (`.claude/sesiones/`) como siempre.
 
 ## Antes de hacer nada
 
@@ -69,7 +66,7 @@ nadie edita el fichero de nadie, y este tablón se regenera a partir de los dem�
     verdad cierre, una terminada nueva con fecha posterior.
 11. **Una tarea mal cortada no se renumera**: incidencia con el corte natural,
     `ABANDONADA`, y avisar. Las tareas nuevas se añaden al final de la numeración (así
-    entró la 10).
+    entraron la 10 y, después, la 11-14).
 12. **No modificar nunca** los seis `traspaso-*.md` de los trabajos (son el registro de
     las sesiones que se fueron; `traspaso-reparto-ajedrez.md` sí se actualiza, pero
     solo al hacer traspaso de sesión) ni `reparto/autorizaciones.md`.
@@ -93,35 +90,35 @@ equivalencia de hoy está en `proyecto.md`.
 | 05 | Pestaña «Problemas» en `index.html` y `script.js` | tareas/tarea-05-pestana-problemas.md | 04 LISTA | 3 h | MEDIO | `main` (index.html, script.js) | manual | **LISTA** | |
 | 06 | Rendimiento y equilibrio del almacén de problemas | tareas/tarea-06-almacen-problemas.md | 05 LISTA | 1 h (queda) | MEDIO | `main` + `entrenamiento/` | manual | **LISTA** | |
 | 07 | Interfaz de «Editar tablero» (§1, §4, §5) | tareas/tarea-07-editar-tablero-ui.md | 05 LISTA | 4 h | MEDIO | `main` (7 ficheros de UI) | manual | **LISTA** | |
-| 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | PENDIENTE | |
+| 08 | Verificación en navegador de todo lo publicado | tareas/tarea-08-verificacion.md | 05 y 07 LISTAS | 2 h | MEDIO | salidas/08-verificacion/ | manual | **LISTA** | |
 | 09 | Limpieza de restos y duplicados | tareas/tarea-09-limpieza.md | 2 firmas en autorizaciones.md | 1 h | BAJO | reparto/_papelera/ | manual | **ESPERA FIRMA** (la 01 ya está LISTA) | |
-| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA | |
-| 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | PENDIENTE | |
-| 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | PENDIENTE | |
-| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | PENDIENTE | |
-| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | BLOQUEADA | |
+| 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | BLOQUEADA (falta 03) | |
+| 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
+| 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna (06 LISTA) | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | EN CURSO | s-20260824T235458-3ccd1290 · caduca 2026-08-25T05:54:58Z |
+| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260824T235417-04eac74c · caduca 2026-08-25T05:54:24Z |
+| 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h (+ horas de máquina) | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | BLOQUEADA (falta 12) | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
 Estado de la 03 (2026-08-24T23:26Z, detalle en `hechos/fallos/03--s-20260824T214012-f5750bb7.md`):
-`rps-rey` y `rpsls-rey` cerrados y publicados (main = 53b32e6); `rps` y `rpsls` sin
-medir, a la espera del visto bueno de Juan Luis para relanzar la arena (ocupa su Mac).
-Quien la retome: NO repetir lo de las -rey; empezar por la lista de candidatas
-pendientes del fallo. Ojo del mismo fallo: un git en segundo plano puede perder el
-directorio de trabajo — comprobar `pwd`/rutas absolutas antes de rebases en worktrees.
+`rps-rey` y `rpsls-rey` cerrados y publicados (main = 53b32e6, ya integrado en el
+b102835 actual); `rps` y `rpsls` sin medir, a la espera del visto bueno de Juan Luis
+para relanzar la arena (ocupa su Mac). Quien la retome: NO repetir lo de las -rey;
+empezar por la lista de candidatas pendientes del fallo. Ojo del mismo fallo: un git en
+segundo plano puede perder el directorio de trabajo — comprobar `pwd`/rutas absolutas
+antes de rebases en worktrees.
 
-Libres ahora mismo: la **08**, la **11**, la **12** y la **13** (todas MEDIO, sin
-ficheros en común entre sí). Ojo con la 11: edita `index.html`/`script.js`, que la
-sesión `8df0fd81` puede tener reclamados en `.claude/sesiones/` — y esa misma sesión
-podría estar con la 08 sin reclamo escrito: mira `hechos/reclamos/08--*` antes de
-darla por libre. La 09 sigue esperando las dos firmas de `autorizaciones.md`; la 10
-espera a la 03 LISTA; la 14, a la 12.
+**El reparto de los seis trabajos originales está entregado**: las tareas 01-08 están
+todas LISTA salvo la 03 (A MEDIAS, sin reclamo vivo — necesita decisión de Juan Luis
+para relanzar la arena) y la 09 (ESPERA FIRMA). La 08 cerró con 7/7 comprobaciones
+documentadas: 6 BIEN, 1 FALLA parcial — ver la incidencia de abajo.
 
-Nota de rendimiento para quien coja la 08: la pestaña «Problemas» en difícil/experto
-puede tardar hasta 45-90 s en dar un problema nuevo si el almacén está vacío para ese
-nivel (ver el registro de la tarea 06); no es un cuelgue, es el generador trabajando.
+Libres ahora mismo: **ninguna de banda MEDIO ni BAJO sin precondición pendiente.** La 09
+(BAJO) sigue esperando las dos firmas de `autorizaciones.md`. La 10 y la 14 están
+bloqueadas. Las tareas 12 y 13 están en curso, cada una en su propia sesión, sin
+ficheros en común entre ellas.
 
 ## Registro de finalizaciones
 
@@ -129,6 +126,8 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 08 · 2026-08-25 00:23 · s-20260824T235504-fde8fd6d · 7/7 comprobaciones ejecutadas y documentadas (captura y/o JSON cada una); 6 BIEN, 1 FALLA parcial: `editor.html` no se sirve sin conexión por un desajuste `?v=N` entre sus `<script>` y las rutas cacheadas por `sw.js` (`index.html` sí funciona offline); VERSION de `sw.js` única y superior (v7 sobre v6), FICHEROS completo; 39 ficheros de salida + 39 marcadores en `salidas/08-verificacion/` · HEAD verificado = b102835
+- LISTA · tarea 11 · 2026-08-25 00:03 · s-20260824T235449-a524a145 · 1 fichero (script.js), 1 línea; `help-draws` ya no menciona peón en rps-rey/rpsls-rey (sin peones); verificado en Chromium headless sobre las 5 modalidades, 0 regresiones · main = b102835
 - LISTA · tarea 06 · 2026-08-24 23:11 · s-20260824T214036-9bb6b2c2 · 2 ficheros modificados (problemas.js, problemas-ui.js) + 1 nuevo (entrenamiento/prueba-problemas.js); difícil/experto sí generan (el 0 medido era la ventana de medición, no el generador); arreglado el presupuesto real (`msEspera` por nivel) que hacía fallar «Nuevo problema» en difícil/experto; verificador independiente reconstruido, 44 problemas reverificados (32 fácil/medio + 12 difícil/experto), 0 fallos · main = 8336795
 - LISTA · tarea 07 · 2026-08-24 22:52 · s-20260824T213344-deadcf4b · 7 ficheros (290 inserciones, 41 borrados); node test-edicion.js 31/31; ciclo completo en Chromium headless vía Playwright, 19/19, 0 errores de consola · origin/main = daa0f28
 - LISTA · tarea 05 · 2026-08-24 20:50 · s-20260824T180039-ac278f27 · 4 cambios html + 3 ganchos + 1 fallo CSS arreglado, verificado en Chrome · main = 792e745
@@ -140,6 +139,13 @@ Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
 Derivado de `hechos/incidencias/`.
 
+- s-20260824T235504-fde8fd6d (tarea 08): `editor.html` no se sirve sin conexión porque
+  varios de sus `<script>` llevan `?v=N` en la URL y `sw.js` cachea las rutas sin esa
+  query string, así que la petición no encuentra hit en caché y no hay red. `index.html`
+  sí funciona offline. Tres correcciones candidatas sin decidir (detalle completo en el
+  fichero de incidencia); pendiente de que Juan Luis decida si abre tarea nueva para
+  arreglarlo. También nota menor sobre el estado del árbol compartido al arrancar la
+  sesión, sin impacto en esta tarea.
 - s-20260824T233011-d4d13c52: ampliación con las tareas 11-14 (cuatro problemas + una
   sugerencia de Juan Luis, 2026-08-25); duplicados de sincronización con « 2» en el
   nombre detectados (libro-trigonal, tres scripts) — candidatos para la 09; hunks sin

@@ -1,0 +1,30 @@
+{
+  "parteA": {
+    "botonExiste": true,
+    "generado": true,
+    "archivoDescargado": "/private/tmp/claude-501/-Users-salasgar-Documents-git-Ajedrez-triangular/b3e52c0b-f2d5-406c-a362-582be4175327/scratchpad/pw/problema-imagen-08.png",
+    "bytes": 233847,
+    "esPng": true
+  },
+  "parteB": {
+    "datosProblema": {
+      "tipo": "mate",
+      "pieza": null,
+      "jugadas": 1
+    },
+    "comprobado": {
+      "estado": "Comprobado: las negras juegan y dan mate en 1 jugada.",
+      "guardarHabilitado": true,
+      "jsonHabilitado": true,
+      "pngHabilitado": true
+    },
+    "guardadoInfo": {
+      "estado": "Guardado como «problema-imagen-08». Aparecerá en la pestaña Problemas del juego.",
+      "hayGuardado": true
+    },
+    "jsonOk": true,
+    "pngOk": true,
+    "pngBytes": 233847
+  },
+  "consoleErrors": []
+}

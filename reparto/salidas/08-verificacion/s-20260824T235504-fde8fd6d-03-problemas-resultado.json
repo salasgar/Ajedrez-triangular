@@ -1,0 +1,85 @@
+{
+  "tipos": {
+    "mate": {
+      "ok": true,
+      "fase": "resolviendo",
+      "tieneActual": true,
+      "enunciado": "Las negras juegan y dan mate en 1 jugada.",
+      "obj": {
+        "tipo": "mate",
+        "pieza": null,
+        "jugadas": 1
+      },
+      "intento": 0
+    },
+    "gana": {
+      "ok": true,
+      "fase": "resolviendo",
+      "tieneActual": true,
+      "enunciado": "Las blancas juegan y capturan una dama en 1 jugada.",
+      "obj": {
+        "tipo": "gana",
+        "pieza": "Q",
+        "jugadas": 1
+      },
+      "intento": 0
+    },
+    "corona": {
+      "ok": true,
+      "fase": "resolviendo",
+      "tieneActual": true,
+      "enunciado": "Las blancas juegan y coronan un peón en 1 jugada.",
+      "obj": {
+        "tipo": "corona",
+        "pieza": null,
+        "jugadas": 1
+      },
+      "intento": 0
+    },
+    "tablas": {
+      "ok": true,
+      "fase": "resolviendo",
+      "tieneActual": true,
+      "enunciado": "Las blancas juegan y consiguen tablas en 1 jugada.",
+      "obj": {
+        "tipo": "tablas",
+        "pieza": null,
+        "jugadas": 1
+      },
+      "intento": 0
+    }
+  },
+  "resolver": {
+    "tipo": "mate",
+    "pasos": 2,
+    "faseFinal": "resuelto"
+  },
+  "pista": {
+    "pistaKey": "1,-1,2",
+    "mensaje": "Pista: mueve la pieza señalada.",
+    "resaltado": true
+  },
+  "solucion": {
+    "tipo": "gana",
+    "jugadasLinea": 1,
+    "fase": "rendido",
+    "lineaVisible": true,
+    "progreso": "Solución a la vista."
+  },
+  "guardarAbrir": {
+    "nombreGuardado": "problema-08-1787616972730",
+    "contieneNombre": true,
+    "enunciadoAntesGuardar": "Las negras juegan y capturan un alfil en 1 jugada.",
+    "enunciadoTrasAbrir": "Las negras juegan y capturan un alfil en 1 jugada.",
+    "igual": true
+  },
+  "exportarImportar": {
+    "archivo": "/private/tmp/claude-501/-Users-salasgar-Documents-git-Ajedrez-triangular/b3e52c0b-f2d5-406c-a362-582be4175327/scratchpad/pw/export-problema-08.json",
+    "tipoExportado": "gana",
+    "enunciadoAntesImportar": "Las negras juegan y dan mate en 1 jugada.",
+    "enunciadoTrasImportar": "Las negras juegan y capturan un alfil en 1 jugada.",
+    "cambioComoEsperado": true,
+    "coincideConExportado": true
+  },
+  "consoleErrors": []
+}
