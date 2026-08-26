@@ -9,7 +9,7 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T11:05Z · por la sesión s-20260826T095832-0470517d al cerrar la
+Regenerado: 2026-08-26T10:55Z · por la sesión s-20260826T095832-0470517d al cerrar la
 16 (los dos reyes ya no pueden quedar adyacentes en las modalidades -rey; el dorado de
 `dekle`, en rojo permanente desde la 10, vuelve a verde). La cadena de arena 17-20
 —encargo de Juan Luis: validar por elo las mejoras del motor en `rps-rey` y
@@ -119,24 +119,25 @@ equivalencia de hoy está en `proyecto.md`.
 | 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) + dorado de dekle | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | **LISTA** | |
 | 17 | Arena de motor A/B para rps-rey y rpsls-rey (arnés + parametrización RPS_CFG) | tareas/tarea-17-arena-motor.md | 16 LISTA | 3 h | MEDIO | `entrenamiento/arena-motor.js` + `main` (ai.js, solo parametrización) | manual | PENDIENTE | |
 | 18 | Candidato 1 en arena: pesos de amenaza (0.1/0.3 vs 0.2/0.6 vs 0.05/0.15) | tareas/tarea-18-arena-pesos-amenaza.md | 17 LISTA | 5 h | MEDIO | `main` (ai.js, constantes de amenaza) + `entrenamiento/` | manual | BLOQUEADA | |
-| 19 | Candidato 2 en arena: prima de invencibilidad (idea de Juan Luis) | tareas/tarea-19-arena-invencibilidad.md | 18 LISTA | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
-| 20 | Candidato 3 en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
+| 19 | Candidato en arena: prima de invencibilidad sobre el modelo aditivo | tareas/tarea-19-arena-invencibilidad.md | 21 LISTA (y que la proporcional NO haya entrado) | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
+| 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 21 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
+| 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | BLOQUEADA | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**Libre ahora mismo: la 17 (MEDIO), sin reclamo; las 18-20 esperan en cadena detrás de
-ella.** Las cinco entraron el 2026-08-26 por encargo de Juan Luis (sus criterios, en
-`hechos/notas/s-20260825T093251-fde516e1.md`): primero la regla de reyes (16), luego
-el arnés de arena (17) y tres candidatos medidos por elo, en serie porque comparten
-ai.js y cada uno parte del vigente anterior: pesos de amenaza (18), prima de
-invencibilidad (19) y quiescencia extendida (20, banda ALTA — el arreglo de fondo de
-la 13, ya con vía de decisión: bandera + arena, p<0.05). Recordatorio del signo:
-elo(A-B) POSITIVO = el candidato PIERDE. Las tandas de arena de esta cadena están
-expresamente autorizadas (máx. 2 procesos node, segundo plano).
+**Libre ahora mismo: la 17 (MEDIO), sin reclamo; detrás, la cadena en serie va
+17 → 18 → 21 → 19 → 20** (recableada el 2026-08-26 al entrar la 21: la evaluación
+proporcional de Juan Luis va antes que la prima y que la quiescencia, porque si gana
+en arena la 19 pierde su objeto —la prima está dentro— y la 20 cambia de premisa; las
+fichas de la 19 y la 20 llevan su comprobación barata). Todas comparten ai.js y cada
+candidato se mide contra el vigente que dejó el anterior, con p<0.05. Recordatorio
+del signo: elo(A-B) POSITIVO = el candidato PIERDE. Las tandas de arena de esta
+cadena están expresamente autorizadas (máx. 2 procesos node, segundo plano). Los
+criterios de Juan Luis, en `hechos/notas/s-20260825T093251-fde516e1.md`.
 
-**La 16 quedó LISTA el 2026-08-26T11:05Z** (main = `3ac4c3a`, sesión
+**La 16 quedó LISTA el 2026-08-26T10:55Z** (main = `3ac4c3a`, sesión
 `s-20260826T095832-0470517d`): en las modalidades `-rey`, los dos reyes ya no pueden
 quedar adyacentes, como en el ajedrez clásico. Mecanismo elegido por Juan Luis y
 aplicado tal cual: **la matriz `capturesConRey` declara que 'K' captura a 'K'**, un

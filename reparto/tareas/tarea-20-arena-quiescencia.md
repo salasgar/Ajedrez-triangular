@@ -3,8 +3,15 @@
 Creada: 2026-08-26 (sesión coordinadora s-20260825T093251-fde516e1; es el «arreglo de
 fondo» de la 13, ahora con la vía de decisión fijada por Juan Luis: se implementa
 tras bandera y LO DECIDE LA ARENA)
-Precondición: 19 LISTA (mismo ai.js: un escritor cada vez; el vigente de referencia
-acumula ya 18 y 19)
+Precondición: 19 LISTA, o 21 LISTA si la 19 quedó sin objeto (recableada el
+2026-08-26: la 21 —evaluación proporcional— va antes, y si queda vigente cambia la
+premisa de esta tarea; mismo ai.js: un escritor cada vez)
+**Comprobación barata al abrir**: lee `hechos/terminadas/21--*`. Si la evaluación
+proporcional quedó VIGENTE, repite ANTES DE NADA el barrido del ply 16 con ella: si
+la oscilación entre profundidades ya no existe, el motivo de esta tarea ha
+desaparecido — no la reclames: escribe lo observado en una incidencia, avisa a Juan
+Luis y que decida. Solo si la oscilación persiste (o la proporcional no entró) sigue
+esta ficha.
 Disparo: MANUAL · Duración esperada: 8 h (diseño + CPU de arena) · Banda: **ALTO**
 Salida (dueña exclusiva): `main` (ai.js — quiesce y lo que necesite alrededor) +
 `entrenamiento/` (logs y resúmenes)

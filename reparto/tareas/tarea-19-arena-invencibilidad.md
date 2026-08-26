@@ -2,8 +2,13 @@
 
 Creada: 2026-08-26 (sesión coordinadora s-20260825T093251-fde516e1; la idea es de
 Juan Luis, criterio 3 de `hechos/notas/s-20260825T093251-fde516e1.md`)
-Precondición: 18 LISTA (mismo fichero ai.js: un escritor cada vez, y el «vigente» de
-referencia debe incluir ya el resultado de la 18)
+Precondición: 21 LISTA (recableada el 2026-08-26: la evaluación proporcional de la
+21 lleva la prima DENTRO, así que hay que saber primero si queda vigente; además,
+mismo ai.js: un escritor cada vez)
+**Comprobación barata al abrir**: lee `hechos/terminadas/21--*`. Si dice que la
+evaluación proporcional quedó VIGENTE, esta tarea pierde su objeto — no la reclames:
+avisa a Juan Luis y que decida si se marca sustituida. Si la proporcional NO entró,
+sigue tal cual sobre el modelo aditivo.
 Disparo: MANUAL · Duración esperada: 5 h (casi todo CPU de arena) · Banda: MEDIO
 Salida (dueña exclusiva): `main` (ai.js — el término nuevo y su constante) +
 `entrenamiento/` (logs y resúmenes de sus tandas)

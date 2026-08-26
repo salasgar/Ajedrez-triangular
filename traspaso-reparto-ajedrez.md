@@ -14,10 +14,11 @@ Encargo de Juan Luis del 2026-08-24 (seis trabajos, decisiones delegadas), ampli
 **Las 15 tareas originales están LISTAS; quedan las 16-20, la cadena de arena del
 2026-08-26.** Encargo de Juan Luis: centrarse en `rps-rey` (PPTR) y `rpsls-rey`
 (PPTLSR) — las modalidades sin rey quedan APARCADAS por poco jugables — y validar
-por elo las mejoras del motor: regla de reyes (16), arnés de arena A/B (17) y tres
-candidatos EN SERIE (18 pesos de amenaza, 19 prima de invencibilidad, 20 quiescencia
-extendida — banda ALTA). El estado por tarea vive en el tablón `reparto/_ESTADO.md`
-(fuente de verdad: `reparto/hechos/`), regenerado el 2026-08-26T09:40Z.
+por elo las mejoras del motor. La 16 (regla de reyes) ya está LISTA; la cadena en
+serie va **17 (arnés) → 18 (pesos de amenaza) → 21 (evaluación PROPORCIONAL, idea de
+Juan Luis de la tarde del 26-8) → 19 (prima de invencibilidad, solo si la 21 no
+entra) → 20 (quiescencia, banda ALTA, solo si sigue haciendo falta)**. El estado por
+tarea vive en el tablón `reparto/_ESTADO.md` (fuente de verdad: `reparto/hechos/`).
 
 La 13 cerró en dos sesiones: la primera arregló dos bugs reales del motor
 (`6dcc509`) y dejó el diagnóstico completo; la segunda estabilizó el síntoma bajando
