@@ -1,0 +1,368 @@
+{
+  "turno": "w",
+  "tablero": [
+    [
+      "0,-3,4",
+      {
+        "type": "O",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "-3,4,1",
+      {
+        "type": "O",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "1,-3,3",
+      {
+        "type": "O",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "-2,4,0",
+      {
+        "type": "O",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "2,-3,3",
+      {
+        "type": "T",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "2,-3,2",
+      {
+        "type": "O",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "-1,4,-1",
+      {
+        "type": "O",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "3,-3,2",
+      {
+        "type": "T",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "-1,4,-2",
+      {
+        "type": "T",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "3,-3,1",
+      {
+        "type": "O",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "0,4,-2",
+      {
+        "type": "O",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "4,-3,1",
+      {
+        "type": "T",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "0,4,-3",
+      {
+        "type": "T",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "4,-3,0",
+      {
+        "type": "O",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "1,4,-3",
+      {
+        "type": "O",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "-1,-2,4",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "0,-2,4",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "-2,3,1",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "1,-2,3",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "1,-2,2",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "-1,3,0",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "2,-2,2",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "3,-2,1",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "0,3,-2",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "1,3,-2",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "4,-2,0",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "1,3,-3",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "4,-2,-1",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": false
+      }
+    ],
+    [
+      "2,3,-3",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": false
+      }
+    ],
+    [
+      "-2,2,1",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": true
+      }
+    ],
+    [
+      "1,-1,2",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": true
+      }
+    ],
+    [
+      "-1,2,0",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": true
+      }
+    ],
+    [
+      "3,-1,-1",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": true
+      }
+    ],
+    [
+      "0,2,0",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": true
+      }
+    ],
+    [
+      "-2,2,2",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": true
+      }
+    ],
+    [
+      "0,0,1",
+      {
+        "type": "A",
+        "color": "w",
+        "moved": true
+      }
+    ],
+    [
+      "-1,3,-1",
+      {
+        "type": "T",
+        "color": "b",
+        "moved": true
+      }
+    ],
+    [
+      "-3,3,1",
+      {
+        "type": "A",
+        "color": "b",
+        "moved": true
+      }
+    ],
+    [
+      "-1,1,2",
+      {
+        "type": "T",
+        "color": "w",
+        "moved": true
+      }
+    ],
+    [
+      "-1,2,1",
+      {
+        "type": "T",
+        "color": "b",
+        "moved": true
+      }
+    ]
+  ],
+  "elegida": {
+    "from": "0,0,1",
+    "to": "-1,0,2"
+  },
+  "scoreCaptura": {
+    "from": "-1,1,2",
+    "to": "-2,2,1",
+    "score": 181.6614502350536
+  },
+  "scoreElegida": {
+    "from": "0,0,1",
+    "to": "-1,0,2",
+    "score": 332.09455758395535,
+    "chosen": true
+  },
+  "top5": [
+    {
+      "from": "0,0,1",
+      "to": "-1,0,2",
+      "score": 332.09455758395535,
+      "chosen": true
+    },
+    {
+      "from": "1,-1,2",
+      "to": "0,-2,3",
+      "score": 292.7019556297481
+    },
+    {
+      "from": "-1,-2,4",
+      "to": "-1,-1,3",
+      "score": 278.52547854188487
+    },
+    {
+      "from": "3,-1,-1",
+      "to": "2,0,-1",
+      "score": 277.0813634351548
+    },
+    {
+      "from": "3,-1,-1",
+      "to": "4,0,-2",
+      "score": 261.5404127173754
+    }
+  ]
+}

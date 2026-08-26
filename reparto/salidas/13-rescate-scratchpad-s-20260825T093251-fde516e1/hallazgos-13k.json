@@ -1,0 +1,2420 @@
+{
+  "hallazgos": [
+    {
+      "ply": 16,
+      "color": "w",
+      "nPiezas": 40,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,2,1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,0,1",
+        "to": "1,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 18,
+      "color": "w",
+      "nPiezas": 40,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,1,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-2,3",
+        "to": "0,-2,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 20,
+      "color": "w",
+      "nPiezas": 40,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,1,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,-3,1",
+        "to": "3,-2,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 22,
+      "color": "w",
+      "nPiezas": 40,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,1,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,-3,2",
+        "to": "1,-2,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 23,
+      "color": "b",
+      "nPiezas": 40,
+      "capturaGratis": {
+        "from": "0,0,2",
+        "to": "1,-1,1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,4,-1",
+        "to": "-2,3,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 24,
+      "color": "w",
+      "nPiezas": 40,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,1,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-2,3",
+        "to": "0,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 29,
+      "color": "b",
+      "nPiezas": 38,
+      "capturaGratis": {
+        "from": "-2,1,2",
+        "to": "-2,1,3"
+      },
+      "piezaCapturadaGratis": "T",
+      "piezaCapturadoraGratis": "O",
+      "elegida": {
+        "from": "-1,2,0",
+        "to": "0,1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 31,
+      "color": "b",
+      "nPiezas": 38,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,1,2",
+        "to": "-3,1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 33,
+      "color": "b",
+      "nPiezas": 38,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,3,-2",
+        "to": "1,2,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 35,
+      "color": "b",
+      "nPiezas": 38,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-3,1,3",
+        "to": "-3,0,4"
+      },
+      "elegidaCaptura": "T",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 37,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,2,1",
+        "to": "-2,1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 39,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,3,-3",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 41,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,2,0",
+        "to": "-1,1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 43,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "0,0,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,3,-1",
+        "to": "0,2,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 45,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "1,0,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,1,1",
+        "to": "0,1,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 47,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "1,0,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-3,3,1",
+        "to": "-2,2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 48,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-2,2",
+        "to": "1,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 49,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "1,0,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,2,-2",
+        "to": "3,1,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 50,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,0,0",
+        "to": "2,0,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 51,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,1",
+        "to": "1,0,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,2,-1",
+        "to": "1,1,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 52,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,0,1",
+        "to": "2,0,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 53,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "2,0,0"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,2,0",
+        "to": "-1,1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 54,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,-2,4",
+        "to": "-1,-1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 55,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "2,0,0"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,3,-2",
+        "to": "1,2,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 56,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,0,0",
+        "to": "1,1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 57,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,0",
+        "to": "1,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,3,-3",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 58,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-3,3",
+        "to": "1,-2,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 59,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,0",
+        "to": "1,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,1,0",
+        "to": "2,0,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 60,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,-1,2",
+        "to": "1,0,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 61,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,0",
+        "to": "1,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,1,1",
+        "to": "0,0,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 62,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,-1,3",
+        "to": "0,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 63,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,0",
+        "to": "1,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,0,1",
+        "to": "-1,1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 64,
+      "color": "w",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "-2,0,4",
+        "to": "-3,0,4"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,-2,3",
+        "to": "0,-1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 65,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,0",
+        "to": "1,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-3,0,4",
+        "to": "-2,1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 67,
+      "color": "b",
+      "nPiezas": 37,
+      "capturaGratis": {
+        "from": "0,1,0",
+        "to": "1,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,1,2",
+        "to": "-1,0,3"
+      },
+      "elegidaCaptura": "O",
+      "elegidaEsGratis": false
+    },
+    {
+      "ply": 69,
+      "color": "b",
+      "nPiezas": 36,
+      "capturaGratis": {
+        "from": "-1,3,0",
+        "to": "0,2,0"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,1,3",
+        "to": "-1,0,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 71,
+      "color": "b",
+      "nPiezas": 36,
+      "capturaGratis": {
+        "from": "-1,3,0",
+        "to": "0,3,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,1,2",
+        "to": "0,0,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 73,
+      "color": "b",
+      "nPiezas": 35,
+      "capturaGratis": {
+        "from": "0,0,2",
+        "to": "1,-1,1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,4,-3",
+        "to": "1,3,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 75,
+      "color": "b",
+      "nPiezas": 35,
+      "capturaGratis": {
+        "from": "0,0,2",
+        "to": "1,0,1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,3,-2",
+        "to": "2,2,-3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 81,
+      "color": "b",
+      "nPiezas": 34,
+      "capturaGratis": {
+        "from": "-1,-1,4",
+        "to": "-2,0,4"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,2,-3",
+        "to": "2,1,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 83,
+      "color": "b",
+      "nPiezas": 34,
+      "capturaGratis": {
+        "from": "-1,-1,4",
+        "to": "-2,0,4"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,0,2",
+        "to": "0,-1,3"
+      },
+      "elegidaCaptura": "T",
+      "elegidaEsGratis": false
+    },
+    {
+      "ply": 86,
+      "color": "w",
+      "nPiezas": 32,
+      "capturaGratis": {
+        "from": "1,-2,2",
+        "to": "0,-1,3"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "4,-3,1",
+        "to": "3,-2,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 87,
+      "color": "b",
+      "nPiezas": 32,
+      "capturaGratis": {
+        "from": "-1,0,3",
+        "to": "0,-1,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,1,-2",
+        "to": "1,1,-1"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 88,
+      "color": "w",
+      "nPiezas": 31,
+      "capturaGratis": {
+        "from": "1,-2,2",
+        "to": "0,-1,3"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,-1,2",
+        "to": "1,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 90,
+      "color": "w",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,-2,2",
+        "to": "0,-1,3"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-1,1",
+        "to": "2,-2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 92,
+      "color": "w",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,-2,2",
+        "to": "0,-1,3"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,0,1",
+        "to": "2,-1,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 94,
+      "color": "w",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,-2,2",
+        "to": "0,-1,3"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "3,-2,0",
+        "to": "2,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 95,
+      "color": "b",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,0,0",
+        "to": "2,-1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-1,3",
+        "to": "1,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 96,
+      "color": "w",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,-2,2",
+        "to": "1,-1,2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-1,1",
+        "to": "2,0,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 97,
+      "color": "b",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,0,0",
+        "to": "2,-1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-1,2",
+        "to": "1,0,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 99,
+      "color": "b",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,0,0",
+        "to": "2,-1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,0,1",
+        "to": "1,1,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 100,
+      "color": "w",
+      "nPiezas": 30,
+      "capturaGratis": {
+        "from": "1,1,-1",
+        "to": "1,2,-2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,1,-1",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 101,
+      "color": "b",
+      "nPiezas": 29,
+      "capturaGratis": {
+        "from": "1,0,0",
+        "to": "2,-1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,4,-2",
+        "to": "1,3,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 103,
+      "color": "b",
+      "nPiezas": 28,
+      "capturaGratis": {
+        "from": "1,0,0",
+        "to": "2,-1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,1,0",
+        "to": "2,1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 105,
+      "color": "b",
+      "nPiezas": 28,
+      "capturaGratis": {
+        "from": "1,0,0",
+        "to": "2,-1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-1,1",
+        "to": "2,0,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 109,
+      "color": "b",
+      "nPiezas": 27,
+      "capturaGratis": {
+        "from": "2,-1,0",
+        "to": "2,0,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,3,-2",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 110,
+      "color": "w",
+      "nPiezas": 27,
+      "capturaGratis": {
+        "from": "2,0,-1",
+        "to": "2,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "3,1,-2",
+        "to": "3,0,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 111,
+      "color": "b",
+      "nPiezas": 27,
+      "capturaGratis": {
+        "from": "2,-1,0",
+        "to": "2,0,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,-1,0",
+        "to": "1,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 112,
+      "color": "w",
+      "nPiezas": 27,
+      "capturaGratis": {
+        "from": "2,0,-1",
+        "to": "2,1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-1,1",
+        "to": "1,0,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 113,
+      "color": "b",
+      "nPiezas": 27,
+      "capturaGratis": {
+        "from": "1,-1,1",
+        "to": "1,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,1,-1",
+        "to": "1,0,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 115,
+      "color": "b",
+      "nPiezas": 26,
+      "capturaGratis": {
+        "from": "1,-1,1",
+        "to": "1,0,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,0,3",
+        "to": "-2,0,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 116,
+      "color": "w",
+      "nPiezas": 26,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "2,0,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,0,0",
+        "to": "1,1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 117,
+      "color": "b",
+      "nPiezas": 26,
+      "capturaGratis": {
+        "from": "1,-1,1",
+        "to": "1,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,2,-2",
+        "to": "2,1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 118,
+      "color": "w",
+      "nPiezas": 26,
+      "capturaGratis": {
+        "from": "1,0,1",
+        "to": "0,1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,1,-1",
+        "to": "2,1,-1"
+      },
+      "elegidaCaptura": "O",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 119,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,-1,1",
+        "to": "1,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-2,3,1",
+        "to": "-3,2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 120,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "2,0,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,0,2",
+        "to": "-1,1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 121,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,-1,1",
+        "to": "1,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,3,0",
+        "to": "0,3,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 122,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "2,0,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-2,2",
+        "to": "2,-3,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 123,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,-1,1",
+        "to": "2,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,0,0",
+        "to": "2,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 124,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,0,1",
+        "to": "0,1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-2,4",
+        "to": "1,-2,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 125,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,4,-3",
+        "to": "0,3,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 126,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,0,1",
+        "to": "0,1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,-2,2",
+        "to": "1,-3,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 127,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,-1,1",
+        "to": "2,-1,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 128,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,0,1",
+        "to": "0,1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,0,-1",
+        "to": "3,-1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 129,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-1,1",
+        "to": "2,-2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 130,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,0,1",
+        "to": "0,1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,1,-1",
+        "to": "1,2,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 131,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,1,1",
+        "to": "-1,0,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 132,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,0,1",
+        "to": "0,1,0"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,0,1",
+        "to": "0,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 133,
+      "color": "b",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,0,4",
+        "to": "-1,-1,4"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 134,
+      "color": "w",
+      "nPiezas": 25,
+      "capturaGratis": {
+        "from": "1,2,-1",
+        "to": "0,3,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,-1,2",
+        "to": "-1,0,2"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 135,
+      "color": "b",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,3,-2",
+        "to": "0,4,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 136,
+      "color": "w",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "-1,0,2",
+        "to": "-2,0,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,2,-1",
+        "to": "1,3,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 137,
+      "color": "b",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-3,4,1",
+        "to": "-2,3,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 138,
+      "color": "w",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "-1,0,2",
+        "to": "-2,0,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,1,1",
+        "to": "-1,2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 139,
+      "color": "b",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,2,-2",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 140,
+      "color": "w",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "-1,0,2",
+        "to": "-2,0,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-2,3",
+        "to": "1,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 141,
+      "color": "b",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,3,0",
+        "to": "-2,2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 142,
+      "color": "w",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "-1,0,2",
+        "to": "-2,0,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,0,2",
+        "to": "-2,1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 143,
+      "color": "b",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,0,3",
+        "to": "-1,-1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 144,
+      "color": "w",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "4,-3,0",
+        "to": "3,-2,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 145,
+      "color": "b",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,2,1",
+        "to": "-2,1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 146,
+      "color": "w",
+      "nPiezas": 24,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,1,3",
+        "to": "-2,2,2"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": false
+    },
+    {
+      "ply": 147,
+      "color": "b",
+      "nPiezas": 23,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-1,0",
+        "to": "3,-2,1"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": false
+    },
+    {
+      "ply": 148,
+      "color": "w",
+      "nPiezas": 22,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,2,2",
+        "to": "-3,2,2"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": false
+    },
+    {
+      "ply": 149,
+      "color": "b",
+      "nPiezas": 21,
+      "capturaGratis": {
+        "from": "0,3,-1",
+        "to": "-1,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "3,-2,1",
+        "to": "3,-3,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 150,
+      "color": "w",
+      "nPiezas": 21,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,4,-2",
+        "to": "-2,4,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 151,
+      "color": "b",
+      "nPiezas": 21,
+      "capturaGratis": {
+        "from": "-2,1,2",
+        "to": "-3,2,2"
+      },
+      "piezaCapturadaGratis": "T",
+      "piezaCapturadoraGratis": "O",
+      "elegida": {
+        "from": "2,-2,1",
+        "to": "1,-2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 152,
+      "color": "w",
+      "nPiezas": 21,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,4,-1",
+        "to": "-3,4,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 153,
+      "color": "b",
+      "nPiezas": 21,
+      "capturaGratis": {
+        "from": "-2,1,2",
+        "to": "-3,2,2"
+      },
+      "piezaCapturadaGratis": "T",
+      "piezaCapturadoraGratis": "O",
+      "elegida": {
+        "from": "1,-2,2",
+        "to": "1,-2,3"
+      },
+      "elegidaCaptura": "O",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 154,
+      "color": "w",
+      "nPiezas": 20,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,2,1",
+        "to": "-2,1,2"
+      },
+      "elegidaCaptura": "O",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 155,
+      "color": "b",
+      "nPiezas": 19,
+      "capturaGratis": {
+        "from": "3,-3,2",
+        "to": "2,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,-1,4",
+        "to": "0,-2,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 156,
+      "color": "w",
+      "nPiezas": 19,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,-1,2",
+        "to": "1,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 157,
+      "color": "b",
+      "nPiezas": 19,
+      "capturaGratis": {
+        "from": "3,-3,2",
+        "to": "2,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-2,4,0",
+        "to": "-2,3,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 158,
+      "color": "w",
+      "nPiezas": 19,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-3,2,2",
+        "to": "-2,1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 159,
+      "color": "b",
+      "nPiezas": 19,
+      "capturaGratis": {
+        "from": "3,-3,2",
+        "to": "2,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-2,3",
+        "to": "0,-1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 160,
+      "color": "w",
+      "nPiezas": 19,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,1,2",
+        "to": "-2,2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 162,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,-1,1",
+        "to": "2,-1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 163,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-1,2",
+        "to": "0,0,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 164,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "1,3,-2",
+        "to": "0,4,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,1,3",
+        "to": "-2,0,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 165,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,4,-2",
+        "to": "-1,3,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 166,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "3,-1,-1",
+        "to": "3,0,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 167,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,-1,3",
+        "to": "0,-2,4"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 168,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "3,0,-2",
+        "to": "3,1,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 169,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "2,2,-2",
+        "to": "1,1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 170,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-2,0,3",
+        "to": "-1,-1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 171,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-2,4",
+        "to": "-1,-1,4"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 172,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "3,1,-2",
+        "to": "2,0,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 173,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,1,-1",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 174,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,0,-1",
+        "to": "1,1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 175,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "2,-3,3",
+        "to": "1,-3,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,0,2",
+        "to": "-1,1,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 176,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,-3,3",
+        "to": "0,-2,4"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 177,
+      "color": "b",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,3,-1",
+        "to": "0,2,0"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 178,
+      "color": "w",
+      "nPiezas": 18,
+      "capturaGratis": {
+        "from": "-2,2,2",
+        "to": "-2,3,1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "1,1,-1",
+        "to": "2,2,-2"
+      },
+      "elegidaCaptura": "A",
+      "elegidaEsGratis": true
+    },
+    {
+      "ply": 179,
+      "color": "b",
+      "nPiezas": 17,
+      "capturaGratis": {
+        "from": "-1,1,2",
+        "to": "-2,2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-1,-1,4",
+        "to": "0,-1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 182,
+      "color": "w",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "-1,-1,3",
+        "to": "0,-1,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "0,-2,4",
+        "to": "-1,-2,4"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 186,
+      "color": "w",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "0,-1,3",
+        "to": "1,-2,3"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,-2,0",
+        "to": "3,-1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 191,
+      "color": "b",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "2,-1,0",
+        "to": "3,-1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,3,-1",
+        "to": "-1,4,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 192,
+      "color": "w",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "1,-2,3",
+        "to": "2,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,3,-2",
+        "to": "0,2,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 193,
+      "color": "b",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "2,-1,0",
+        "to": "3,-1,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,2,0",
+        "to": "1,2,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 194,
+      "color": "w",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "1,-2,3",
+        "to": "2,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,-1,-1",
+        "to": "3,0,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 196,
+      "color": "w",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "1,-2,3",
+        "to": "2,-2,2"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-3,4,0",
+        "to": "-3,3,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 197,
+      "color": "b",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "3,0,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "2,-2,2",
+        "to": "3,-2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 198,
+      "color": "w",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "0,2,-1",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-3,3,1",
+        "to": "-2,2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 199,
+      "color": "b",
+      "nPiezas": 16,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "3,0,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,1,2",
+        "to": "0,1,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 201,
+      "color": "b",
+      "nPiezas": 15,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "3,0,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "0,1,0",
+        "to": "-1,2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 203,
+      "color": "b",
+      "nPiezas": 15,
+      "capturaGratis": {
+        "from": "3,0,-1",
+        "to": "3,0,-2"
+      },
+      "piezaCapturadaGratis": "O",
+      "piezaCapturadoraGratis": "A",
+      "elegida": {
+        "from": "-1,2,1",
+        "to": "-2,2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 209,
+      "color": "b",
+      "nPiezas": 14,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,-2,1",
+        "to": "4,-3,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 211,
+      "color": "b",
+      "nPiezas": 14,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "-2,2,2",
+        "to": "-3,1,3"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 213,
+      "color": "b",
+      "nPiezas": 14,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,0,-1",
+        "to": "3,0,-2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 215,
+      "color": "b",
+      "nPiezas": 14,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-3,3",
+        "to": "1,-2,2"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 217,
+      "color": "b",
+      "nPiezas": 14,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "3,0,-2",
+        "to": "4,-1,-1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    },
+    {
+      "ply": 219,
+      "color": "b",
+      "nPiezas": 14,
+      "capturaGratis": {
+        "from": "1,1,0",
+        "to": "1,2,-1"
+      },
+      "piezaCapturadaGratis": "A",
+      "piezaCapturadoraGratis": "T",
+      "elegida": {
+        "from": "1,-2,2",
+        "to": "2,-2,1"
+      },
+      "elegidaCaptura": null,
+      "elegidaEsGratis": null
+    }
+  ],
+  "totalPlies": 220,
+  "status": "playing"
+}
