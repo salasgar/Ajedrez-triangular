@@ -9,8 +9,9 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T04:35Z · por la sesión s-20260826T022659-6a71f33e (la 13 queda
-LISTA: **las 15 tareas del reparto están LISTA. No queda ninguna tarea libre.**)
+Regenerado: 2026-08-26T09:00Z · por la sesión coordinadora s-20260825T093251-fde516e1
+(las 15 tareas originales LISTA; **entra la tarea 16, libre**, por decisión de Juan
+Luis del 2026-08-26: dos reyes nunca adyacentes en las modalidades -rey)
 
 El árbol compartido está sobre `main` = `origin/main` (`bb3c534`: pesos de amenaza de
 la 13 bajados a la mitad, sobre el `6dcc509` de los dos bugs de la misma tarea). Las
@@ -19,10 +20,9 @@ tareas de interfaz editan los ficheros directamente, con los reclamos del harnes
 reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
 tire cuando quiera.
 
-**El reparto está completo.** Ninguna sesión nueva encontrará tarea que reclamar:
-lee la sección «Libre ahora mismo, más abajo» y las notas de cada tarea sobre trabajo
-futuro que queda por decidir (no son tareas del reparto, son propuestas para que Juan
-Luis abra, si quiere, un reparto nuevo o encargos sueltos).
+**Las 15 tareas originales están completas; queda libre la 16** (nueva, 2026-08-26,
+pequeña: implementar la regla «dos reyes nunca adyacentes» decidida por Juan Luis).
+El resto del trabajo futuro son cabos sueltos a decisión suya — ver la sección final.
 
 ## Antes de hacer nada
 
@@ -111,13 +111,17 @@ equivalencia de hoy está en `proyecto.md`.
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 6 h (subida) | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | **LISTA** | |
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | **LISTA** | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
+| 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | PENDIENTE | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**No queda ninguna tarea libre: las 15 están LISTA.** Ver más abajo, tras el cierre de
-la 13, qué queda para un reparto o encargo futuro (no del reparto actual).
+**Libre ahora mismo: la 16 (MEDIO), PENDIENTE, sin reclamo.** Entró el 2026-08-26 por
+decisión expresa de Juan Luis (nota `hechos/notas/s-20260825T093251-fde516e1.md`, ya
+volcada a su ficha): en las modalidades -rey un rey nunca debe poder colocarse junto
+al otro; se implementa haciendo que `capturesConRey` diga que K puede capturar a K
+(el filtro `canCapture()` de `6dcc509` hace el resto). Las 15 originales están LISTA.
 
 **La 13 quedó A MEDIAS el 2026-08-26T01:43Z** (main = 6dcc509, sesión
 `s-20260825T090706-b85c3e30`): dos bugs reales arreglados y commiteados. (1)
@@ -354,6 +358,12 @@ un encargo directo, no algo que ninguna sesión deba iniciar por su cuenta:
   sin aplicar todavía a propósito — la 10 no la tocó por no ser su encargo.
 - `stash@{0}` de respaldo de la reconciliación (tarea 04): ya no hace falta, libre
   para que Juan Luis lo tire cuando quiera.
-- `scripts/nueva-sesion 2.sh`: duplicado obsoleto sin trackear que reapareció después
-  del cierre de la 09 (ver `hechos/incidencias/s-20260825T093251-fde516e1.md`),
-  candidato a papelera con nueva firma suya.
+- ~~`scripts/nueva-sesion 2.sh`~~: YA RESUELTO el 2026-08-25 — Juan Luis firmó la
+  autorización y la coordinadora lo movió a `reparto/_papelera/` (ver
+  `hechos/incidencias/s-20260825T093251-fde516e1.md`). No queda nada pendiente de él;
+  la papelera entera la vacía Juan Luis desde el Finder cuando quiera.
+- **Criterio fijado por Juan Luis para el arreglo de fondo de la 13** (2026-08-26):
+  renunciar a una captura gratis por una jugada estratégica puede ser legítimo en
+  PPT; el arreglo debe hacer honesta la comparación (verificar la ganancia de la
+  jugada tranquila igual de bien que la captura), no imponer «captura siempre».
+  Nota completa en `hechos/notas/s-20260825T093251-fde516e1.md`.
