@@ -1,0 +1,21 @@
+arena-motor · rps-rey · nivel 4 · 50 pares (100 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = proporcional     {"PROPORCIONAL":1}
+  2 proceso(s), semillas 401/402
+
+arena[rps-rey]: vigente vs proporcional · pares 26..50 · seed 402 · 0 partidas ya hechas en entrenamiento/t21-rps-rey-proporcional--s-20260826T095832-0470517d.p2.log
+arena[rps-rey]: vigente vs proporcional · pares 1..25 · seed 401 · 0 partidas ya hechas en entrenamiento/t21-rps-rey-proporcional--s-20260826T095832-0470517d.p1.log
+
+partes unidas en entrenamiento/t21-rps-rey-proporcional--s-20260826T095832-0470517d.log
+
+modalidad rps-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = proporcional · rps = {"PROPORCIONAL":1}
+
+100 partidas · finales: mate 32, fifty 27, tope 40, repetition 1 · 5 cortadas dentro del margen 300 (tablas)
+A (vigente): 25 ganadas, 33 tablas, 42 perdidas · puntuación 41.5%
+elo(A−B) = -60  [-118, -5]  p = 0.034
+
+VEREDICTO: el candidato GANA por 60 elo (p < 0.05).
+
+coste: 18.4 min de reloj para 100 partidas = 327 partidas/hora con 2 proceso(s) · 19.8 s por partida de media

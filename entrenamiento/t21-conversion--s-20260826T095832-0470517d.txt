@@ -1,0 +1,18 @@
+modalidad rps-rey · blancas con 8 piezas de ventaja,
+el mismo modelo juega los dos bandos, tope 400 medias jugadas
+
+ modelo       │ semilla │ final        │ gana │ plies │ piezas w-b │ capturas w-b
+──────────────┼─────────┼──────────────┼──────┼───────┼────────────┼─────────────
+ aditivo       │   101   │ checkmate    │  w   │   223 │  10- 3    │     9- 10
+ proporcional │   101   │ fifty        │  -   │   100 │  20-12    │     0-  0
+ proporc.PESOS │   101   │ fifty        │  -   │   100 │  20-12    │     0-  0
+ aditivo       │   202   │ fifty        │  -   │   337 │   9- 1    │    11- 11
+ proporcional │   202   │ fifty        │  -   │   100 │  20-12    │     0-  0
+ proporc.PESOS │   202   │ fifty        │  -   │   100 │  20-12    │     0-  0
+ aditivo       │   303   │ fifty        │  -   │   333 │   8- 1    │    11- 12
+ proporcional │   303   │ checkmate    │  b   │    94 │  20-12    │     0-  0
+ proporc.PESOS │   303   │ fifty        │  -   │   100 │  20-12    │     0-  0
+
+aditivo      : remata en 1/3 · 64 capturas en total · media 223 medias jugadas
+proporcional : remata en 0/3 · 0 capturas en total
+proporc.PESOS: remata en 0/3 · 0 capturas en total

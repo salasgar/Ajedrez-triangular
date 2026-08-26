@@ -1,0 +1,21 @@
+posición real del ply 16 (modalidad rps, 40 piezas)
+captura gratis  -1,1,2>-2,2,1   contra   tranquila  0,0,1>-1,0,2
+
+aditivo:
+  prof │  captura │ tranquila │ diferencia │ ¿gana la captura?
+     1 │    344.9 │     165.4 │      179.5 │ sí
+     2 │    249.0 │     167.1 │       81.9 │ sí
+     3 │    259.1 │     186.3 │       72.8 │ sí
+     4 │    144.9 │     116.8 │       28.1 │ sí
+     5 │    170.6 │     152.6 │       18.0 │ sí
+  => la captura gana en 5/5 profundidades  (sin oscilación)
+
+proporcional:
+  prof │  captura │ tranquila │ diferencia │ ¿gana la captura?
+     1 │     28.8 │     -11.4 │       40.2 │ sí
+     2 │     77.2 │      -7.4 │       84.7 │ sí
+     3 │     77.2 │       2.1 │       75.1 │ sí
+     4 │     58.3 │     -14.4 │       72.7 │ sí
+     5 │     77.1 │       1.9 │       75.2 │ sí
+  => la captura gana en 5/5 profundidades  (sin oscilación)
+

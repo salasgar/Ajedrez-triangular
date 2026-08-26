@@ -1,0 +1,28 @@
+arena-motor · rps-rey · nivel 4 · 50 pares (100 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = proporcional     {"PROPORCIONAL":1}
+  2 proceso(s), semillas 403/404
+
+arena[rps-rey]: vigente vs proporcional · pares 76..100 · seed 404 · 0 partidas ya hechas en entrenamiento/t21-rps-rey-proporcional-b--s-20260826T095832-0470517d.p2.log
+arena[rps-rey]: vigente vs proporcional · pares 51..75 · seed 403 · 0 partidas ya hechas en entrenamiento/t21-rps-rey-proporcional-b--s-20260826T095832-0470517d.p1.log
+arena-motor · rps-rey · nivel 4 · 50 pares (100 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = proporcional     {"PROPORCIONAL":1}
+  2 proceso(s), semillas 403/404
+
+arena[rps-rey]: vigente vs proporcional · pares 76..100 · seed 404 · 40 partidas ya hechas en entrenamiento/t21-rps-rey-proporcional-b--s-20260826T095832-0470517d.p2.log
+arena[rps-rey]: vigente vs proporcional · pares 51..75 · seed 403 · 35 partidas ya hechas en entrenamiento/t21-rps-rey-proporcional-b--s-20260826T095832-0470517d.p1.log
+
+partes unidas en entrenamiento/t21-rps-rey-proporcional-b--s-20260826T095832-0470517d.log
+
+modalidad rps-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = proporcional · rps = {"PROPORCIONAL":1}
+
+100 partidas · finales: fifty 41, mate 37, tope 22 · 1 cortadas dentro del margen 300 (tablas)
+A (vigente): 25 ganadas, 42 tablas, 33 perdidas · puntuación 46.0%
+elo(A−B) = -28  [-81, +24]  p = 0.291
+
+VEREDICTO: el candidato EMPATA (diferencia no significativa, p ≥ 0.05).
+
+coste: 11.4 min de reloj para 100 partidas = 529 partidas/hora con 2 proceso(s) · 52.1 s por partida de media

@@ -23,6 +23,9 @@ const AI_WORKER_FNS = [
   // evaluación de las modalidades Piedra, papel y tijera (la caché de
   // rpsInfo vive en V._rpsInfo, así que no necesita declaración propia)
   rpsInfo, rpsAplicaCfg, rpsValor, rpsDynValues, rpsDeadPosition, rpsContraataque, rpsDist, evaluateRps,
+  // modelo proporcional (tarea 21): su caché vive en V._rpsPropInfo, como la
+  // de rpsInfo, así que tampoco necesita declaración propia
+  rpsPropInfo, rpsPropPeso, rpsPropCuentas, rpsPropScoreCuentas, rpsPropPosicional, evaluateRpsProporcional,
   capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
   pickSoftmax, chooseAiMove,

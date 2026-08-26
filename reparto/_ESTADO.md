@@ -9,11 +9,10 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T13:10Z · por la sesión s-20260826T095832-0470517d al cerrar la
-18, su TERCERA tarea seguida (antes cerró la 16 y la 17). Primer candidato de la cadena
-medido por elo: los pesos de amenaza se quedan en 0.1/0.3 y dejan de ser provisionales.
-Queda libre la 21. La cadena en serie la recableó `a0bfaa7` al entrar la 21: va
-18 → 21 → 19 → 20. Dos decisiones de alcance de Juan Luis del 2026-08-26: las
+Regenerado: 2026-08-26T18:05Z · por la sesión s-20260826T095832-0470517d al cerrar la
+21, su CUARTA tarea seguida (antes cerró la 16, la 17 y la 18). La evaluación
+proporcional PIERDE por 81 elo y su bandera queda apagada; queda libre la 22, que
+arregla la causa que la 21 diagnosticó. La cadena va 18 → 21 → 22 → 19 → 20. Dos decisiones de alcance de Juan Luis del 2026-08-26: las
 modalidades sin rey (`rps`, `rpsls`) siguen APARCADAS, y `rpsls-rey` queda APLAZADA
 —que no es lo mismo: tendrá su propia pasada de arena cuando `rps-rey` esté optimizada
 (`9f1e2e4`; ver también `hechos/notas/s-20260826T095832-0470517d.md`).
@@ -26,11 +25,12 @@ tareas de interfaz editan los ficheros directamente, con los reclamos del harnes
 reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
 tire cuando quiera.
 
-**Las 15 tareas originales están completas, y también la 16, la 17 y la 18**; quedan
-la 21, la 19 y la 20: los candidatos de mejora medidos por elo, EN SERIE (comparten
-ai.js y cada uno parte del vigente que dejó el anterior). El instrumento está hecho y
-probado (17) y ya ha dictado su primer veredicto (18). Las modalidades sin rey
-(`rps`, `rpsls`) quedan aparcadas: ninguna tarea las toca.
+**Las 15 tareas originales están completas, y también la 16, la 17, la 18 y la 21**;
+quedan la 22 (libre), la 19 y la 20: los candidatos de mejora medidos por
+elo, EN SERIE (comparten ai.js y cada uno parte del vigente que dejó el anterior). El
+instrumento está hecho y probado (17) y ya ha dictado dos veredictos: la 18 (los pesos
+de amenaza se quedan) y la 21 (la evaluación proporcional se rechaza). Las
+modalidades sin rey (`rps`, `rpsls`) quedan aparcadas: ninguna tarea las toca.
 
 ## Antes de hacer nada
 
@@ -122,23 +122,47 @@ equivalencia de hoy está en `proyecto.md`.
 | 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) + dorado de dekle | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | **LISTA** | |
 | 17 | Arena de motor A/B para rps-rey y rpsls-rey (arnés + parametrización RPS_CFG) | tareas/tarea-17-arena-motor.md | 16 LISTA | 3 h | MEDIO | `entrenamiento/arena-motor.js` + `main` (ai.js, solo parametrización) | manual | **LISTA** | |
 | 18 | Candidato 1 en arena: pesos de amenaza (0.1/0.3 vs 0.2/0.6 vs 0.05/0.15) | tareas/tarea-18-arena-pesos-amenaza.md | 17 LISTA | 5 h | MEDIO | `main` (ai.js, constantes de amenaza) + `entrenamiento/` | manual | **LISTA** | |
-| 19 | Candidato en arena: prima de invencibilidad sobre el modelo aditivo | tareas/tarea-19-arena-invencibilidad.md | 21 LISTA (y que la proporcional NO haya entrado) | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
-| 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 21 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
-| 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | PENDIENTE | |
+| 19 | Candidato en arena: prima de invencibilidad sobre el modelo aditivo | tareas/tarea-19-arena-invencibilidad.md | 22 LISTA (y que la proporcional NO haya quedado vigente) | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
+| 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 22 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
+| 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | LISTA | s-20260826T095832-0470517d |
+| 22 | Candidato en arena: acoso al rey rival (arregla la falta de contacto que diagnosticó la 21) | tareas/tarea-22-acoso-al-rey-rival.md | 21 LISTA | 8 h | ALTO | `main` (ai.js, término nuevo en q_pos) + `entrenamiento/` | manual | **PENDIENTE** | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**Libre ahora mismo: la 21 (MEDIO), sin reclamo; detrás, la cadena en serie va
-21 → 19 → 20** (recableada el 2026-08-26 al entrar la 21: la evaluación
-proporcional de Juan Luis va antes que la prima y que la quiescencia, porque si gana
-en arena la 19 pierde su objeto —la prima está dentro— y la 20 cambia de premisa; las
-fichas de la 19 y la 20 llevan su comprobación barata). Todas comparten ai.js y cada
+**La 21 está LISTA** (cerrada el 2026-08-26T18:05Z: la evaluación proporcional PIERDE
+por 81 elo [+50,+114], p=0,000, y su bandera queda apagada). **La cadena en serie se
+recableó el 2026-08-26T17:38Z: ahora va 18 → 21 → 22 → 19 → 20** (antes 21 → 19 → 20;
+entra la 22, nueva, entre la 21 y la 19/20 — ver más abajo el porqué). **Libre para
+reclamar: la 22**, de banda ALTO, que arregla la falta de contacto que diagnosticó la
+21. Aviso de método salido de la 21, que vale para toda esta cadena: si más del ~15%
+de las partidas de una tanda acaban en «tope», el veredicto lo está decidiendo la
+adjudicación por material y puede salir INVERTIDO — sube `--max-plies`. Está medido y
+explicado en `hechos/notas/s-20260826T095832-0470517d.md`. Todas comparten ai.js y cada
 candidato se mide contra el vigente que dejó el anterior, con p<0.05. Recordatorio
 del signo: elo(A-B) POSITIVO = el candidato PIERDE. Las tandas de arena de esta
 cadena están expresamente autorizadas (máx. 2 procesos node, segundo plano). Los
 criterios de Juan Luis, en `hechos/notas/s-20260825T093251-fde516e1.md`.
+
+**Hallazgo del 2026-08-26T17:38Z, mientras la 21 seguía corriendo su tanda de
+confirmación**: la propia sesión de la 21 diagnosticó en su reclamo (latidos de
+15:35Z a 16:15Z) que el candidato proporcional gana material y pierde partidas —
+en las partidas decididas en el tablero el aditivo gana claro (61,2%), pero el
+proporcional va por delante en material en 61 de 62 partidas adjudicadas por tope,
+así que el veredicto estándar premia justo lo que el candidato optimiza. Descartó
+saturación, aversión al cambio y (parcialmente) no distinguir tipos; concluyó
+"no es un problema de valorar tipos sino de falta de iniciativa" — confirmado desde
+otro ángulo por una sesión de consulta directa con Juan Luis: en autojuego
+proporcional-contra-sí-mismo, 0 capturas LEGALMENTE DISPONIBLES en 80 medias
+jugadas (la evaluación no lleva ningún término de amenaza/caza, a propósito, así
+que ningún bando tiene motivo para acercarse). Decisión de Juan Luis: añadir un
+sesgo de acercamiento de todas las piezas (salvo el rey propio) al rey rival, con
+cuidado de que el rey propio no se lance a atacar demasiado pronto — solo cuando
+quede poco material. Esto es la tarea 22 nueva. Detalle completo en
+`hechos/incidencias/s-20260826T173839-09708b47.md` y `tareas/tarea-22-acoso-al-
+rey-rival.md`. La 21 sigue su curso tal cual estaba planteada — no cambia su
+alcance ni su tanda en marcha.
 
 **La 18 quedó LISTA el 2026-08-26T13:10Z** (main = `f7a982f`, sesión
 `s-20260826T095832-0470517d`, su tercera tarea seguida): **los pesos de amenaza se
@@ -365,6 +389,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 21 · 2026-08-26 18:05 · s-20260826T095832-0470517d · la evaluación PROPORCIONAL de Juan Luis se RECHAZA y su bandera queda apagada (el modelo se deja implementado y probado: la 22 lo continúa): rps-rey, 200 partidas, elo(A−B)=+81 [+50,+114] p=0,000, idéntico a los márgenes 150/300/900. OJO AL MÉTODO: con el tope de jugadas por defecto (400) el veredicto salía AL REVÉS (+44 a favor del candidato con margen 300, −33 con margen 900, los dos significativos) porque 62 de 200 partidas se adjudicaban por material y el candidato iba por delante en material en 61 de ellas; con --max-plies=800 solo 1 de 200 queda por adjudicar. Causa del rechazo: el modelo no tiene INICIATIVA — en autojuego con 8 piezas de ventaja hace CERO capturas y en una de tres partidas le dan mate llevando 20 piezas contra 12; descartadas antes la saturación (el gradiente CRECE, ×2,58) y la aversión al cambio (un cambio igualado vale 0,0 exacto en los dos modelos). Sub-bandera PROP_PESOS implementada y probada pero SIN MEDIR a propósito (se mide en la 22, sobre el ganador). 69 pruebas en verde · main = PENDIENTE
 - LISTA · tarea 18 · 2026-08-26 13:10 · s-20260826T095832-0470517d · primer candidato de la cadena medido por elo; NINGÚN valor cambia (0.1/0.3 se quedan, ya no como provisionales sino como medidos): 0.1/0.3 contra el antiguo 0.2/0.6, 100 partidas, A 62,0% (35-54-11), elo(A−B)=+85 [+40,+133] p=0,000 → el antiguo PIERDE; 0.1/0.3 contra la bajada 0.05/0.15, 200 partidas, A 51,5% (46-114-40), elo(A−B)=+10 [−21,+42] p=0,517 → EMPATA; robusto entre margen 150 y 900; solo rps-rey (decisión de Juan Luis); arena-motor.js gana --primero y la guardia del libro circular; test-modalidades, test-rps y test-ia-rps en verde; 300 partidas en 55 min · main = f7a982f
 - LISTA · tarea 17 · 2026-08-26 11:49 · s-20260826T095832-0470517d · instrumento de medida de la cadena: los ocho RPS_* pasan a RPS_DEFAULTS (congelado) + RPS_CFG (activo) con rpsAplicaCfg() en las dos puertas (chooseAiMove, evaluateRps) y cfg.rps dentro de cfgSig; entrenamiento/arena-motor.js nuevo (lanza arena.js, resume con elo.js, veredicto escrito); ningún valor por defecto cambia —corrida de test-ia-rps.js idéntica línea por línea salvo un nombre impreso—; tandas de humo con el IC incluyendo el 0 en las dos modalidades; arreglado test-worker.js, que probaba salas nueve veces con nueve nombres (aliasing de setVariant sobre CELL_MAP) · main = 74ca9d9
 - LISTA · tarea 16 · 2026-08-26 10:55 · s-20260826T095832-0470517d · dos reyes nunca adyacentes en las modalidades -rey, por el mecanismo que eligió Juan Luis: capturesConRey declara K×K, una línea en variants.js; basta porque attacks()/isAttacked e isAttackedFast filtran por canCapture(), así que la casilla vecina al rey rival cuenta como atacada y la captura nunca se ejecuta; comprobado contra el código de antes en legalMoves Y en genMoves; prueba nueva de 10 aserciones; dorado de dekle remedido (estaba en rojo desde 56917bf) · main = 3ac4c3a
@@ -388,6 +413,14 @@ Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
 Derivado de `hechos/incidencias/`.
 
+- s-20260826T173839-09708b47 (consulta directa con Juan Luis, banda ALTO): mientras
+  la tarea 21 seguía en curso, diagnóstico de por qué el candidato proporcional gana
+  material y pierde partidas (falta de todo término de amenaza/caza: 0 capturas
+  legalmente disponibles en 80 medias jugadas de autojuego) y decisión de Juan Luis
+  de añadir un sesgo de acercamiento al rey rival, con el rey propio contenido hasta
+  que quede poco material. Da lugar a la tarea 22 nueva, insertada entre la 21 y la
+  19/20. Ver detalle completo en el fichero y en `tareas/tarea-22-acoso-al-rey-
+  rival.md`.
 - s-20260825T090655-e89d6030 (tarea 10): dos hallazgos. (1) `./instalar-servicio.sh
   resultados` lee de `~/Library/Application Support/ajedrez-triangular-entrenamiento/`,
   que se quedó con un corpus de la ronda 15 más viejo y más pequeño que el que acabó

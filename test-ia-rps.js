@@ -421,6 +421,217 @@ if (process.argv[2] !== 'match') {
       'una búsqueda sin cfg.rps deja los pesos activos en los de por defecto');
   }
 
+  console.log('Evaluación PROPORCIONAL (tarea 21, tras bandera):');
+  {
+    const r = run(`
+      setVariant('rps-rey');
+      newGame();
+      const info = rpsInfo();
+      const base = { depth: 2, mobility: true, order: true, quiesce: true };
+      const prop = { ...base, rps: { PROPORCIONAL: 1 } };
+      const out = {};
+
+      // 1. la bandera APAGADA no toca nada: mismo número que el modelo aditivo
+      out.apagadaIgual = evaluate(game.board, 'w', base) ===
+                         evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 0 } });
+
+      // 2. simetría: la posición inicial es simétrica, así que vale 0 exacto
+      out.inicialCero = evaluate(game.board, 'w', prop);
+
+      // 3. antisimetría: lo que gana uno lo pierde el otro, sea cual sea la
+      //    posición (el minimax se rompe si no)
+      let quitadas = 0;
+      for (const [k, p] of [...game.board]) {
+        if (p.color === 'b' && p.type !== 'K' && quitadas < 3) { game.board.delete(k); quitadas++; }
+      }
+      const desdeW = evaluate(game.board, 'w', prop);
+      const desdeB = evaluate(game.board, 'b', prop);
+      out.antisimetrica = Math.abs(desdeW + desdeB) < 1e-9;
+      out.ventajaBlanca = desdeW;
+
+      // 4. el modelo es OTRO, no el mismo con más términos
+      out.distintoDelAditivo = evaluate(game.board, 'w', base) !== desdeW;
+
+      // 5. capturar SIEMPRE mejora: quitar una pieza rival sube la evaluación
+      //    (es lo que garantiza que el valor por captura de rpsDynValues salga
+      //    positivo, y de ahí dependen MVV-LVA y la poda de quiesce)
+      let sube = true;
+      for (const t of info.figuras) {
+        for (const [k, p] of [...game.board]) {
+          if (p.color !== 'b' || p.type !== t) continue;
+          game.board.delete(k);
+          if (evaluate(game.board, 'w', prop) <= desdeW) sube = false;
+          game.board.set(k, p);
+          break;
+        }
+      }
+      out.capturarSube = sube;
+
+      // 6. valores por captura derivados de la fórmula, no de una tabla:
+      //    todos positivos y en el rango de siempre (una pieza ~100)
+      rpsAplicaCfg(prop);
+      const dyn = rpsDynValues(game.board);
+      const vals = [];
+      for (const t of info.figuras) { vals.push(dyn.w[t], dyn.b[t]); }
+      out.valoresPositivos = vals.every(v => v > 0);
+      out.valorMax = Math.max(...vals);
+
+      // 7. INVENCIBILIDAD (criterio 3 de Juan Luis): comerse la última pieza
+      //    rival de un tipo deja a mis depredados sin verdugo, y eso tiene que
+      //    ser una ganancia GRANDE. Es lo que el modelo aditivo no recogía.
+      setVariant('rps-rey');
+      newGame();
+      const t0 = info.figuras[0];
+      const negras = [...game.board.entries()].filter(([, p]) => p.color === 'b' && p.type === t0);
+      for (const [k] of negras.slice(1)) game.board.delete(k);
+      const antesP = evaluate(game.board, 'w', prop);
+      const antesA = evaluate(game.board, 'w', base);
+      game.board.delete(negras[0][0]);
+      out.saltoProp = evaluate(game.board, 'w', prop) - antesP;
+      out.saltoAdit = evaluate(game.board, 'w', base) - antesA;
+
+      // 8. un tipo extinto EN AMBOS bandos sale de la media (si no, daría
+      //    cociente 1 a los dos y diluiría el resto)
+      setVariant('rps-rey');
+      newGame();
+      for (const [k, p] of [...game.board]) if (p.type === t0) game.board.delete(k);
+      out.extintoEnAmbos = evaluate(game.board, 'w', prop);
+
+      // 9. rpsPropInfo deriva la protección de la matriz, sin tablas a mano:
+      //    en rps, a la piedra la come el papel y la tijera come papel, así
+      //    que la tijera protege a la piedra
+      const P = rpsPropInfo();
+      out.protectores = P.protectores;
+      out.protegidos = P.protegidos;
+      return out;
+    `);
+    ok(r.apagadaIgual, 'con la bandera apagada la evaluación es la aditiva de siempre');
+    ok(Math.abs(r.inicialCero) < 1e-9,
+      `la posición inicial vale 0 exacto por simetría (${r.inicialCero})`);
+    ok(r.antisimetrica, 'antisimétrica: evaluar desde blancas y desde negras suma 0');
+    ok(r.distintoDelAditivo, 'con la bandera encendida es OTRO modelo, no el aditivo');
+    ok(r.capturarSube, 'capturar cualquier pieza rival sube la evaluación');
+    ok(r.valoresPositivos,
+      `los valores por captura (delta de la fórmula) son todos positivos, máx ${r.valorMax.toFixed(0)}`);
+    ok(r.valorMax > 40 && r.valorMax < 250,
+      `y están en el rango de siempre, una pieza ~100 (máx ${r.valorMax.toFixed(0)})`);
+    ok(r.saltoProp > 300,
+      `comerse el último rival de un tipo es ganancia grande: +${r.saltoProp.toFixed(0)}`);
+    ok(r.saltoAdit < r.saltoProp,
+      `y el modelo aditivo no lo recogía: ${r.saltoAdit.toFixed(0)} (criterio 3 de Juan Luis)`);
+    ok(Math.abs(r.extintoEnAmbos) < 1e-9,
+      'un tipo extinto en AMBOS bandos sale de la media y no desequilibra');
+    ok(JSON.stringify(r.protectores.O) === JSON.stringify(['T']),
+      `la protección sale de la matriz de capturas: a O la protege ${JSON.stringify(r.protectores.O)}`);
+    ok(JSON.stringify(r.protegidos.O) === JSON.stringify(['A']),
+      `y el dual: O protege a ${JSON.stringify(r.protegidos.O)}`);
+  }
+
+  // --- variante ponderada de la tarea 21 -------------------------------------
+  // La arena rechazó el modelo proporcional simple por una razón concreta: valora
+  // TODA captura en ~100 sea del tipo que sea, así que no distingue cambiar una
+  // tijera por una piedra. PROP_PESOS convierte la media geométrica en ponderada,
+  // con el peso de cada tipo tomado de rpsValor() —el mismo del modelo aditivo,
+  // derivado de la matriz de capturas, así que generaliza solo a rpsls-rey.
+
+  console.log('Evaluación PROPORCIONAL PONDERADA (tarea 21, sub-bandera PROP_PESOS):');
+  {
+    const r = run(`
+      setVariant('rps-rey');
+      newGame();
+      const info = rpsInfo();
+      const base = { depth: 2, mobility: true, order: true, quiesce: true };
+      const prop = { ...base, rps: { PROPORCIONAL: 1 } };
+      const pesado = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 1 } };
+      const out = {};
+
+      // 1. la sub-bandera apagada deja EXACTAMENTE el modelo de antes: con todos
+      //    los pesos a 1, W = n y wPos = 1, así que el denominador vuelve a ser
+      //    n+1 y no hay ni un bit de diferencia. Es una generalización estricta.
+      out.sinPesosIgual = evaluate(game.board, 'w', prop) ===
+                          evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0 } });
+
+      // 2. y encendida NO es el mismo modelo (si no, la variante no mediría nada)
+      let quitadas = 0;
+      for (const [k, p] of [...game.board]) {
+        if (p.color === 'b' && p.type !== 'K' && quitadas < 3) { game.board.delete(k); quitadas++; }
+      }
+      out.pesadoDistinto = evaluate(game.board, 'w', prop) !== evaluate(game.board, 'w', pesado);
+
+      // 3. antisimetría CON pesos. Es la que puede romper la ponderación, porque
+      //    un peso que dependiera del bando haría que cada jugador viera una
+      //    posición distinta. Por eso rpsPropPeso promedia los dos colores.
+      const desdeW = evaluate(game.board, 'w', pesado);
+      const desdeB = evaluate(game.board, 'b', pesado);
+      out.antisimetrica = Math.abs(desdeW + desdeB) < 1e-9;
+
+      // 4. el invariante de arriba, directo sobre la función del peso
+      rpsAplicaCfg(pesado);
+      const cw = {}, cb = {};
+      for (const t of info.tipos) { cw[t] = 0; cb[t] = 0; }
+      for (const [, p] of game.board) (p.color === 'w' ? cw : cb)[p.type]++;
+      out.pesoSimetrico = info.figuras.every(t =>
+        Math.abs(rpsPropPeso(t, cw, cb) - rpsPropPeso(t, cb, cw)) < 1e-12);
+
+      // 5. la posición inicial sigue valiendo 0 exacto
+      setVariant('rps-rey');
+      newGame();
+      out.inicialCero = evaluate(game.board, 'w', pesado);
+
+      // 6. EL MECANISMO: con el material simétrico los pesos son casi iguales
+      //    (todos los tipos valen lo mismo, y es correcto); cuando a un bando se
+      //    le acaba un tipo, se separan. Ahí es donde la variante aporta.
+      rpsAplicaCfg(pesado);
+      const c0w = {}, c0b = {};
+      for (const t of info.tipos) { c0w[t] = 0; c0b[t] = 0; }
+      for (const [, p] of game.board) (p.color === 'w' ? c0w : c0b)[p.type]++;
+      const abanico = (a, b) => {
+        const v = info.figuras.map(t => rpsPropPeso(t, a, b));
+        return Math.max(...v) / Math.min(...v);
+      };
+      out.abanicoSimetrico = abanico(c0w, c0b);
+      const c1b = { ...c0b, [info.figuras[0]]: 0 };     // a las negras no les queda ese tipo
+      out.abanicoDesigual = abanico(c0w, c1b);
+
+      // 7. los invariantes de los que dependen MVV-LVA y la poda de quiesce
+      //    tienen que seguir en pie con la ponderación encendida
+      setVariant('rps-rey');
+      newGame();
+      const antes = evaluate(game.board, 'w', pesado);
+      let sube = true;
+      for (const t of info.figuras) {
+        for (const [k, p] of [...game.board]) {
+          if (p.color !== 'b' || p.type !== t) continue;
+          game.board.delete(k);
+          if (evaluate(game.board, 'w', pesado) <= antes) sube = false;
+          game.board.set(k, p);
+          break;
+        }
+      }
+      out.capturarSube = sube;
+      rpsAplicaCfg(pesado);
+      const dyn = rpsDynValues(game.board);
+      const vals = [];
+      for (const t of info.figuras) { vals.push(dyn.w[t], dyn.b[t]); }
+      out.valoresPositivos = vals.every(v => v > 0);
+      out.valorMax = Math.max(...vals);
+      return out;
+    `);
+    ok(r.sinPesosIgual, 'con PROP_PESOS apagada sale el modelo proporcional de siempre, bit a bit');
+    ok(r.pesadoDistinto, 'y encendida es otro modelo');
+    ok(r.antisimetrica, 'sigue siendo antisimétrica con los pesos puestos');
+    ok(r.pesoSimetrico, 'el peso de un tipo no depende del bando (lo que protege la antisimetría)');
+    ok(Math.abs(r.inicialCero) < 1e-9,
+      `la posición inicial vale 0 exacto (${r.inicialCero})`);
+    ok(r.abanicoSimetrico < 1.3,
+      `con el material simétrico los tipos pesan casi igual (x${r.abanicoSimetrico.toFixed(2)})`);
+    ok(r.abanicoDesigual > 1.6,
+      `y se separan cuando a un bando se le acaba un tipo (x${r.abanicoDesigual.toFixed(2)})`);
+    ok(r.capturarSube, 'capturar sigue subiendo siempre la evaluación');
+    ok(r.valoresPositivos,
+      `los valores por captura siguen positivos, máx ${r.valorMax.toFixed(0)}`);
+  }
+
   // --- búsqueda sin rey ------------------------------------------------------
 
   console.log('Búsqueda kingless:');

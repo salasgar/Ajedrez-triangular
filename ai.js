@@ -225,6 +225,66 @@ const RPS_DEFAULTS = Object.freeze({
   // esto. No se recorta a tablas en seco porque eso aplana la evaluación y el
   // bando que SÍ puede ganar se queda sin gradiente que seguir.
   SIN_VICTORIA: 0.1,
+
+  // ---- Evaluación PROPORCIONAL (tarea 21, propuesta de Juan Luis) --------
+  // Modelo ALTERNATIVO, no un término más: con PROPORCIONAL distinto de 0 no
+  // se ejecuta nada del modelo aditivo de arriba (ni material dinámico, ni
+  // amenaza, ni caza, ni movilidad). Ver evaluateRpsProporcional.
+  //
+  // MEDIDO EN ARENA el 2026-08-26 (tarea 21) y APAGADO: en rps-rey, 200
+  // partidas contra el modelo vigente, elo(A−B) = +81 [+50, +114], p = 0,000
+  // → el modelo proporcional PIERDE por 81 elo. Se deja implementado y
+  // probado porque la tarea 22 lo continúa; no se borra.
+  //
+  // OJO CON CÓMO SE MIDIÓ, que aquí estuvo la trampa. Con el tope de jugadas
+  // por defecto de la arena (400) el veredicto salía AL REVÉS: +44 a favor del
+  // candidato con el margen estándar (300), pero −33 con margen 900, los dos
+  // significativos. La causa: 62 de esas 200 partidas no terminaban y se
+  // adjudicaban por material, y el candidato iba por delante en material en 61
+  // de las 62. O sea, se estaba adjudicando por material justo al modelo cuyo
+  // objetivo ES el material. Repetido con --max-plies=800, que deja 1 sola
+  // partida de 200 por adjudicar, el número de arriba sale idéntico a los
+  // márgenes 150, 300 y 900. Ver notas/s-20260826T095832-0470517d.md.
+  //
+  // POR QUÉ PIERDE, que es lo que aprovecha la tarea 22: el modelo no tiene
+  // iniciativa. Evalúa un ESTADO —qué proporción tengo— y ninguna señal empuja
+  // a las piezas a ponerse a tiro. En autojuego con 8 piezas de ventaja hace
+  // CERO capturas en 300 medias jugadas (banco t21-conversion) y en una de las
+  // tres partidas le dan mate llevando 20 piezas contra 12. El gradiente está
+  // sano (capturar vale MÁS cuanto más ganas, ×2,58: banco t21-gradiente),
+  // pero nunca llega a activarse porque no hay contacto.
+  PROPORCIONAL: 0,        // bandera: 0 = apagada (por defecto), 1 = encendida
+  // Sub-bandera: media geométrica PONDERADA por el valor de cada tipo, con
+  // rpsPropPeso() —el rpsValor() del modelo aditivo, promediado entre colores
+  // para no romper la antisimetría—. Corrige que el modelo sin ella valore TODA
+  // captura en ~100 sea del tipo que sea (O 102,8 · A 94,2 · T 102,8) mientras
+  // el aditivo distingue (O 20 · A 24 · T 52).
+  //
+  // IMPLEMENTADA Y PROBADA, PERO SIN MEDIR EN ARENA, a propósito: ponderar los
+  // tipos solo puede notarse cuando hay CAMBIOS, y este modelo no llega nunca
+  // al contacto, así que medirla hoy no distinguiría «no sirve» de «no ha
+  // tenido ocasión». Se mide en la tarea 22, DESPUÉS del término de acoso y
+  // sobre el ganador. Con la sub-bandera apagada, W = n y wPos = 1, así que el
+  // denominador vuelve a ser n+1 y sale el modelo sin pesos bit a bit: es una
+  // generalización estricta, no otro modelo.
+  PROP_PESOS: 0,
+  // Escala del modelo al rango de siempre (una pieza ≈ 100 puntos). Calibrada
+  // midiendo el delta real de capturar una figura en la posición inicial de
+  // rps-rey; ver la terminada de la tarea 21.
+  PROP_K: 2000,
+  // Prima de invencibilidad: puntos por cada tipo del que YO tengo todas las
+  // piezas vivas (el rival se quedó sin ninguna), o sea por cada tipo mío que
+  // ya no tiene verdugo posible. El modelo ya premia eso por sí solo —el
+  // cociente se va a 1—, esto es el extra que pidió Juan Luis.
+  PROP_INVENCIBLE: 60,
+  // Pesos del valor posicional de una pieza. Las cuatro señales van
+  // normalizadas a [0,1], así que estos números son directamente comparables
+  // entre sí; el modelo no los usa en bruto, sino como PROPORCIÓN del total.
+  PROP_BASE: 1,           // toda pieza vale algo por existir (evita el 0/0)
+  PROP_PROTECTOR: 1,      // cerca de quien se come a mi depredador
+  PROP_PROTEGIDO: 1,      // cerca de a quien yo defiendo
+  PROP_CENTRO: 1,         // dominio del centro
+  PROP_PRESA: 1,          // cerca de presas rivales sin respuesta
 });
 
 // Valores activos. Se muta en sitio (nunca se reasigna la referencia) porque
@@ -341,6 +401,27 @@ function rpsDynValues(board) {
   for (const t of info.tipos) { cnt.w[t] = 0; cnt.b[t] = 0; }
   for (const [, p] of board) cnt[p.color][p.type]++;
   const val = { w: {}, b: {} };
+  // Con el modelo proporcional encendido no hay tabla de valores que consultar:
+  // lo que vale una pieza es LO QUE CAMBIA EL SCORE si desaparece del tablero,
+  // derivado de la propia fórmula (ficha de la tarea 21). Son a lo sumo 2×5
+  // reevaluaciones de una función que solo recorre los tipos, sobre los
+  // recuentos que ya están hechos: por eso se separó rpsPropScoreCuentas.
+  if (RPS_CFG.PROPORCIONAL) {
+    const base = rpsPropScoreCuentas(cnt.w, cnt.b);   // desde las blancas
+    for (const t of info.figuras) {
+      if (cnt.w[t] > 0) {
+        cnt.w[t]--;
+        val.w[t] = Math.max(1, base - rpsPropScoreCuentas(cnt.w, cnt.b));
+        cnt.w[t]++;
+      } else val.w[t] = 1;
+      if (cnt.b[t] > 0) {
+        cnt.b[t]--;
+        val.b[t] = Math.max(1, rpsPropScoreCuentas(cnt.w, cnt.b) - base);
+        cnt.b[t]++;
+      } else val.b[t] = 1;
+    }
+    return val;
+  }
   for (const t of info.figuras) {
     val.w[t] = rpsValor(t, cnt.b);
     val.b[t] = rpsValor(t, cnt.w);
@@ -525,6 +606,255 @@ function evaluateRps(board, color, cfg) {
     if (!ganaW && score > 0) score *= RPS_CFG.SIN_VICTORIA;
     if (!ganaB && score < 0) score *= RPS_CFG.SIN_VICTORIA;
   }
+  return color === 'w' ? score : -score;
+}
+
+// --- Evaluación PROPORCIONAL de las modalidades PPT (tarea 21) ------------
+//
+// Modelo alternativo al aditivo de arriba, propuesto por Juan Luis. En vez de
+// sumar y restar valores por pieza, se evalúa la PROPORCIÓN de cada recurso:
+//
+//   q_t = (mías_t + 1) / (totales_t + 1)          para cada tipo de figura
+//   q_pos = (valor posicional mío) / (valor posicional de todos)
+//   G = media geométrica de todos los cocientes
+//   score = PROP_K · (ln G_mío − ln G_rival)
+//
+// Por qué esto y no una suma. Cada cociente está acotado en (0,1], así que
+// ningún término puede desbocarse ni eclipsar a los demás — que es la RAÍZ de
+// la oscilación entre profundidades que diagnosticó la tarea 13 y que la 18
+// solo pudo mitigar bajando pesos. Y la media geométrica codifica una verdad
+// de estas modalidades que la suma no sabe: necesitas TODOS los tipos, porque
+// quedarte sin uno hunde el producto entero (con 0 piedras, tus papeles no
+// tienen quien los proteja para siempre). Generaliza sola a rpsls-rey: son
+// cinco cocientes en vez de tres, sin tocar nada.
+//
+// El logaritmo no es un detalle de implementación: convierte la media
+// geométrica en media aritmética de logaritmos, que es barata, estable (nada
+// de productos que se van a cero) y vale exactamente 0 cuando la posición está
+// equilibrada, que es lo que el minimax necesita.
+//
+// SUAVIZADO +1: sin él, un tipo del que nadie tiene piezas daría 0/0, y el
+// primer bando en quedarse sin un tipo daría cociente 0 y logaritmo −∞. Con
+// él, un tipo extinto EN AMBOS bandos daría cociente 1 a los dos —un artefacto
+// que diluye la media—, así que además se EXCLUYE de la media. La prima de
+// invencibilidad exige mías > 0 por el mismo motivo.
+//
+// EL REY QUEDA FUERA de los cocientes: del jaque, del mate y de la regla de
+// reyes no adyacentes (tarea 16) se ocupa la búsqueda, como siempre.
+//
+// LO QUE ESTE MODELO NO LLEVA, a propósito: los términos aditivos de amenaza y
+// de caza (es un modelo U OTRO, no una mezcla), la movilidad —la ficha lo
+// define como «alternativa completa a evaluateRps», y la calidad posicional la
+// aporta q_pos— y la rebaja SIN_VICTORIA, que existe para matar el incentivo
+// de los «rehenes» del modelo aditivo y aquí no tiene equivalente. Si el
+// candidato pierde en arena, un cociente de movilidad (q_mob = mi movilidad /
+// movilidad total) es la variante siguiente más natural, y encaja en el modelo
+// sin romperlo.
+
+// Quién protege a quién, derivado de la matriz de capturas (así vale para
+// cualquier modalidad PPT sin escribir nada a mano):
+//   protectores[t] = tipos propios que se comen a algún depredador de t
+//                    (en rps: a la piedra la protege la tijera, porque a la
+//                     piedra la come el papel y la tijera come papel)
+//   protegidos[t]  = tipos propios a los que t defiende (el dual)
+// Se cachea en la variante, como rpsInfo.
+function rpsPropInfo() {
+  if (V._rpsPropInfo) return V._rpsPropInfo;
+  const info = rpsInfo();
+  const protectores = {}, protegidos = {};
+  for (const t of info.figuras) {
+    const prot = new Set();
+    for (const a of info.depredadores[t]) {
+      for (const d of info.capturadoPor[a]) if (d !== 'K') prot.add(d);
+    }
+    protectores[t] = [...prot];
+  }
+  for (const t of info.figuras) protegidos[t] = [];
+  for (const u of info.figuras) {
+    for (const d of protectores[u]) protegidos[d].push(u);
+  }
+  // Distancias y centralidad PRECALCULADAS. rpsDist las cachea con pereza y
+  // centrality() llama a Math.hypot cada vez; las dos cosas se pagan en cada
+  // hoja de la búsqueda, y Math.hypot es de lo más caro que hay en V8 (mide
+  // el desbordamiento). Aquí se llenan de una vez por modalidad: para un
+  // tablero de este tamaño la matriz completa son unos pocos miles de floats.
+  const n = CELLS.length;
+  const dist = new Float32Array(n * n);
+  const centro = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = CELLS[i];
+    centro[a.idx] = centrality(a);
+    for (let j = 0; j < n; j++) {
+      const b = CELLS[j];
+      dist[a.idx * n + b.idx] = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    }
+  }
+  return (V._rpsPropInfo = { protectores, protegidos, dist, centro, n });
+}
+
+// La parte del score que solo depende de los RECUENTOS: los cocientes por tipo
+// y la prima de invencibilidad, siempre desde las blancas. Se separa porque la
+// usan dos sitios muy distintos: la evaluación (que le añade el cociente
+// posicional) y rpsDynValues, donde el «valor» de una pieza es el DELTA de
+// esta función al quitarla del tablero — que es como la ficha pide derivar el
+// valor por captura: de la propia fórmula, no de una tabla.
+// Peso de un tipo en la media ponderada (sub-bandera PROP_PESOS): lo que vale
+// AHORA una pieza de ese tipo, con el mismo rpsValor() del modelo aditivo (base
+// + presas vivas − depredadores vivos). Sale entero de la matriz de capturas, así
+// que generaliza solo a rpsls-rey sin tocar nada.
+//
+// Se promedian los dos colores a propósito. Si el peso dependiera del bando, el
+// score dejaría de ser antisimétrico y el minimax vería dos posiciones distintas
+// según quién mirara: el error más caro que se puede cometer en una evaluación.
+function rpsPropPeso(t, cw, cb) {
+  return (rpsValor(t, cb) + rpsValor(t, cw)) / 2;
+}
+
+function rpsPropCuentas(cw, cb) {
+  const info = rpsInfo();
+  const pesos = RPS_CFG.PROP_PESOS;
+  let sw = 0, sb = 0, n = 0, inv = 0, W = 0;
+  for (const t of info.figuras) {
+    const w = cw[t] || 0, b = cb[t] || 0, tot = w + b;
+    if (tot === 0) continue;             // extinto en ambos: fuera de la media
+    // Con PROP_PESOS la media geométrica pasa de simple a PONDERADA: cada tipo
+    // pesa lo que vale una pieza suya. Sin la sub-bandera todos pesan 1 y sale
+    // EXACTAMENTE la fórmula de antes, así que la variante es una generalización
+    // estricta, no otro modelo. Lo que obligó a probarla: medido en la arena, el
+    // modelo sin pesos valora TODA captura en ~100 sea del tipo que sea (O 102,8
+    // · A 94,2 · T 102,8), mientras el aditivo distingue (O 20 · A 24 · T 52),
+    // así que el cambio tijera-por-piedra le daba exactamente igual.
+    const p = pesos ? rpsPropPeso(t, cw, cb) : 1;
+    const den = Math.log(tot + 1);
+    sw += p * (Math.log(w + 1) - den);
+    sb += p * (Math.log(b + 1) - den);
+    W += p;
+    n++;
+    // invencibilidad: todas las piezas vivas de este tipo son de un bando, y
+    // ese bando tiene alguna (el +1 del suavizado no cuenta como pieza)
+    if (b === 0) inv++;
+    else if (w === 0) inv--;
+  }
+  // El cociente posicional pesa como un tipo MEDIO, que es lo que pesaba antes
+  // (1 sobre n+1). Así subir los pesos no lo diluye ni lo infla.
+  return { sw, sb, n, inv, W, wPos: n === 0 ? 0 : W / n };
+}
+
+// Score de solo-recuentos, desde las blancas. El cociente posicional no entra
+// aquí a propósito: depende de la casilla de destino, y esto se llama para
+// ORDENAR jugadas, donde hay que ser barato. Es una aproximación declarada,
+// no un olvido.
+function rpsPropScoreCuentas(cw, cb) {
+  const { sw, sb, n, inv, W, wPos } = rpsPropCuentas(cw, cb);
+  if (n === 0) return 0;
+  return RPS_CFG.PROP_K * (sw - sb) / (W + wPos) + RPS_CFG.PROP_INVENCIBLE * inv;
+}
+
+// Valor posicional de cada pieza, por color y tipo, para el cociente q_pos.
+// Cuatro señales, todas normalizadas a [0,1] y todas derivadas de la matriz de
+// capturas o de la geometría, más una base para que ninguna pieza valga 0.
+// Devuelve las dos sumas (blancas, negras).
+function rpsPropPosicional(board, cnt, cells) {
+  const info = rpsInfo(), P = rpsPropInfo();
+  const diam = info.diam;
+  // Pesos leídos UNA vez: esto se ejecuta en cada hoja de la búsqueda, y
+  // RPS_CFG.X dentro de un bucle son accesos a propiedad que se pagan.
+  const wBase = RPS_CFG.PROP_BASE, wProt = RPS_CFG.PROP_PROTECTOR;
+  const wPrg = RPS_CFG.PROP_PROTEGIDO, wCen = RPS_CFG.PROP_CENTRO;
+  const wPre = RPS_CFG.PROP_PRESA;
+  // Cercanía [0,1] al más próximo de una lista de casillas, saltándose la
+  // propia. 0 si la lista está vacía (no hay a quien acercarse).
+  const DIST = P.dist, NC = P.n, CENTRO = P.centro;
+  const cercania = (fila, desde, lista) => {
+    let dmin = Infinity;
+    for (let i = 0; i < lista.length; i++) {
+      const c = lista[i];
+      if (c === desde) continue;
+      const d = DIST[fila + c.idx];
+      if (d < dmin) dmin = d;
+    }
+    return dmin === Infinity ? 0 : 1 - dmin / diam;
+  };
+  let sumaW = 0, sumaB = 0;
+  const protes = [], proteg = [], presas = [];
+  for (let ci = 0; ci < 2; ci++) {
+    const color = ci === 0 ? 'w' : 'b', foe = ci === 0 ? 'b' : 'w';
+    const mios = cells[color], suyos = cells[foe];
+    for (const t of info.figuras) {
+      const mias = mios[t];
+      if (!mias.length) continue;
+      // Listas de referencia, montadas una vez por (color, tipo) y no por
+      // pieza. Se reutilizan los mismos arrays (length = 0) para no dejar
+      // basura en cada hoja de la búsqueda.
+      protes.length = 0; proteg.length = 0; presas.length = 0;
+      if (wProt) for (const d of P.protectores[t]) for (const c of mios[d]) protes.push(c);
+      if (wPrg) for (const u of P.protegidos[t]) for (const c of mios[u]) proteg.push(c);
+      if (wPre) {
+        for (const v of info.presas[t]) {
+          for (const c of suyos[v]) {
+            // «desprotegida» es la misma noción de defensa que usa el modelo
+            // aditivo: que el rival no pueda responder a una pieza mía de
+            // tipo t que aterrice ahí
+            if (!rpsContraataque(board, c, t, foe)) presas.push(c);
+          }
+        }
+      }
+      let acum = 0;
+      for (let i = 0; i < mias.length; i++) {
+        const cell = mias[i];
+        const fila = cell.idx * NC;
+        let v = wBase;
+        if (wProt) v += wProt * cercania(fila, cell, protes);
+        if (wPrg) v += wPrg * cercania(fila, cell, proteg);
+        if (wCen) v += wCen * CENTRO[cell.idx];
+        if (wPre) v += wPre * cercania(fila, cell, presas);
+        acum += v;
+      }
+      if (ci === 0) sumaW += acum; else sumaB += acum;
+    }
+  }
+  return { w: sumaW, b: sumaB };
+}
+
+// La evaluación proporcional. Misma firma y mismo contrato que evaluateRps:
+// devuelve la puntuación desde el punto de vista de `color`.
+function evaluateRpsProporcional(board, color, cfg) {
+  rpsAplicaCfg(cfg);                     // pesos activos de ESTE jugador
+  const info = rpsInfo();
+  const cnt = { w: {}, b: {} };
+  const cells = { w: {}, b: {} };
+  for (const t of info.tipos) {
+    cnt.w[t] = 0; cnt.b[t] = 0; cells.w[t] = []; cells.b[t] = [];
+  }
+  for (const [key, p] of board) {
+    cnt[p.color][p.type]++;
+    cells[p.color][p.type].push(CELL_MAP.get(key));
+  }
+  // quedarse sin piezas es la derrota ('wiped'); igual que en evaluateRps,
+  // verlo ya en la hoja evita que la quietud lo puntúe como simple material
+  if (V.kingless) {
+    let mias = 0, suyas = 0;
+    for (const t of info.tipos) {
+      if (color === 'w') { mias += cnt.w[t]; suyas += cnt.b[t]; }
+      else { mias += cnt.b[t]; suyas += cnt.w[t]; }
+    }
+    if (mias === 0) return -MATE;
+    if (suyas === 0) return MATE;
+  }
+  const { sw, sb, n, inv, W, wPos } = rpsPropCuentas(cnt.w, cnt.b);
+  // sin ninguna figura viva no hay nada que proporcionar (solo reyes): la
+  // posición está equilibrada por definición de este modelo
+  if (n === 0) return 0;
+  const pos = rpsPropPosicional(board, cnt, cells);
+  // El cociente posicional lleva el MISMO suavizado que los de tipo, para que
+  // la media mezcle magnitudes comparables y para que un bando que se queda
+  // solo con el rey (valor posicional 0, porque el rey no cuenta) no dé
+  // logaritmo de cero.
+  const totPos = pos.w + pos.b;
+  const denPos = Math.log(totPos + 1);
+  const lnGW = (sw + wPos * (Math.log(pos.w + 1) - denPos)) / (W + wPos);
+  const lnGB = (sb + wPos * (Math.log(pos.b + 1) - denPos)) / (W + wPos);
+  const score = RPS_CFG.PROP_K * (lnGW - lnGB) + RPS_CFG.PROP_INVENCIBLE * inv;
   return color === 'w' ? score : -score;
 }
 
@@ -925,7 +1255,16 @@ function evaluate(board, color, cfg) {
   // los valores planos de la modalidad (sirve para medir la dinámica contra
   // la plana en la arena y en test-ia-rps.js). Las clásicas no tienen
   // V.captures y siguen por aquí abajo, intactas.
-  if (V.captures && cfg.dynamicValues !== false) return evaluateRps(board, color, cfg);
+  // Con cfg.rps.PROPORCIONAL se entra en el modelo proporcional de la tarea 21
+  // (media geométrica de cocientes), que sustituye a evaluateRps ENTERA. Se
+  // mira `cfg.rps` y no `RPS_CFG` a propósito: RPS_CFG lo fija rpsAplicaCfg,
+  // que es lo primero que hace cada una de las dos evaluaciones, así que
+  // consultarlo aquí obligaría a llamarla dos veces en cada hoja.
+  if (V.captures && cfg.dynamicValues !== false) {
+    return (cfg.rps && cfg.rps.PROPORCIONAL)
+      ? evaluateRpsProporcional(board, color, cfg)
+      : evaluateRps(board, color, cfg);
+  }
   const values = cfg.pieceValues || PV();
   const posW = cfg.positionWeights;
   // Puntos por jugada disponible. Sale de la modalidad (engine.mobility), como

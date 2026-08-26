@@ -1,0 +1,7 @@
+arena-motor · rps-rey · nivel 4 · 100 pares (200 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = proporcional-pesos {"PROPORCIONAL":1,"PROP_PESOS":1}
+  2 proceso(s), semillas 407/408
+
+arena[rps-rey]: vigente vs proporcional-pesos · pares 201..250 · seed 407 · 0 partidas ya hechas en entrenamiento/t21-rps-rey-pesos-tope800--s-20260826T095832-0470517d.p1.log
+arena[rps-rey]: vigente vs proporcional-pesos · pares 251..300 · seed 408 · 0 partidas ya hechas en entrenamiento/t21-rps-rey-pesos-tope800--s-20260826T095832-0470517d.p2.log
