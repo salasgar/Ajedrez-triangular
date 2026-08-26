@@ -9,12 +9,12 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-25T18:20Z · por la sesión s-20260825T090854-1758bb65 (la 14 queda
-LISTA: 89 problemas cosechados de partidas reales, 0 rechazados en la reverificación
-completa; solo la 13 sigue EN CURSO)
+Regenerado: 2026-08-26T01:43Z · por la sesión s-20260825T090706-b85c3e30 (la 13 queda
+A MEDIAS: dos bugs reales arreglados y commiteados, pero el síntoma central —capturas
+gratis ignoradas en posiciones muy pobladas— sigue sin resolver; cogible)
 
-El árbol compartido está sobre `main` = `origin/main` (`dc6081c`: tablón de la 10, sobre
-el `56917bf` de la propia 10). Las tareas de interfaz editan los ficheros directamente,
+El árbol compartido está sobre `main` = `origin/main` (`6dcc509`: arreglos de la 13,
+sobre el `2f91fde` de la 14). Las tareas de interfaz editan los ficheros directamente,
 con los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
 respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que
 Juan Luis lo tire cuando quiera.
@@ -103,7 +103,7 @@ equivalencia de hoy está en `proyecto.md`.
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | **LISTA** | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | **LISTA** | |
-| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 3 h | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | EN CURSO | s-20260825T090706-b85c3e30 · 2026-08-25T15:07:18Z |
+| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 6 h (subida) | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | A MEDIAS | |
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | **LISTA** | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
@@ -111,9 +111,38 @@ Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**No queda ninguna tarea libre ahora mismo.** Solo la 13 sigue EN CURSO (reclamo vivo
-hasta 2026-08-26T03:17Z); las demás están LISTAS. Quien llegue: comprueba
-`hechos/reclamos/` por si esa caducó mientras tanto.
+**Libre ahora mismo: la 13 (MEDIO), A MEDIAS, sin reclamo vivo.** Todas las demás están
+LISTAS. Quien la coja: lee primero `hechos/fallos/13--s-20260825T090706-b85c3e30.md`
+—el diagnóstico completo de por dónde seguir— antes de repetir trabajo ya hecho.
+
+**La 13 queda A MEDIAS el 2026-08-26T01:43Z** (main = 6dcc509): dos bugs reales
+arreglados y commiteados. (1) `orderMoves`/`orderSearchMoves`/`quiesce` ordenaban y
+podaban capturas en las modalidades PPT con los valores PLANOS de la modalidad (todo a
+100) en vez del valor dinámico real (`rpsValor`); `quiesce()` podaba por diferencia con
+ese mismo plano, así que descartaba capturas que en realidad valen más de 100. Arreglado
+con `rpsDynValues()` nueva. (2) `isAttackedFast` no aplicaba `canCapture()` a los
+ataques de piezas saltadoras: en las modalidades -rey, un rey rival adyacente se contaba
+como jaque aunque K no puede "capturar" a K (la única excepción de `capturesConRey`), así
+que `genMoves` rechazaba jugadas legales del rey. **Bug preexistente, no de esta
+sesión** —confirmado contra el `ai.js` de HEAD sin tocar nada—, solo destapado por el
+camino distinto que tomó la partida de autojuego tras el arreglo (1). `test-modalidades.js`
+y `test-rps.js` en verde completo; `test-ia-rps.js` en verde salvo `dekle` en la
+regresión clásica, que es ajeno a esta tarea (el commit `56917bf` de la tarea 10 cambió
+los valores de dekle y dejó desactualizado el dorado — confirmado igual 3 veces contra
+HEAD sin tocar nada).
+
+**El síntoma central que reportó Juan Luis sigue sin resolver**: en autojuego real
+(nivel 8, `rps`, 220 jugadas) el nivel más alto sigue dejando pasar capturas gratis en
+posiciones muy pobladas (~40 piezas) con la misma frecuencia que antes de los dos
+arreglos (129/220 turnos sin capturar nada, antes; 135/220, después — sin mejora
+medible). Diagnosticado a fondo pero no arreglado: la puntuación de la búsqueda oscila
+con la profundidad (una captura gratis pasa de puntuar 500.9 a 181.7 entre profundidad 1
+y 4, justo donde cae el presupuesto de nodos real), aumentar el presupuesto 20× reduce
+el hueco pero no lo cierra, y la sospecha con más fundamento (sin confirmar) es que
+`quiesce()` solo persigue capturas y nunca las jugadas tranquilas que cambian mucho el
+término de "amenaza" — así que esas jugadas nunca se verifican tácticamente como sí se
+verifican las capturas. Detalle completo, con los números y las pistas para la siguiente
+sesión, en `hechos/fallos/13--s-20260825T090706-b85c3e30.md`.
 
 La 03 quedó LISTA el 2026-08-25T01:55Z (main = 74cbb1a): la segunda tanda de arena
 (96 partidas, con el visto bueno de Juan Luis) midió las 6 candidatas pendientes y

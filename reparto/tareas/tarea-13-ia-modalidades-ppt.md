@@ -2,7 +2,11 @@
 
 Creada: 2026-08-25 (sesión s-20260824T233011-d4d13c52, ampliación del reparto)
 Precondición: tarea 03 sin reclamo vivo (LISTA, o A MEDIAS como quedó el 2026-08-25) · Disparo: MANUAL
-Duración esperada: 3 h · Banda de modelo: MEDIO
+Duración esperada: 6 h (subida de 3 h por la sesión s-20260825T090706-b85c3e30
+el 2026-08-26: el diagnóstico a fondo — por qué el nivel alto deja pasar
+capturas gratis en posiciones muy pobladas — llevó bastante más que arreglar
+un bug puntual; ver hechos/fallos/13--s-20260825T090706-b85c3e30.md) · Banda
+de modelo: MEDIO
 Salida (dueña exclusiva): `main` (ai.js, ai-async.js, test-ia-rps.js)
 
 ## Antes de empezar
