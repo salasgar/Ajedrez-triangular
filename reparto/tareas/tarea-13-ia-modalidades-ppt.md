@@ -48,6 +48,21 @@ reproducir primero; «juega mal» en general viene después.
 - Ya existe `node test-ia-rps.js`: ejecútalo ANTES de tocar nada, para saber qué
   cubría y qué daba por bueno.
 
+## Decisiones de Juan Luis del 2026-08-26 (fuente: hechos/notas/s-20260825T093251-fde516e1.md)
+1. **Dos reyes nunca adyacentes** (modalidades -rey): implementarlo haciendo que
+   `capturesConRey` en variants.js diga que K SÍ puede capturar a K — así la casilla
+   junto al rey rival cuenta como atacada y moverse ahí es ilegal, como en el ajedrez
+   clásico. El filtro `canCapture()` de `isAttackedFast` (commit `6dcc509`) se queda;
+   cambia el dato, no el código. Ojo: la «captura gratis del rey» de la regresión de
+   `rpsls-rey` pasa a ser jugada ilegal — revisar ese caso y su dorado. Este cambio
+   puntual de variants.js queda AUTORIZADO pese al «Prohibido» de abajo; solo esa
+   entrada de la matriz.
+2. **El arreglo no debe imponer «captura siempre»**: renunciar a una captura gratis
+   por una jugada estratégica puede ser legítimo en PPT. El objetivo es que la
+   comparación sea honesta (la ganancia de la jugada tranquila, verificada igual de
+   bien que la captura, sin la oscilación entre profundidades), no forzar la captura
+   por regla. El criterio de cierre se lee con esa luz.
+
 ## Qué hay que hacer
 1. Reproducir: una posición PPT con captura gratis obvia donde el nivel máximo no
    captura. Convertirla en caso de prueba en test-ia-rps.js (posición + jugada
