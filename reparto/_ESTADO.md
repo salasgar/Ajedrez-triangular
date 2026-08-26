@@ -9,24 +9,25 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T10:55Z · por la sesión s-20260826T095832-0470517d al cerrar la
-16 (los dos reyes ya no pueden quedar adyacentes en las modalidades -rey; el dorado de
-`dekle`, en rojo permanente desde la 10, vuelve a verde). La cadena de arena 17-20
-—encargo de Juan Luis: validar por elo las mejoras del motor en `rps-rey` y
-`rpsls-rey`— queda abierta por la 17; las modalidades sin rey siguen APARCADAS por
-decisión suya del 2026-08-26.
+Regenerado: 2026-08-26T11:49Z · por la sesión s-20260826T095832-0470517d al cerrar la
+17, su segunda tarea seguida (antes cerró la 16). Ya está el instrumento de medida de la
+cadena: los pesos de evaluación PPT son configurables (`cfg.rps`) y
+`entrenamiento/arena-motor.js` los mide por elo, con tandas de humo limpias en las dos
+modalidades. Queda libre la 18. La cadena en serie la recableó `a0bfaa7` al entrar la
+21: va 18 → 21 → 19 → 20. Las modalidades sin rey siguen APARCADAS por decisión de Juan
+Luis del 2026-08-26.
 
-El árbol compartido está sobre `main` = `origin/main` (`3ac4c3a`: la regla de reyes de
-la 16, sobre el `bb3c534` de los pesos de amenaza de la 13). Las
+El árbol compartido está sobre `main` = `origin/main` (`74ca9d9`: la arena de motor de
+la 17, sobre el `3ac4c3a` de la regla de reyes de la 16). Las
 tareas de interfaz editan los ficheros directamente, con los reclamos del harness
 (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de respaldo de la
 reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
 tire cuando quiera.
 
-**Las 15 tareas originales están completas, y también la 16**; quedan las 17-20 de la
-cadena nueva del 2026-08-26: la 16 (regla de reyes) era la puerta y ya está LISTA, así
-que la 17 (arena de motor) queda libre; las 18-20 miden por elo tres candidatos de
-mejora, EN SERIE (comparten ai.js y cada una parte del vigente que dejó la anterior). Las modalidades sin rey
+**Las 15 tareas originales están completas, y también la 16 y la 17**; quedan las
+18-21: los candidatos de mejora medidos por elo, EN SERIE (comparten ai.js y cada uno
+parte del vigente que dejó el anterior). El instrumento ya está hecho y probado (17),
+así que la 18 puede empezar a medir directamente. Las modalidades sin rey
 (`rps`, `rpsls`) quedan aparcadas: ninguna tarea las toca.
 
 ## Antes de hacer nada
@@ -117,8 +118,8 @@ equivalencia de hoy está en `proyecto.md`.
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | **LISTA** | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 | 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) + dorado de dekle | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | **LISTA** | |
-| 17 | Arena de motor A/B para rps-rey y rpsls-rey (arnés + parametrización RPS_CFG) | tareas/tarea-17-arena-motor.md | 16 LISTA | 3 h | MEDIO | `entrenamiento/arena-motor.js` + `main` (ai.js, solo parametrización) | manual | PENDIENTE | |
-| 18 | Candidato 1 en arena: pesos de amenaza (0.1/0.3 vs 0.2/0.6 vs 0.05/0.15) | tareas/tarea-18-arena-pesos-amenaza.md | 17 LISTA | 5 h | MEDIO | `main` (ai.js, constantes de amenaza) + `entrenamiento/` | manual | BLOQUEADA | |
+| 17 | Arena de motor A/B para rps-rey y rpsls-rey (arnés + parametrización RPS_CFG) | tareas/tarea-17-arena-motor.md | 16 LISTA | 3 h | MEDIO | `entrenamiento/arena-motor.js` + `main` (ai.js, solo parametrización) | manual | **LISTA** | |
+| 18 | Candidato 1 en arena: pesos de amenaza (0.1/0.3 vs 0.2/0.6 vs 0.05/0.15) | tareas/tarea-18-arena-pesos-amenaza.md | 17 LISTA | 5 h | MEDIO | `main` (ai.js, constantes de amenaza) + `entrenamiento/` | manual | PENDIENTE | |
 | 19 | Candidato en arena: prima de invencibilidad sobre el modelo aditivo | tareas/tarea-19-arena-invencibilidad.md | 21 LISTA (y que la proporcional NO haya entrado) | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
 | 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 21 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
 | 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | BLOQUEADA | |
@@ -127,8 +128,8 @@ Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**Libre ahora mismo: la 17 (MEDIO), sin reclamo; detrás, la cadena en serie va
-17 → 18 → 21 → 19 → 20** (recableada el 2026-08-26 al entrar la 21: la evaluación
+**Libre ahora mismo: la 18 (MEDIO), sin reclamo; detrás, la cadena en serie va
+18 → 21 → 19 → 20** (recableada el 2026-08-26 al entrar la 21: la evaluación
 proporcional de Juan Luis va antes que la prima y que la quiescencia, porque si gana
 en arena la 19 pierde su objeto —la prima está dentro— y la 20 cambia de premisa; las
 fichas de la 19 y la 20 llevan su comprobación barata). Todas comparten ai.js y cada
@@ -136,6 +137,42 @@ candidato se mide contra el vigente que dejó el anterior, con p<0.05. Recordato
 del signo: elo(A-B) POSITIVO = el candidato PIERDE. Las tandas de arena de esta
 cadena están expresamente autorizadas (máx. 2 procesos node, segundo plano). Los
 criterios de Juan Luis, en `hechos/notas/s-20260825T093251-fde516e1.md`.
+
+**La 17 quedó LISTA el 2026-08-26T11:49Z** (main = `74ca9d9`, sesión
+`s-20260826T095832-0470517d`, su segunda tarea seguida): ya hay con qué medir. Los ocho
+pesos `RPS_*` de `ai.js` pasan de constantes sueltas a `RPS_DEFAULTS` (congelado) +
+`RPS_CFG` (activo), que `rpsAplicaCfg()` fija al entrar en `chooseAiMove()` y
+`evaluateRps()` — por ahí y no como un parámetro más porque `rpsValor()`, `orderMoves()`
+y `orderSearchMoves()` NO reciben `cfg`, y pasárselo obligaría a tocar el núcleo de
+búsqueda. **Ningún valor por defecto cambia**: la corrida completa de `test-ia-rps.js`
+sale idéntica LÍNEA POR LÍNEA a la de antes, salvo el bloque nuevo que prueba la
+parametrización. `cfg.rps` entra en `cfgSig` (sin eso las dos ramas de una tanda
+compartirían tabla de transposición y medirían ruido — ya pasó con la escalera 5 vs 6,
+20 elo falsos), y una clave mal escrita ABORTA en vez de medir dos motores iguales en
+silencio. `entrenamiento/arena-motor.js` no reimplementa la arena: **lanza `arena.js`**
+y resume con `elo.js`, así que hereda aperturas emparejadas, colores invertidos,
+adjudicación diferida y reanudación, y las medidas son comparables con las de las tareas
+03 y 10. Escribe el veredicto con todas las letras («el candidato GANA/PIERDE/EMPATA»),
+porque el signo de `elo(A−B)` ya costó el bug de trigonal. **Tandas de humo (A contra A,
+16 partidas)**: `rps-rey` elo −44 [−175, +76] p=0,472; `rpsls-rey` elo +66 [−43, +190]
+p=0,237 — el intervalo incluye el 0 en las dos, el arnés no favorece a ningún asiento.
+**Coste medido, para dimensionar las tandas de 18-21**: 50-58 s por partida a nivel 4
+compartiendo CPU (61-71 partidas/hora por proceso) y 25 s a solas; con 2 procesos y la
+máquina libre, contar 200-280 partidas/hora, o sea 1-2 h por tanda de 200 partidas.
+Detalle y modo de uso en `hechos/terminadas/17--s-20260826T095832-0470517d.md`.
+
+**Hallazgo de esa tarea, ya arreglado: `test-worker.js` llevaba probando `salas` nueve
+veces con nueve nombres distintos.** `setVariant()` no crea casillas nuevas, REESCRIBE
+`cell.leaps`/`cell.rays` sobre los mismos objetos del grafo, y el test guardaba
+`CELL_MAP` —referencia viva— para las nueve modalidades antes de usarlas. En las
+modalidades PPT los tipos `O/A/T` no están en las tablas de `salas`, así que
+`pseudoMoves()` caía a su último caso, el del peón: el worker respondía con un avance
+doble de peón jugado con una tijera. Viejo (falla igual en `07d6265`) y **ajeno al
+worker del navegador**, donde `CELL_MAP` viaja clonado. Las nueve modalidades pasan
+ahora, y las cuatro de PPT se prueban de verdad por primera vez. Aviso general que deja:
+cualquier guion que guarde `CELL_MAP`, `CELLS` o una casilla y luego llame a
+`setVariant()` tiene el mismo agujero. Detalle en
+`hechos/incidencias/s-20260826T095832-0470517d.md`.
 
 **La 16 quedó LISTA el 2026-08-26T10:55Z** (main = `3ac4c3a`, sesión
 `s-20260826T095832-0470517d`): en las modalidades `-rey`, los dos reyes ya no pueden
