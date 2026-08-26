@@ -1,0 +1,5 @@
+coste por evaluación · rps-rey · posición de mediojuego (40 piezas) · 20000 evals
+  aditivo              9.6 µs/eval
+  proporcional puro    41.6 µs/eval
+  prop.+acoso x10      41.2 µs/eval
+  candidato (defaults) 41.7 µs/eval

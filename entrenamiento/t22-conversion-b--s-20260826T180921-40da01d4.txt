@@ -1,0 +1,14 @@
+modalidad rps-rey · blancas con 8 piezas de ventaja,
+el mismo modelo juega los dos bandos, tope 400 medias jugadas
+
+ modelo        │ semilla │ final        │ gana │ plies │ piezas w-b │ capturas w-b
+───────────────┼─────────┼──────────────┼──────┼───────┼────────────┼─────────────
+ prop.ACOSO x10 │   101   │ checkmate    │  w   │   193 │  11- 1    │    11-  9
+ prop.ACOSO x30 │   101   │ checkmate    │  w   │   199 │   9- 1    │    11- 11
+ prop.ACOSO x10 │   202   │ checkmate    │  w   │   271 │   9- 1    │    11- 11
+ prop.ACOSO x30 │   202   │ checkmate    │  w   │   125 │  14- 5    │     7-  6
+ prop.ACOSO x10 │   303   │ checkmate    │  w   │   241 │   9- 1    │    11- 11
+ prop.ACOSO x30 │   303   │ checkmate    │  w   │    89 │  17- 7    │     5-  3
+
+prop.ACOSO x10: remata en 3/3 · 64 capturas en total · media 235 medias jugadas
+prop.ACOSO x30: remata en 3/3 · 43 capturas en total · media 138 medias jugadas

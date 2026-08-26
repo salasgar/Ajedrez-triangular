@@ -104,6 +104,13 @@ function _partida(id, levelW, levelB, cap, seed) {
 }`, ctx);
 
 const CLASICAS = ['salas', 'salas-v4', 'salas-1998', 'dekle', 'trigonal'];
+
+// Las modalidades SIN REY ('rps', 'rpsls') se retiraron de variants.js el
+// 26-8-2026 (decisión de Juan Luis: sin jaque, no jugables), pero el soporte
+// kingless de ai.js y rules.js se conserva por si vuelven. Las pruebas que
+// necesitan una modalidad kingless se saltan mientras no exista ninguna, y se
+// reactivan solas si algún día vuelve a haberla.
+const SIN_REY = run(`return Object.keys(VARIANTS).find(id => VARIANTS[id].kingless) || null`);
 const NIVEL_REG = 4;      // sin temperatura: determinista con el azar sembrado
 const PLIES_REG = 6;
 const SEED_REG = 20260824;
@@ -192,7 +199,7 @@ if (process.argv[2] !== 'match') {
   // --- valores dinámicos -----------------------------------------------------
 
   console.log('Valores dinámicos (rpsValor):');
-  run(`setVariant('rps')`);
+  run(`setVariant('rps-rey')`);
   const suelo = run(`return RPS_CFG.VALOR_SUELO`);
   {
     const con3 = run(`return rpsValor('O', { O: 0, A: 0, T: 3 })`);
@@ -213,8 +220,8 @@ if (process.argv[2] !== 'match') {
     ok(acosada === suelo, `los depredadores nunca hunden el valor bajo el suelo (${acosada})`);
   }
   {
-    // En rpsls cada tipo tiene dos presas y dos depredadores.
-    run(`setVariant('rpsls')`);
+    // En la matriz de cinco cada tipo tiene dos presas y dos depredadores.
+    run(`setVariant('rpsls-rey')`);
     const v1 = run(`return rpsValor('O', { O: 0, A: 0, T: 2, L: 2, S: 0 })`);
     const v2 = run(`return rpsValor('O', { O: 0, A: 0, T: 2, L: 0, S: 0 })`);
     ok(v1 > v2, `rpsls: las dos especies de presa cuentan (${v1} > ${v2})`);
@@ -233,11 +240,12 @@ if (process.argv[2] !== 'match') {
   // tener una piedra (que ya no puede capturar nada).
   {
     const r = run(`
-      setVariant('rps');
+      setVariant('rps-rey');
       // dos casillas no vecinas (que el término de amenazas no entre)
       const a = CELLS[0];
       const b = CELLS.find(c => c !== a && !a.kingNbrs.includes(c));
-      const cfg = { mobility: false };
+      // este ejemplo es del modelo ADITIVO: bandera proporcional fuera
+      const cfg = { mobility: false, rps: { PROPORCIONAL: 0 } };
       const conPiedra = new Map([
         [a.key, { type: 'O', color: 'w', moved: true }],
         [b.key, { type: 'O', color: 'b', moved: true }],
@@ -257,13 +265,14 @@ if (process.argv[2] !== 'match') {
   console.log('Amenazas:');
   {
     const r = run(`
-      setVariant('rps');
+      setVariant('rps-rey');
       const centro = CELLS.find(c => c.kingNbrs.length >= 6);
       const [n1, n2] = centro.kingNbrs;
       const lejos = CELLS.find(c => c !== centro && !centro.kingNbrs.includes(c) &&
         !c.kingNbrs.includes(n1) && !c.kingNbrs.includes(n2) &&
         c.kingNbrs.length >= 2);
-      const cfg = { mobility: false };
+      // el término de amenazas es del modelo ADITIVO: bandera proporcional fuera
+      const cfg = { mobility: false, rps: { PROPORCIONAL: 0 } };
       // tijera blanca tranquila (la piedra negra está lejos)
       const tranquila = new Map([
         [centro.key, { type: 'T', color: 'w', moved: true }],
@@ -296,7 +305,7 @@ if (process.argv[2] !== 'match') {
   console.log('Generación de capturas de la quietud:');
   {
     const r = run(`
-      setVariant('rps');
+      setVariant('rps-rey');
       const centro = CELLS.find(c => c.kingNbrs.length >= 3);
       const [n1, n2] = centro.kingNbrs;
       const board = new Map([
@@ -310,7 +319,7 @@ if (process.argv[2] !== 'match') {
     `);
     ok(r.length === 1, `la piedra solo tiene una captura legal (da ${r.length})`);
     ok(run(`
-      setVariant('rps');
+      setVariant('rps-rey');
       const centro = CELLS.find(c => c.kingNbrs.length >= 3);
       const board = new Map([
         [centro.key, { type: 'O', color: 'w', moved: true }],
@@ -428,12 +437,18 @@ if (process.argv[2] !== 'match') {
       newGame();
       const info = rpsInfo();
       const base = { depth: 2, mobility: true, order: true, quiesce: true };
-      const prop = { ...base, rps: { PROPORCIONAL: 1 } };
+      // OJO desde la tarea 22: el candidato completo (acoso + pesos) quedó
+      // ENCENDIDO por defecto, y un cfg.rps parcial significa «defaults más
+      // sobrescrituras». Este bloque prueba el modelo proporcional PURO de la
+      // 21, así que sus banderas accesorias van a 0 explícito.
+      const prop = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0, PROP_ACOSO: 0, PROP_ACOSO_REY: 0 } };
       const out = {};
 
       // 1. la bandera APAGADA no toca nada: mismo número que el modelo aditivo
-      out.apagadaIgual = evaluate(game.board, 'w', base) ===
-                         evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 0 } });
+      //    (que desde la tarea 22 ya no es el jugador por defecto: se compara
+      //    contra evaluateRps directamente)
+      out.apagadaIgual = evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 0 } }) ===
+                         evaluateRps(game.board, 'w', { ...base, rps: { PROPORCIONAL: 0 } });
 
       // 2. simetría: la posición inicial es simétrica, así que vale 0 exacto
       out.inicialCero = evaluate(game.board, 'w', prop);
@@ -541,15 +556,19 @@ if (process.argv[2] !== 'match') {
       newGame();
       const info = rpsInfo();
       const base = { depth: 2, mobility: true, order: true, quiesce: true };
-      const prop = { ...base, rps: { PROPORCIONAL: 1 } };
-      const pesado = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 1 } };
+      // Banderas de la tarea 22 a 0 explícito: este bloque compara el modelo
+      // puro contra el puro+pesos, sin el acoso por medio (encendido por
+      // defecto desde la 22, igual que PROP_PESOS).
+      const prop = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0, PROP_ACOSO: 0, PROP_ACOSO_REY: 0 } };
+      const pesado = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 1, PROP_ACOSO: 0, PROP_ACOSO_REY: 0 } };
       const out = {};
 
-      // 1. la sub-bandera apagada deja EXACTAMENTE el modelo de antes: con todos
-      //    los pesos a 1, W = n y wPos = 1, así que el denominador vuelve a ser
-      //    n+1 y no hay ni un bit de diferencia. Es una generalización estricta.
-      out.sinPesosIgual = evaluate(game.board, 'w', prop) ===
-                          evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0 } });
+      // 1. omitir PROP_PESOS equivale a su valor por defecto (desde la tarea
+      //    22, encendida): la fontanería de cfg.rps no distingue omitido de
+      //    explícito. (Antes de la 22 este test comprobaba lo mismo con el
+      //    defecto a 0.)
+      out.sinPesosIgual = evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 1, PROP_ACOSO: 0, PROP_ACOSO_REY: 0 } }) ===
+                          evaluate(game.board, 'w', pesado);
 
       // 2. y encendida NO es el mismo modelo (si no, la variante no mediría nada)
       let quitadas = 0;
@@ -617,7 +636,7 @@ if (process.argv[2] !== 'match') {
       out.valorMax = Math.max(...vals);
       return out;
     `);
-    ok(r.sinPesosIgual, 'con PROP_PESOS apagada sale el modelo proporcional de siempre, bit a bit');
+    ok(r.sinPesosIgual, 'omitir PROP_PESOS equivale a su valor por defecto (hoy encendida), bit a bit');
     ok(r.pesadoDistinto, 'y encendida es otro modelo');
     ok(r.antisimetrica, 'sigue siendo antisimétrica con los pesos puestos');
     ok(r.pesoSimetrico, 'el peso de un tipo no depende del bando (lo que protege la antisimetría)');
@@ -632,13 +651,185 @@ if (process.argv[2] !== 'match') {
       `los valores por captura siguen positivos, máx ${r.valorMax.toFixed(0)}`);
   }
 
+  // --- término de acoso de la tarea 22 ---------------------------------------
+  // La 21 se rechazó por falta de INICIATIVA: ninguna señal del modelo
+  // proporcional empuja a entrar en rango de contacto, y en autojuego con 8
+  // piezas de ventaja hace cero capturas. El acoso añade a q_pos la cercanía
+  // de cada figura propia al rey RIVAL (imán geométrico: el rey sigue fuera de
+  // los cocientes y sin valor de captura), con el rey PROPIO frenado por una
+  // rampa de material para que no ataque antes de tiempo (condición de Juan
+  // Luis, ver PROP_ACOSO_REY en ai.js).
+
+  console.log('Acoso al rey rival (tarea 22, señal PROP_ACOSO + freno del rey propio):');
+  {
+    const r = run(`
+      setVariant('rps-rey');
+      newGame();
+      const info = rpsInfo();
+      const base = { depth: 2, mobility: true, order: true, quiesce: true };
+      // El candidato completo quedó por defecto, así que aquí cada cfg dice
+      // TODAS sus banderas: este bloque aísla la señal de acoso sin los pesos.
+      const prop = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0, PROP_ACOSO: 0, PROP_ACOSO_REY: 0 } };
+      const acoso = { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0, PROP_ACOSO: 1, PROP_ACOSO_REY: 1 } };
+      const out = {};
+
+      // 1. omitir las claves de acoso equivale a sus valores por defecto
+      //    (encendidas desde esta misma tarea)
+      out.apagadoIgual = evaluate(game.board, 'w', { ...base, rps: { PROPORCIONAL: 1, PROP_PESOS: 0 } }) ===
+        evaluate(game.board, 'w', { ...base,
+          rps: { PROPORCIONAL: 1, PROP_PESOS: 0, PROP_ACOSO: 10, PROP_ACOSO_REY: 10 } });
+
+      // 2. la posición inicial sigue valiendo 0 exacto (simetría)
+      out.inicialCero = evaluate(game.board, 'w', acoso);
+
+      // 3-5. sobre una posición asimétrica CON material de sobra (35 figuras,
+      //      la rampa del rey sigue cerrada)
+      let quitadas = 0;
+      for (const [k, p] of [...game.board]) {
+        if (p.color === 'b' && p.type !== 'K' && quitadas < 3) { game.board.delete(k); quitadas++; }
+      }
+      // 3. el término del rey NO hace nada en apertura/mediojuego: encenderlo
+      //    solo, aunque sea fuerte, deja la evaluación idéntica
+      out.reyFrenado = evaluate(game.board, 'w', { ...base,
+          rps: { PROPORCIONAL: 1, PROP_PESOS: 0, PROP_ACOSO: 0, PROP_ACOSO_REY: 5 } }) ===
+        evaluate(game.board, 'w', prop);
+      // 4. la señal de las figuras sí cambia el modelo
+      out.distinto = evaluate(game.board, 'w', acoso) !== evaluate(game.board, 'w', prop);
+      // 5. y sigue siendo antisimétrico
+      const desdeW = evaluate(game.board, 'w', acoso);
+      const desdeB = evaluate(game.board, 'b', acoso);
+      out.antisimetrica = Math.abs(desdeW + desdeB) < 1e-9;
+
+      // 6. la señal, aislada: la misma pieza en dos casillas, con las otras
+      //    cuatro señales apagadas para que nada la contamine — más cerca del
+      //    rey rival tiene que valer estrictamente más
+      setVariant('rps-rey');
+      newGame();
+      const soloAcoso = { ...base, rps: { PROPORCIONAL: 1, PROP_ACOSO: 1,
+        PROP_ACOSO_REY: 0, PROP_PESOS: 0,
+        PROP_PROTECTOR: 0, PROP_PROTEGIDO: 0, PROP_CENTRO: 0, PROP_PRESA: 0 } };
+      let reyNegro = null;
+      for (const [k, p] of game.board)
+        if (p.color === 'b' && p.type === 'K') reyNegro = CELL_MAP.get(k);
+      let piezaKey = null, pieza = null;
+      for (const [k, p] of game.board)
+        if (p.color === 'w' && p.type !== 'K') { piezaKey = k; pieza = p; break; }
+      let cerca = null, lejos = null, dCerca = Infinity, dLejos = -1;
+      for (const [k, c] of CELL_MAP) {
+        if (game.board.has(k)) continue;
+        const d = rpsDist(info, c, reyNegro);
+        if (d < dCerca) { dCerca = d; cerca = k; }
+        if (d > dLejos) { dLejos = d; lejos = k; }
+      }
+      game.board.delete(piezaKey);
+      game.board.set(cerca, pieza);
+      const evalCerca = evaluate(game.board, 'w', soloAcoso);
+      game.board.delete(cerca);
+      game.board.set(lejos, pieza);
+      const evalLejos = evaluate(game.board, 'w', soloAcoso);
+      out.acercarSube = evalCerca > evalLejos;
+      out.deltaAcoso = evalCerca - evalLejos;
+
+      // 7. el rey propio, con la rampa ABIERTA (4 figuras < umbral 12) y su
+      //    bando en VENTAJA (3-1; el término del rey es solo del que va
+      //    ganando, porque la distancia rey-rey es la misma para los dos y un
+      //    término simétrico se anularía en el cociente): más cerca del rey
+      //    rival vale más con el término puesto, exactamente lo mismo con el
+      //    término quitado, y la antisimetría aguanta
+      setVariant('rps-rey');
+      newGame();
+      const dejar = { w: 3, b: 1 };
+      for (const [k, p] of [...game.board]) {
+        if (p.type === 'K') continue;
+        if (dejar[p.color] > 0) { dejar[p.color]--; continue; }
+        game.board.delete(k);
+      }
+      const soloRey = { ...base, rps: { PROPORCIONAL: 1, PROP_ACOSO_REY: 3,
+        PROP_ACOSO: 0, PROP_PESOS: 0,
+        PROP_PROTECTOR: 0, PROP_PROTEGIDO: 0, PROP_CENTRO: 0, PROP_PRESA: 0 } };
+      const sinRey = { ...base, rps: { PROPORCIONAL: 1,
+        PROP_ACOSO: 0, PROP_ACOSO_REY: 0, PROP_PESOS: 0,
+        PROP_PROTECTOR: 0, PROP_PROTEGIDO: 0, PROP_CENTRO: 0, PROP_PRESA: 0 } };
+      let reyWKey = null, reyW = null, reyBKey = null, reyB = null, reyNegro2 = null;
+      for (const [k, p] of game.board) {
+        if (p.type !== 'K') continue;
+        if (p.color === 'w') { reyWKey = k; reyW = p; }
+        else { reyBKey = k; reyB = p; reyNegro2 = CELL_MAP.get(k); }
+      }
+      let cerca2 = null, lejos2 = null, dC2 = Infinity, dL2 = -1;
+      for (const [k, c] of CELL_MAP) {
+        if (game.board.has(k)) continue;
+        const d = rpsDist(info, c, reyNegro2);
+        if (d < dC2) { dC2 = d; cerca2 = k; }
+        if (d > dL2) { dL2 = d; lejos2 = k; }
+      }
+      game.board.delete(reyWKey);
+      game.board.set(cerca2, reyW);
+      const reyCercaCon = evaluate(game.board, 'w', soloRey);
+      const reyCercaSin = evaluate(game.board, 'w', sinRey);
+      out.antisimetricaFinal = Math.abs(reyCercaCon + evaluate(game.board, 'b', soloRey)) < 1e-9;
+      game.board.delete(cerca2);
+      game.board.set(lejos2, reyW);
+      out.reyEmpujaEnFinal = reyCercaCon > evaluate(game.board, 'w', soloRey);
+      out.sinTerminoDaIgual = reyCercaSin === evaluate(game.board, 'w', sinRey);
+      // el rey del bando que va PERDIENDO no recibe el término: como el único
+      // término del rey es del rival (blancas), acercar el rey negro al rey
+      // blanco acorta la distancia rey-rey y SUBE el término blanco — visto
+      // desde las negras, acercarse BAJA su evaluación. El rey perdedor huye,
+      // no ataca.
+      const reyBlanco = CELL_MAP.get(lejos2);   // el rey blanco se quedó aquí
+      let cercaB = null, lejosB = null, dCB = Infinity, dLB = -1;
+      for (const [k, c] of CELL_MAP) {
+        if (game.board.has(k)) continue;
+        const d = rpsDist(info, c, reyBlanco);
+        if (d < dCB) { dCB = d; cercaB = k; }
+        if (d > dLB) { dLB = d; lejosB = k; }
+      }
+      game.board.delete(reyBKey);
+      game.board.set(cercaB, reyB);
+      const negroCerca = evaluate(game.board, 'b', soloRey);
+      game.board.delete(cercaB);
+      game.board.set(lejosB, reyB);
+      out.reyPerdedorHuye = negroCerca < evaluate(game.board, 'b', soloRey);
+
+      // 8. las modalidades clásicas ni lo miran
+      setVariant('salas');
+      newGame();
+      out.clasicaIntacta = evaluate(game.board, 'w', base) ===
+        evaluate(game.board, 'w', { ...base,
+          rps: { PROPORCIONAL: 1, PROP_ACOSO: 3, PROP_ACOSO_REY: 3 } });
+      return out;
+    `);
+    ok(r.apagadoIgual, 'omitir las claves de acoso equivale a su valor por defecto (10), bit a bit');
+    ok(Math.abs(r.inicialCero) < 1e-9,
+      `la posición inicial sigue valiendo 0 exacto (${r.inicialCero})`);
+    ok(r.reyFrenado,
+      'con material de sobra el término del rey propio no cambia NADA (la rampa lo frena)');
+    ok(r.distinto, 'la señal de las figuras sí cambia el modelo');
+    ok(r.antisimetrica, 'antisimétrico con el acoso encendido');
+    ok(r.acercarSube,
+      `acercar una figura al rey rival sube la evaluación (+${r.deltaAcoso.toFixed(1)})`);
+    ok(r.reyEmpujaEnFinal,
+      'con poco material y ventaja propia la rampa se abre y el rey sí quiere acercarse');
+    ok(r.sinTerminoDaIgual,
+      'y sin el término la casilla del rey da exactamente igual, como siempre');
+    ok(r.reyPerdedorHuye,
+      'el rey del bando que va perdiendo no recibe el término: acercarse le baja la evaluación');
+    ok(r.antisimetricaFinal, 'antisimétrico también con el rey empujando');
+    ok(r.clasicaIntacta, 'las modalidades clásicas ni lo miran, aun con todo encendido');
+  }
+
   // --- búsqueda sin rey ------------------------------------------------------
 
+  if (!SIN_REY) {
+    console.log('Búsqueda kingless: · saltada (hoy ninguna modalidad es kingless; ' +
+      'el soporte de ai.js/rules.js se conserva y estas pruebas vuelven solas con él)');
+  } else {
   console.log('Búsqueda kingless:');
   {
     // Capturar la última pieza rival tiene que puntuar como un mate.
     const r = run(`
-      setVariant('rps');
+      setVariant('${SIN_REY}');
       newGame();
       const centro = CELLS.find(c => c.kingNbrs.length >= 3);
       game.board = new Map([
@@ -659,7 +850,7 @@ if (process.argv[2] !== 'match') {
     // La regla de los 50 movimientos NO aplica sin rey: con el reloj al
     // límite, una posición ganadora se sigue puntuando como ganadora.
     const r = run(`
-      setVariant('rps');
+      setVariant('${SIN_REY}');
       newGame();
       const libres = CELLS.filter(c => c.kingNbrs.length >= 3);
       game.board = new Map([
@@ -680,7 +871,7 @@ if (process.argv[2] !== 'match') {
   {
     // Posición muerta (piedra contra piedra): la búsqueda la ve como tablas.
     const r = run(`
-      setVariant('rps');
+      setVariant('${SIN_REY}');
       newGame();
       const libres = CELLS.filter(c => c.kingNbrs.length >= 3);
       game.board = new Map([
@@ -711,6 +902,7 @@ if (process.argv[2] !== 'match') {
       return rpsDeadPosition(b) === true && deadPositionKingless(b) === true;
     `), 'papeles inmortales por ambos lados = posición muerta (IA y reglas coinciden)');
   }
+  }  // fin del guardia SIN_REY
 
   // --- partidas completas IA contra IA ---------------------------------------
 
@@ -718,12 +910,18 @@ if (process.argv[2] !== 'match') {
   // motores prudentes son LARGAS (cientos de jugadas de maniobra); el tope
   // es generoso a propósito.
   console.log('Partidas completas (nivel 4, puede tardar unos minutos):');
-  const FINALES = {
+  // Las filas de 'rps' y 'rpsls' solo juegan si esas modalidades vuelven a
+  // existir (retiradas el 26-8-2026).
+  const TODAS_FINALES = {
     rps: ['wiped', 'stalemate', 'repetition', 'material'],
     rpsls: ['wiped', 'stalemate', 'repetition', 'material'],
     'rps-rey': ['checkmate', 'stalemate', 'repetition', 'material', 'fifty'],
     'rpsls-rey': ['checkmate', 'stalemate', 'repetition', 'material', 'fifty'],
   };
+  const FINALES = {};
+  for (const id of Object.keys(TODAS_FINALES)) {
+    if (run(`return !!VARIANTS[${JSON.stringify(id)}]`)) FINALES[id] = TODAS_FINALES[id];
+  }
   for (const [id, validos] of Object.entries(FINALES)) {
     const r = run(`return _partida('${id}', 4, 4, 1600, 99)`);
     ok(r.ended, `${id}: la partida termina (${r.status ?? '?'} en ${r.plies} medias jugadas)`);
@@ -742,6 +940,10 @@ if (process.argv[2] !== 'match') {
 // dynamicValues, así que cada jugador usa su propia tabla.
 
 const NGAMES = Number(process.argv[3] ?? process.argv[2]) || 6;
+if (!SIN_REY) {
+  console.log('Match rps: · saltado (la modalidad kingless \'rps\' se retiró el ' +
+    '26-8-2026; el match vuelve solo si vuelve ella)');
+} else {
 console.log(`Match rps: evaluación dinámica contra valores planos (${NGAMES} partidas, nivel 4):`);
 run(`
   AI_LEVELS['dinamica'] = { ...AI_LEVELS[4] };
@@ -755,7 +957,7 @@ const MARGEN_ADJUDICACION = 3;
 let dinamica = 0, plana = 0, tablas = 0;
 for (let i = 0; i < NGAMES; i++) {
   const dinBlancas = i % 2 === 0;
-  const r = run(`return _partida('rps',
+  const r = run(`return _partida('${SIN_REY}',
     '${dinBlancas ? 'dinamica' : 'plana'}', '${dinBlancas ? 'plana' : 'dinamica'}',
     1200, ${3001 + i})`);
   const piezasDin = dinBlancas ? r.piezas.w : r.piezas.b;
@@ -774,6 +976,7 @@ for (let i = 0; i < NGAMES; i++) {
 }
 console.log(`  Resultado: dinámica ${dinamica} — plana ${plana} — tablas ${tablas}`);
 ok(dinamica > plana, `la evaluación dinámica gana el match (${dinamica}–${plana}–${tablas})`);
+}  // fin del guardia SIN_REY del match
 
 console.log(fallos ? `\n${fallos} pruebas FALLADAS` : '\nTodas las pruebas pasan.');
 process.exit(fallos ? 1 : 0);

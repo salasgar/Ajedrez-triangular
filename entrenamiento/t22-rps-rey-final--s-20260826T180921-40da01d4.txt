@@ -1,0 +1,21 @@
+arena-motor · rps-rey · nivel 4 · 100 pares (200 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = t22-final        {"PROPORCIONAL":1,"PROP_ACOSO":10,"PROP_ACOSO_REY":10,"PROP_PESOS":1}
+  2 proceso(s), semillas 62/63
+
+arena[rps-rey]: vigente vs t22-final · pares 1..50 · seed 62 · 0 partidas ya hechas en /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-t22-final-n4-2026-08-26T2103.p1.log
+arena[rps-rey]: vigente vs t22-final · pares 51..100 · seed 63 · 0 partidas ya hechas en /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-t22-final-n4-2026-08-26T2103.p2.log
+
+partes unidas en /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-t22-final-n4-2026-08-26T2103.log
+
+modalidad rps-rey · tope 800 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = t22-final · rps = {"PROPORCIONAL":1,"PROP_ACOSO":10,"PROP_ACOSO_REY":10,"PROP_PESOS":1}
+
+200 partidas · finales: mate 168, fifty 28, stalemate 3, repetition 1 · 0 cortadas dentro del margen 300 (tablas)
+A (vigente): 8 ganadas, 32 tablas, 160 perdidas · puntuación 12.0%
+elo(A−B) = -346  [-414, -294]  p = 0.000
+
+VEREDICTO: el candidato GANA por 346 elo (p < 0.05).
+
+coste: 36.1 min de reloj para 200 partidas = 333 partidas/hora con 2 proceso(s) · 21.5 s por partida de media

@@ -253,21 +253,37 @@ const RPS_DEFAULTS = Object.freeze({
   // tres partidas le dan mate llevando 20 piezas contra 12. El gradiente está
   // sano (capturar vale MÁS cuanto más ganas, ×2,58: banco t21-gradiente),
   // pero nunca llega a activarse porque no hay contacto.
-  PROPORCIONAL: 0,        // bandera: 0 = apagada (por defecto), 1 = encendida
+  //
+  // Y MEDIDO OTRA VEZ EL 2026-08-26 (tarea 22), CON el término de acoso, y
+  // ENCENDIDO: la señal que faltaba era exactamente esa. En rps-rey, 200
+  // partidas por tanda, tope 800 medias jugadas (0 adjudicadas en todas):
+  //   proporcional+acoso x10 contra el aditivo:  GANA por 308 [255, 376] p=0,000
+  //   proporcional+acoso x30 contra el aditivo:  GANA por 315 [256, 394] p=0,000
+  //   x10 contra x30, en directo:                EMPATE (+26 [−12, +64] p=0,17)
+  //   x10+PROP_PESOS contra x10, en directo:     los pesos GANAN por 131 [94, 171]
+  // Logs en entrenamiento/t22-rps-rey-*--s-20260826T180921-40da01d4.txt.
+  // Solo medido en rps-rey (decisión de Juan Luis del 26-8-2026): rpsls-rey
+  // hereda estos valores SIN haberse medido allí. En las modalidades SIN REY
+  // el modelo queda APAGADO por defecto (ver rpsAplicaCfg): están aparcadas,
+  // no hay rey que acosar, y el proporcional sin acoso es justo el que perdió
+  // por 81.
+  PROPORCIONAL: 1,        // bandera: 0 = apagada, 1 = encendida (por defecto)
   // Sub-bandera: media geométrica PONDERADA por el valor de cada tipo, con
   // rpsPropPeso() —el rpsValor() del modelo aditivo, promediado entre colores
   // para no romper la antisimetría—. Corrige que el modelo sin ella valore TODA
   // captura en ~100 sea del tipo que sea (O 102,8 · A 94,2 · T 102,8) mientras
   // el aditivo distingue (O 20 · A 24 · T 52).
   //
-  // IMPLEMENTADA Y PROBADA, PERO SIN MEDIR EN ARENA, a propósito: ponderar los
-  // tipos solo puede notarse cuando hay CAMBIOS, y este modelo no llega nunca
-  // al contacto, así que medirla hoy no distinguiría «no sirve» de «no ha
-  // tenido ocasión». Se mide en la tarea 22, DESPUÉS del término de acoso y
-  // sobre el ganador. Con la sub-bandera apagada, W = n y wPos = 1, así que el
-  // denominador vuelve a ser n+1 y sale el modelo sin pesos bit a bit: es una
-  // generalización estricta, no otro modelo.
-  PROP_PESOS: 0,
+  // La 21 la dejó implementada y probada pero SIN MEDIR, a propósito: ponderar
+  // los tipos solo puede notarse cuando hay CAMBIOS, y su modelo no llegaba
+  // nunca al contacto. MEDIDA EN LA TAREA 22, sobre el ganador y después del
+  // término de acoso, como estaba decidido: en directo contra el mismo modelo
+  // sin pesos (200 partidas, tope 800), los pesos GANAN por 131 elo [94, 171],
+  // p = 0,000. La predicción de la 21 confirmada por las dos mitades: sin
+  // contacto no se notaba, con él es la segunda mejora de la cadena. Con la
+  // sub-bandera apagada, W = n y wPos = 1, así que el denominador vuelve a ser
+  // n+1 y sale el modelo sin pesos bit a bit: generalización estricta.
+  PROP_PESOS: 1,
   // Escala del modelo al rango de siempre (una pieza ≈ 100 puntos). Calibrada
   // midiendo el delta real de capturar una figura en la posición inicial de
   // rps-rey; ver la terminada de la tarea 21.
@@ -285,6 +301,55 @@ const RPS_DEFAULTS = Object.freeze({
   PROP_PROTEGIDO: 1,      // cerca de a quien yo defiendo
   PROP_CENTRO: 1,         // dominio del centro
   PROP_PRESA: 1,          // cerca de presas rivales sin respuesta
+  // ---- Acoso al rey rival (tarea 22, decisión de Juan Luis) --------------
+  // Quinta señal de q_pos: cercanía de cada pieza propia al rey RIVAL. Existe
+  // porque la 21 enseñó que este modelo no tiene INICIATIVA: las cuatro
+  // señales de arriba premian protegerse, centrarse y rondar presas ya
+  // desprotegidas, pero ninguna empuja a entrar en rango de contacto, y en
+  // una partida simétrica el equilibrio estable es no acercarse nunca (cero
+  // capturas LEGALMENTE DISPONIBLES en 80 medias jugadas de autojuego; ver
+  // reparto/hechos/incidencias/s-20260826T173839-09708b47.md). El rey rival
+  // actúa SOLO como imán geométrico: sigue fuera de los cocientes y sin valor
+  // de captura (decisión de la 21, que esto no reabre) — las piezas rivales
+  // tendrán que interponerse, y de ahí sale el contacto que hoy no existe.
+  // Va como señal de q_pos y no como cociente nuevo en la media para no tocar
+  // la normalización: un cociente más cambiaría el peso relativo de TODOS los
+  // demás (n+1 → n+2) incluso apagado, y el compromiso «¿me quedo junto a mi
+  // protector o avanzo hacia el rey?» se resuelve pieza a pieza en la misma
+  // moneda que las otras cuatro señales.
+  // El peso 10 está medido (tarea 22): con 1 y 3 el tirón (~1 punto por paso)
+  // no vence a las otras cuatro señales y el autojuego con ventaja sigue
+  // muriendo en tablas de 50 sin capturar; con 10, el banco t22-conversion
+  // pasa de 0 capturas a rematar 3/3 (64 capturas, las mismas que el
+  // aditivo); con 30 también remata 3/3, pero en directo x10 y x30 EMPATAN
+  // (+26 [−12, +64], p = 0,17), así que se queda el suave, que deja más
+  // sitio a las otras señales.
+  PROP_ACOSO: 10,         // peso de la señal para las figuras (0 = apagada)
+  // El REY PROPIO va aparte, por la condición explícita de Juan Luis: que
+  // apoye el acoso cuando quede poco material, no al principio (se expondría
+  // él solo sin necesidad; del jaque y de los reyes no adyacentes se ocupa la
+  // búsqueda, como siempre). Dos piezas en el diseño:
+  //
+  // 1. Rampa CONTINUA de material, no umbral seco, para no meter un escalón
+  //    de evaluación al cruzarla: el rey empuja con peso
+  //      PROP_ACOSO_REY · max(0, 1 − figurasVivas / PROP_ACOSO_REY_UMBRAL)
+  //    donde figurasVivas cuenta AMBOS bandos. Con 38 figuras iniciales y
+  //    umbral 12, el rey no aporta nada en apertura ni mediojuego.
+  // 2. El término es SOLO del bando en VENTAJA de figuras. No es un capricho:
+  //    la distancia rey-rey es LA MISMA para los dos bandos, así que un
+  //    término que dependa solo de ella suma lo mismo a los dos lados del
+  //    cociente y se anula (lo destapó el test: acercar el rey no movía la
+  //    evaluación NADA). Reservarlo al bando que va ganando le devuelve el
+  //    gradiente —el atacante manda su rey a rematar— y de paso refuerza la
+  //    condición de Juan Luis: un bando que no va por delante no lanza nunca
+  //    su rey. La ventaja es una propiedad de la posición, no del que mira,
+  //    así que la antisimetría queda intacta.
+  //
+  // Como el rey no lleva base ni las otras señales, con el peso a 0 (o la
+  // rampa cerrada, o sin ventaja) contribuye exactamente 0 a q_pos, igual
+  // que siempre.
+  PROP_ACOSO_REY: 10,
+  PROP_ACOSO_REY_UMBRAL: 12,
 });
 
 // Valores activos. Se muta en sitio (nunca se reasigna la referencia) porque
@@ -303,17 +368,23 @@ const RPS_CFG = { ...RPS_DEFAULTS };
 function rpsAplicaCfg(cfg) {
   const o = cfg && cfg.rps;
   Object.assign(RPS_CFG, RPS_DEFAULTS);
-  if (!o) return;
-  for (const k of Object.keys(o)) {
-    if (!(k in RPS_DEFAULTS)) {
-      throw new Error('cfg.rps: clave desconocida ' + JSON.stringify(k) +
-        '. Hay: ' + Object.keys(RPS_DEFAULTS).join(', '));
+  if (o) {
+    for (const k of Object.keys(o)) {
+      if (!(k in RPS_DEFAULTS)) {
+        throw new Error('cfg.rps: clave desconocida ' + JSON.stringify(k) +
+          '. Hay: ' + Object.keys(RPS_DEFAULTS).join(', '));
+      }
+      if (typeof o[k] !== 'number' || !isFinite(o[k])) {
+        throw new Error('cfg.rps.' + k + ' debe ser un número: ' + o[k]);
+      }
+      RPS_CFG[k] = o[k];
     }
-    if (typeof o[k] !== 'number' || !isFinite(o[k])) {
-      throw new Error('cfg.rps.' + k + ' debe ser un número: ' + o[k]);
-    }
-    RPS_CFG[k] = o[k];
   }
+  // Excepción de las modalidades SIN REY (aparcadas por Juan Luis el
+  // 2026-08-26): sin rey no hay imán de acoso, y el proporcional sin acoso es
+  // justo el modelo que perdió por 81 elo en la 21. Salvo petición expresa
+  // (un cfg.rps con PROPORCIONAL explícito), ahí sigue jugando el aditivo.
+  if (V.kingless && !(o && 'PROPORCIONAL' in o)) RPS_CFG.PROPORCIONAL = 0;
 }
 
 // Tablas derivadas de V.captures, cacheadas en la propia modalidad (V viaja
@@ -762,6 +833,17 @@ function rpsPropPosicional(board, cnt, cells) {
   const wBase = RPS_CFG.PROP_BASE, wProt = RPS_CFG.PROP_PROTECTOR;
   const wPrg = RPS_CFG.PROP_PROTEGIDO, wCen = RPS_CFG.PROP_CENTRO;
   const wPre = RPS_CFG.PROP_PRESA;
+  const wAco = RPS_CFG.PROP_ACOSO, wAcoRey = RPS_CFG.PROP_ACOSO_REY;
+  // freno del rey propio: rampa por el material TOTAL vivo y ventaja de
+  // figuras (el término del rey es solo del bando que va ganando; ver el
+  // comentario de PROP_ACOSO_REY para el porqué de las dos cosas)
+  let frenoRey = 0, reyVentaja = 0;
+  if (wAcoRey) {
+    let fw = 0, fb = 0;
+    for (const t of info.figuras) { fw += cnt.w[t] || 0; fb += cnt.b[t] || 0; }
+    frenoRey = Math.max(0, 1 - (fw + fb) / RPS_CFG.PROP_ACOSO_REY_UMBRAL);
+    reyVentaja = fw - fb;
+  }
   // Cercanía [0,1] al más próximo de una lista de casillas, saltándose la
   // propia. 0 si la lista está vacía (no hay a quien acercarse).
   const DIST = P.dist, NC = P.n, CENTRO = P.centro;
@@ -780,6 +862,10 @@ function rpsPropPosicional(board, cnt, cells) {
   for (let ci = 0; ci < 2; ci++) {
     const color = ci === 0 ? 'w' : 'b', foe = ci === 0 ? 'b' : 'w';
     const mios = cells[color], suyos = cells[foe];
+    // el rey rival como imán del acoso (tarea 22); en las modalidades sin rey
+    // no hay imán y la señal queda en 0
+    const reyRival = (wAco || wAcoRey) && suyos.K && suyos.K.length
+      ? suyos.K[0] : null;
     for (const t of info.figuras) {
       const mias = mios[t];
       if (!mias.length) continue;
@@ -808,9 +894,21 @@ function rpsPropPosicional(board, cnt, cells) {
         if (wPrg) v += wPrg * cercania(fila, cell, proteg);
         if (wCen) v += wCen * CENTRO[cell.idx];
         if (wPre) v += wPre * cercania(fila, cell, presas);
+        if (wAco && reyRival) v += wAco * (1 - DIST[fila + reyRival.idx] / diam);
         acum += v;
       }
       if (ci === 0) sumaW += acum; else sumaB += acum;
+    }
+    // el REY PROPIO solo empuja con la rampa abierta (poco material) y solo
+    // si su bando va en ventaja de figuras; no lleva base ni las otras
+    // señales, así que fuera de ese caso contribuye exactamente 0, como
+    // siempre
+    if (wAcoRey && frenoRey > 0 && reyRival && mios.K && mios.K.length &&
+        (ci === 0 ? reyVentaja > 0 : reyVentaja < 0)) {
+      const rey = mios.K[0];
+      const v = wAcoRey * frenoRey *
+        (1 - DIST[rey.idx * NC + reyRival.idx] / diam);
+      if (ci === 0) sumaW += v; else sumaB += v;
     }
   }
   return { w: sumaW, b: sumaB };
@@ -1255,13 +1353,17 @@ function evaluate(board, color, cfg) {
   // los valores planos de la modalidad (sirve para medir la dinámica contra
   // la plana en la arena y en test-ia-rps.js). Las clásicas no tienen
   // V.captures y siguen por aquí abajo, intactas.
-  // Con cfg.rps.PROPORCIONAL se entra en el modelo proporcional de la tarea 21
-  // (media geométrica de cocientes), que sustituye a evaluateRps ENTERA. Se
-  // mira `cfg.rps` y no `RPS_CFG` a propósito: RPS_CFG lo fija rpsAplicaCfg,
-  // que es lo primero que hace cada una de las dos evaluaciones, así que
-  // consultarlo aquí obligaría a llamarla dos veces en cada hoja.
+  // Con el modelo proporcional activo (tarea 21; POR DEFECTO desde la tarea
+  // 22, con su término de acoso) se entra en evaluateRpsProporcional, que
+  // sustituye a evaluateRps ENTERA. La bandera efectiva la decide
+  // rpsAplicaCfg —defaults, más cfg.rps, más la excepción de las modalidades
+  // sin rey—, así que aquí se la llama y se mira RPS_CFG en vez de cfg.rps
+  // (mirar solo cfg.rps ignoraría el defecto encendido). Las dos evaluaciones
+  // vuelven a llamarla por dentro: es idempotente y barata, y también se las
+  // llama directamente sin pasar por aquí.
   if (V.captures && cfg.dynamicValues !== false) {
-    return (cfg.rps && cfg.rps.PROPORCIONAL)
+    rpsAplicaCfg(cfg);
+    return RPS_CFG.PROPORCIONAL
       ? evaluateRpsProporcional(board, color, cfg)
       : evaluateRps(board, color, cfg);
   }

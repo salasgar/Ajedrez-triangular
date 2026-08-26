@@ -1,0 +1,20 @@
+t22-arena-ab · rps-rey · nivel 4 · 100 pares (200 partidas)
+  A = acoso10          {"PROPORCIONAL":1,"PROP_ACOSO":10,"PROP_ACOSO_REY":10}
+  B = acoso30          {"PROPORCIONAL":1,"PROP_ACOSO":30,"PROP_ACOSO_REY":30}
+  2 proceso(s), semillas 42/43
+arena[rps-rey]: acoso10 vs acoso30 · pares 1..50 · seed 42 · 0 partidas ya hechas en /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-acoso10-vs-acoso30-n4-2026-08-26T2009.p1.log
+arena[rps-rey]: acoso10 vs acoso30 · pares 51..100 · seed 43 · 0 partidas ya hechas en /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-acoso10-vs-acoso30-n4-2026-08-26T2009.p2.log
+partes unidas en /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-acoso10-vs-acoso30-n4-2026-08-26T2009.log
+hecho en 25.0 min · resumen: node entrenamiento/arena-motor.js --analiza=/Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/motor-rps-rey-acoso10-vs-acoso30-n4-2026-08-26T2009.log
+
+modalidad rps-rey · tope 800 jugadas · regla de 50 acortada a 80
+A = acoso10 · rps = {"PROPORCIONAL":1,"PROP_ACOSO":10,"PROP_ACOSO_REY":10}
+B = acoso30 · rps = {"PROPORCIONAL":1,"PROP_ACOSO":30,"PROP_ACOSO_REY":30}
+
+200 partidas · finales: mate 123, fifty 73, repetition 1, stalemate 3 · 0 cortadas dentro del margen 300 (tablas)
+A (vigente): 69 ganadas, 77 tablas, 54 perdidas · puntuación 53.8%
+elo(A−B) = +26  [-12, +64]  p = 0.174
+
+VEREDICTO: el candidato EMPATA (diferencia no significativa, p ≥ 0.05).
+
+coste registrado: 14.7 s por partida de media (244 partidas/hora por proceso)
