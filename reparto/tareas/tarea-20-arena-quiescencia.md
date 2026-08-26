@@ -78,6 +78,21 @@ alternativas de diseño descartadas (para no re-explorarlas).
 - Si el diseño se te va a «rehacer la búsqueda entera», eso es una tarea mal
   cortada: incidencia con el corte natural, ABANDONADA, y avisar.
 - Datos al repo; git lento en segundo plano; sellos en UTC.
+- **`DELTA_MARGIN` (ai.js:42, usado en quiesce() en ai.js:1481) es una constante
+  absoluta (200) heredada de la escala del modelo aditivo (~100 por pieza) y hoy se
+  aplica igual con el modelo proporcional activo, sin relación con `PROP_K`.**
+  `gain` (el valor de la pieza capturada) ya se deriva de la fórmula proporcional vía
+  `rpsDynValues`/`rpsPropScoreCuentas` (que multiplica por `PROP_K` internamente,
+  ai.js:689), pero el margen de seguridad que se le suma no escala con él: si se
+  recalibra `PROP_K` (hoy 2000, ver ai.js:237 y el latido de la 21 de las 14:25Z),
+  el margen de 200 deja de significar lo mismo sin que nadie lo note. Al tocar el
+  margen de poda (punto 1 de "Qué hay que hacer"), considera hacerlo depender de
+  `PROP_K` en vez de dejarlo fijo — por ejemplo `PROP_MARGIN_PCT * PROP_K`
+  precalculado una vez en `cfg` al montar la búsqueda (no dentro de `quiesce()`,
+  que es la hoja caliente), no como un porcentaje de un valor posicional de la
+  posición concreta (eso se encoge justo en los finales con poco material, que es
+  donde el margen más falta hace). Si la evaluación proporcional no queda vigente
+  (la 21 falla), esto no aplica y `DELTA_MARGIN` se queda como está para el aditivo.
 
 ## Prohibido
 - Cambiar el comportamiento de las modalidades clásicas: ni un nodo.

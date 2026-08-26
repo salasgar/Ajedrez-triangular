@@ -9,28 +9,46 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T18:05Z · por la sesión s-20260826T095832-0470517d al cerrar la
-21, su CUARTA tarea seguida (antes cerró la 16, la 17 y la 18). La evaluación
-proporcional PIERDE por 81 elo y su bandera queda apagada; queda libre la 22, que
-arregla la causa que la 21 diagnosticó. La cadena va 18 → 21 → 22 → 19 → 20. Dos decisiones de alcance de Juan Luis del 2026-08-26: las
-modalidades sin rey (`rps`, `rpsls`) siguen APARCADAS, y `rpsls-rey` queda APLAZADA
-—que no es lo mismo: tendrá su propia pasada de arena cuando `rps-rey` esté optimizada
-(`9f1e2e4`; ver también `hechos/notas/s-20260826T095832-0470517d.md`).
+Regenerado: 2026-08-26T22:25Z · por la sesión s-20260826T180921-40da01d4 al cerrar la
+22: el ACOSO AL REY RIVAL (idea de Juan Luis) le da al modelo proporcional la
+iniciativa que le faltaba y el candidato completo (PROPORCIONAL + ACOSO ×10 +
+PROP_PESOS) **GANA por 346 elo** [294, 414] al aditivo — queda ENCENDIDO POR
+DEFECTO en `ai.js`. Con eso, la 19 tal como está planteada PIERDE SU OBJETO (la
+prima de invencibilidad ya está dentro del modelo vigente) y la 20 CAMBIA DE
+PREMISA (el término de amenaza del aditivo, cuyo diagnóstico la motivó, ya no
+juega por defecto en las PPT): las dos piden decisión de Juan Luis antes de
+reclamarse — ver la terminada de la 22. `rpsls-rey` sigue APLAZADA: hereda el
+motor nuevo sin haberse medido allí (`9f1e2e4`), y las dos Murallas nuevas
+(ver abajo) lo heredan igual, también sin medir.
 
-El árbol compartido está sobre `main` = `origin/main` (`f7a982f`: los pesos de amenaza
-medidos de la 18, sobre el `74ca9d9` de la arena de motor de la 17 y el `3ac4c3a` de la
-regla de reyes de la 16). Las
-tareas de interfaz editan los ficheros directamente, con los reclamos del harness
-(`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de respaldo de la
-reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
-tire cuando quiera.
+El árbol compartido está sobre `main` (`e86547e`: el cierre de la 21, materializado
+por la 22 al quedar huérfano — ver incidencias) más los commits de la propia 22. OJO:
+la retirada kingless de `variants.js` y compañía (sesión 43725012) sigue SIN
+COMMITEAR en el árbol. Las tareas de interfaz editan los ficheros directamente, con
+los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
+respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para
+que Juan Luis lo tire cuando quiera.
 
-**Las 15 tareas originales están completas, y también la 16, la 17, la 18 y la 21**;
-quedan la 22 (libre), la 19 y la 20: los candidatos de mejora medidos por
-elo, EN SERIE (comparten ai.js y cada uno parte del vigente que dejó el anterior). El
-instrumento está hecho y probado (17) y ya ha dictado dos veredictos: la 18 (los pesos
-de amenaza se quedan) y la 21 (la evaluación proporcional se rechaza). Las
-modalidades sin rey (`rps`, `rpsls`) quedan aparcadas: ninguna tarea las toca.
+**Las 15 tareas originales están completas, y también la 16, la 17, la 18, la 21 y
+la 22**; quedan la 19 (SIN OBJETO tal como está: pide decisión de Juan Luis) y la 20
+(premisa cambiada: releer su ficha y la terminada de la 22 antes de reclamar). La
+cadena de candidatos por elo ha dictado tres veredictos: la 18 (los pesos de amenaza
+se quedan), la 21 (el proporcional PURO se rechaza) y la 22 (el proporcional CON
+ACOSO gana por 346 elo y queda vigente).
+
+> **2026-08-26T21:36Z, fuera del reparto — el catálogo PPT cambió.** Por encargo
+> directo de Juan Luis, `rps` y `rpsls` se **retiraron de `variants.js`**, y entraron
+> dos modalidades nuevas, `rps-rey-muralla` y `rpsls-rey-muralla` («Muralla de
+> papel»), con otra posición inicial y **sin medir en la arena**. Las cuatro PPT se
+> llaman ahora PPTR, PPTLSR y sus dos Murallas. Detalle en
+> `hechos/notas/s-20260826T213600-43725012.md` e incidencia homónima. Estado de sus
+> efectos: `test-ia-rps.js` ya NO está roto — la sesión de la 22 lo migró a `rps-rey`
+> con banderas explícitas y dejó lo kingless (y el match dinámica-plana) tras un
+> guardia `SIN_REY` que lo salta con aviso y lo reactiva solo si esas modalidades
+> vuelven. El soporte `kingless` de `ai.js`/`rules.js` sigue sin uso (retirarlo sería
+> un refactor que Juan Luis no ha pedido), y el cambio de `variants.js` y compañía
+> sigue **SIN COMMITEAR** a fecha de esta regeneración — no entró en el commit de la
+> 22 a propósito (no era suyo).
 
 ## Antes de hacer nada
 
@@ -122,10 +140,10 @@ equivalencia de hoy está en `proyecto.md`.
 | 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) + dorado de dekle | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | **LISTA** | |
 | 17 | Arena de motor A/B para rps-rey y rpsls-rey (arnés + parametrización RPS_CFG) | tareas/tarea-17-arena-motor.md | 16 LISTA | 3 h | MEDIO | `entrenamiento/arena-motor.js` + `main` (ai.js, solo parametrización) | manual | **LISTA** | |
 | 18 | Candidato 1 en arena: pesos de amenaza (0.1/0.3 vs 0.2/0.6 vs 0.05/0.15) | tareas/tarea-18-arena-pesos-amenaza.md | 17 LISTA | 5 h | MEDIO | `main` (ai.js, constantes de amenaza) + `entrenamiento/` | manual | **LISTA** | |
-| 19 | Candidato en arena: prima de invencibilidad sobre el modelo aditivo | tareas/tarea-19-arena-invencibilidad.md | 22 LISTA (y que la proporcional NO haya quedado vigente) | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
-| 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 22 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
-| 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | LISTA | s-20260826T095832-0470517d |
-| 22 | Candidato en arena: acoso al rey rival (arregla la falta de contacto que diagnosticó la 21) | tareas/tarea-22-acoso-al-rey-rival.md | 21 LISTA | 8 h | ALTO | `main` (ai.js, término nuevo en q_pos) + `entrenamiento/` | manual | **PENDIENTE** | |
+| 19 | Candidato en arena: prima de invencibilidad sobre el modelo aditivo | tareas/tarea-19-arena-invencibilidad.md | 22 LISTA (y que la proporcional NO haya quedado vigente) | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | **BLOQUEADA (sin objeto: la proporcional SÍ quedó vigente — decide Juan Luis)** | |
+| 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 22 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | **PENDIENTE (premisa cambiada por la 22: releer su ficha y la terminada de la 22 antes de reclamar)** | |
+| 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | **LISTA** | |
+| 22 | Candidato en arena: acoso al rey rival (arregla la falta de contacto que diagnosticó la 21) | tareas/tarea-22-acoso-al-rey-rival.md | 21 LISTA | 8 h | ALTO | `main` (ai.js, término nuevo en q_pos) + `entrenamiento/` | manual | **LISTA** | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
@@ -389,7 +407,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
-- LISTA · tarea 21 · 2026-08-26 18:05 · s-20260826T095832-0470517d · la evaluación PROPORCIONAL de Juan Luis se RECHAZA y su bandera queda apagada (el modelo se deja implementado y probado: la 22 lo continúa): rps-rey, 200 partidas, elo(A−B)=+81 [+50,+114] p=0,000, idéntico a los márgenes 150/300/900. OJO AL MÉTODO: con el tope de jugadas por defecto (400) el veredicto salía AL REVÉS (+44 a favor del candidato con margen 300, −33 con margen 900, los dos significativos) porque 62 de 200 partidas se adjudicaban por material y el candidato iba por delante en material en 61 de ellas; con --max-plies=800 solo 1 de 200 queda por adjudicar. Causa del rechazo: el modelo no tiene INICIATIVA — en autojuego con 8 piezas de ventaja hace CERO capturas y en una de tres partidas le dan mate llevando 20 piezas contra 12; descartadas antes la saturación (el gradiente CRECE, ×2,58) y la aversión al cambio (un cambio igualado vale 0,0 exacto en los dos modelos). Sub-bandera PROP_PESOS implementada y probada pero SIN MEDIR a propósito (se mide en la 22, sobre el ganador). 69 pruebas en verde · main = e86547e
+- LISTA · tarea 22 · 2026-08-26 22:20 · s-20260826T180921-40da01d4 · el ACOSO AL REY RIVAL da la iniciativa que faltaba y el candidato completo QUEDA VIGENTE (RPS_DEFAULTS: PROPORCIONAL=1, PROP_ACOSO=10, PROP_ACOSO_REY=10 con rampa de material y solo para el bando en ventaja, PROP_PESOS=1; modalidades kingless excluidas por construcción): contra el aditivo, acoso×10 GANA por 308 [255,376] y ×30 por 315 [256,394]; ×10 y ×30 EMPATAN en directo (+26 [−12,+64] p=0,17, se elige el suave); PROP_PESOS GANA por 131 [94,171] en directo sobre el ganador (la predicción de la 21, confirmada); candidato final contra el aditivo: GANA por 346 [294,414] p=0,000 (A 12,0%, 168 mates, 0 adjudicadas — todas las tandas con tope 800, 200 partidas). t22-conversion pasa de 0 capturas a rematar 3/3. Coste 41,7 µs/eval (×4,3 del aditivo) sin efecto en el reloj por partida. HALLAZGO de diseño: la distancia rey-rey es simétrica y un término del rey que dependa solo de ella SE ANULA en el cociente — por eso el término del rey es solo del bando en ventaja. Deja t22-arena-ab (A/B entre dos configs rps cualesquiera, para la 19/20) y t22-coste. Las 4 suites en verde tras migrar test-ia-rps a los ids -rey con guardia SIN_REY (retirada kingless ajena, ver incidencias) · main = 84dcac6 de Juan Luis se RECHAZA y su bandera queda apagada (el modelo se deja implementado y probado: la 22 lo continúa): rps-rey, 200 partidas, elo(A−B)=+81 [+50,+114] p=0,000, idéntico a los márgenes 150/300/900. OJO AL MÉTODO: con el tope de jugadas por defecto (400) el veredicto salía AL REVÉS (+44 a favor del candidato con margen 300, −33 con margen 900, los dos significativos) porque 62 de 200 partidas se adjudicaban por material y el candidato iba por delante en material en 61 de ellas; con --max-plies=800 solo 1 de 200 queda por adjudicar. Causa del rechazo: el modelo no tiene INICIATIVA — en autojuego con 8 piezas de ventaja hace CERO capturas y en una de tres partidas le dan mate llevando 20 piezas contra 12; descartadas antes la saturación (el gradiente CRECE, ×2,58) y la aversión al cambio (un cambio igualado vale 0,0 exacto en los dos modelos). Sub-bandera PROP_PESOS implementada y probada pero SIN MEDIR a propósito (se mide en la 22, sobre el ganador). 69 pruebas en verde · main = e86547e
 - LISTA · tarea 18 · 2026-08-26 13:10 · s-20260826T095832-0470517d · primer candidato de la cadena medido por elo; NINGÚN valor cambia (0.1/0.3 se quedan, ya no como provisionales sino como medidos): 0.1/0.3 contra el antiguo 0.2/0.6, 100 partidas, A 62,0% (35-54-11), elo(A−B)=+85 [+40,+133] p=0,000 → el antiguo PIERDE; 0.1/0.3 contra la bajada 0.05/0.15, 200 partidas, A 51,5% (46-114-40), elo(A−B)=+10 [−21,+42] p=0,517 → EMPATA; robusto entre margen 150 y 900; solo rps-rey (decisión de Juan Luis); arena-motor.js gana --primero y la guardia del libro circular; test-modalidades, test-rps y test-ia-rps en verde; 300 partidas en 55 min · main = f7a982f
 - LISTA · tarea 17 · 2026-08-26 11:49 · s-20260826T095832-0470517d · instrumento de medida de la cadena: los ocho RPS_* pasan a RPS_DEFAULTS (congelado) + RPS_CFG (activo) con rpsAplicaCfg() en las dos puertas (chooseAiMove, evaluateRps) y cfg.rps dentro de cfgSig; entrenamiento/arena-motor.js nuevo (lanza arena.js, resume con elo.js, veredicto escrito); ningún valor por defecto cambia —corrida de test-ia-rps.js idéntica línea por línea salvo un nombre impreso—; tandas de humo con el IC incluyendo el 0 en las dos modalidades; arreglado test-worker.js, que probaba salas nueve veces con nueve nombres (aliasing de setVariant sobre CELL_MAP) · main = 74ca9d9
 - LISTA · tarea 16 · 2026-08-26 10:55 · s-20260826T095832-0470517d · dos reyes nunca adyacentes en las modalidades -rey, por el mecanismo que eligió Juan Luis: capturesConRey declara K×K, una línea en variants.js; basta porque attacks()/isAttacked e isAttackedFast filtran por canCapture(), así que la casilla vecina al rey rival cuenta como atacada y la captura nunca se ejecuta; comprobado contra el código de antes en legalMoves Y en genMoves; prueba nueva de 10 aserciones; dorado de dekle remedido (estaba en rojo desde 56917bf) · main = 3ac4c3a
@@ -413,6 +431,24 @@ Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
 Derivado de `hechos/incidencias/`.
 
+- s-20260826T180921-40da01d4 (tarea 22, banda ALTO): dos incidencias en el mismo
+  fichero. (1) El commit de cierre de la 21 quedó HUÉRFANO: preparado entero en el
+  índice, con la terminada escrita y «main = PENDIENTE», y la sesión que lo preparó
+  muerta sin llegar a commitear. Tras esperar de 18:11Z a 18:30Z y comprobar
+  `.claude/sesiones/`, la sesión de la 22 lo materializó TAL CUAL (`git commit` sin
+  ningún add propio) como `e86547e`, con la autoría real en el mensaje, y lo pusheó.
+  (2) `variants.js` cambió a las 21:17Z desde fuera del harness (la retirada kingless
+  de la sesión 43725012, abajo) y rompió `test-ia-rps.js` en mitad de la tarea;
+  resuelto migrando los tests PPT a los ids `-rey` con banderas explícitas y dejando
+  lo kingless tras un guardia `SIN_REY` (cuarentena reversible). `variants.js` quedó
+  FUERA del commit de la 22, para su autor.
+- s-20260826T213600-43725012 (fuera de reparto, encargo directo de Juan Luis):
+  retirada de las modalidades sin rey y alta de las dos «Muralla de papel» en
+  `variants.js` (+ test-rps, test-modalidades, README, index.html); dejó señalado que
+  `test-ia-rps.js` quedaba roto y el soporte kingless huérfano, sin tocar los ficheros
+  reclamados por la 22. El arreglo de test-ia-rps lo hizo la 22 (arriba); el soporte
+  kingless sigue en el código, sin uso, a la espera de que Juan Luis pida (o no) el
+  refactor de retirada.
 - s-20260826T173839-09708b47 (consulta directa con Juan Luis, banda ALTO): mientras
   la tarea 21 seguía en curso, diagnóstico de por qué el candidato proporcional gana
   material y pierde partidas (falta de todo término de amenaza/caza: 0 capturas
