@@ -144,9 +144,24 @@ const RPS_VALOR_BASE = 60;        // valor de partida de una figura
 const RPS_PESO_PRESA = 12;        // + por cada pieza rival que puede capturar
 const RPS_PESO_DEPREDADOR = 4;    // − por cada pieza rival que puede capturarla
 const RPS_VALOR_SUELO = 25;       // mínimo: bloquear y ocupar espacio vale algo
-const RPS_AMENAZA = 0.2;          // fracción del valor perdida si un depredador
+// Bajados a la mitad (tarea 13, sesión s-20260826T022659-6a71f33e): con los
+// valores originales (0.2/0.6) la evaluación oscila con la profundidad en
+// posiciones muy pobladas y se invierte justo en la profundidad 4 (donde
+// cae el presupuesto de nodos real de los niveles altos), haciendo que el
+// motor deje pasar capturas gratis obvias — confirmado con un barrido de
+// profundidad 1-6 en una posición real (ply 16, 40 piezas): con 0.2/0.6 la
+// jugada de capturar pierde solo en profundidad 4 (por 2 puntos) y gana en
+// las demás; con 0.1/0.3 gana en las seis. Verificado también en juego: un
+// autojuego de 220 jugadas (nivel 8, semilla 100) baja de ~130 a 57 capturas
+// gratis ignoradas. Causa de fondo, sin arreglar: quiesce() solo persigue
+// capturas, nunca las jugadas tranquilas que cambian mucho esta "amenaza",
+// así que su variación entre profundidades nunca se verifica tácticamente
+// (ver hechos/fallos/13--s-20260825T090706-b85c3e30.md). Arreglar eso de raíz
+// tocaría el núcleo de búsqueda compartido por TODAS las modalidades: pedir
+// visto bueno antes, no lo hagas aquí.
+const RPS_AMENAZA = 0.1;          // fracción del valor perdida si un depredador
                                   // la ataca pero el atacante tiene respuesta
-const RPS_AMENAZA_COLGADA = 0.6;  // fracción si nadie puede capturar al atacante
+const RPS_AMENAZA_COLGADA = 0.3;  // fracción si nadie puede capturar al atacante
 // Término de caza (solo kingless): bonificación por tener depredadores cerca
 // de cada presa rival, decreciente con la distancia (0 en la otra punta del
 // tablero, el peso entero al lado). Sin él, dos motores prudentes maniobran
