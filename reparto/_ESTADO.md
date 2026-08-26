@@ -9,15 +9,20 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T01:43Z · por la sesión s-20260825T090706-b85c3e30 (la 13 queda
-A MEDIAS: dos bugs reales arreglados y commiteados, pero el síntoma central —capturas
-gratis ignoradas en posiciones muy pobladas— sigue sin resolver; cogible)
+Regenerado: 2026-08-26T04:35Z · por la sesión s-20260826T022659-6a71f33e (la 13 queda
+LISTA: **las 15 tareas del reparto están LISTA. No queda ninguna tarea libre.**)
 
-El árbol compartido está sobre `main` = `origin/main` (`6dcc509`: arreglos de la 13,
-sobre el `2f91fde` de la 14). Las tareas de interfaz editan los ficheros directamente,
-con los reclamos del harness (`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de
-respaldo de la reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que
-Juan Luis lo tire cuando quiera.
+El árbol compartido está sobre `main` = `origin/main` (`bb3c534`: pesos de amenaza de
+la 13 bajados a la mitad, sobre el `6dcc509` de los dos bugs de la misma tarea). Las
+tareas de interfaz editan los ficheros directamente, con los reclamos del harness
+(`.claude/sesiones/`) como siempre. Queda un `stash@{0}` de respaldo de la
+reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
+tire cuando quiera.
+
+**El reparto está completo.** Ninguna sesión nueva encontrará tarea que reclamar:
+lee la sección «Libre ahora mismo, más abajo» y las notas de cada tarea sobre trabajo
+futuro que queda por decidir (no son tareas del reparto, son propuestas para que Juan
+Luis abra, si quiere, un reparto nuevo o encargos sueltos).
 
 ## Antes de hacer nada
 
@@ -103,7 +108,7 @@ equivalencia de hoy está en `proyecto.md`.
 | 10 | Aplicar los resultados de la ronda 15 del entrenamiento | tareas/tarea-10-ronda-15.md | 03 y 04 LISTAS | 2 h | MEDIO | `main` (variants.js, PDF de valores) | manual | **LISTA** | |
 | 11 | Ayuda y reglas adaptadas a cada modalidad (sin reglas de peón donde no hay peones) | tareas/tarea-11-ayuda-por-modalidad.md | ninguna | 1 h | MEDIO | `main` (index.html, script.js — solo la ayuda) | manual | **LISTA** | |
 | 12 | Problemas bien planteados: mínimo real de jugadas y todas las soluciones admitidas | tareas/tarea-12-problemas-bien-planteados.md | ninguna | 3 h | MEDIO | `main` (problemas.js, problemas-ui.js, crear-problema.js) + `entrenamiento/` | manual | **LISTA** | |
-| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 6 h (subida) | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | A MEDIAS | |
+| 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 6 h (subida) | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | **LISTA** | |
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | **LISTA** | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
 
@@ -111,38 +116,43 @@ Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**Libre ahora mismo: la 13 (MEDIO), A MEDIAS, sin reclamo vivo.** Todas las demás están
-LISTAS. Quien la coja: lee primero `hechos/fallos/13--s-20260825T090706-b85c3e30.md`
-—el diagnóstico completo de por dónde seguir— antes de repetir trabajo ya hecho.
+**No queda ninguna tarea libre: las 15 están LISTA.** Ver más abajo, tras el cierre de
+la 13, qué queda para un reparto o encargo futuro (no del reparto actual).
 
-**La 13 queda A MEDIAS el 2026-08-26T01:43Z** (main = 6dcc509): dos bugs reales
-arreglados y commiteados. (1) `orderMoves`/`orderSearchMoves`/`quiesce` ordenaban y
-podaban capturas en las modalidades PPT con los valores PLANOS de la modalidad (todo a
-100) en vez del valor dinámico real (`rpsValor`); `quiesce()` podaba por diferencia con
-ese mismo plano, así que descartaba capturas que en realidad valen más de 100. Arreglado
-con `rpsDynValues()` nueva. (2) `isAttackedFast` no aplicaba `canCapture()` a los
-ataques de piezas saltadoras: en las modalidades -rey, un rey rival adyacente se contaba
-como jaque aunque K no puede "capturar" a K (la única excepción de `capturesConRey`), así
-que `genMoves` rechazaba jugadas legales del rey. **Bug preexistente, no de esta
-sesión** —confirmado contra el `ai.js` de HEAD sin tocar nada—, solo destapado por el
-camino distinto que tomó la partida de autojuego tras el arreglo (1). `test-modalidades.js`
-y `test-rps.js` en verde completo; `test-ia-rps.js` en verde salvo `dekle` en la
-regresión clásica, que es ajeno a esta tarea (el commit `56917bf` de la tarea 10 cambió
-los valores de dekle y dejó desactualizado el dorado — confirmado igual 3 veces contra
-HEAD sin tocar nada).
+**La 13 quedó A MEDIAS el 2026-08-26T01:43Z** (main = 6dcc509, sesión
+`s-20260825T090706-b85c3e30`): dos bugs reales arreglados y commiteados. (1)
+`orderMoves`/`orderSearchMoves`/`quiesce` ordenaban y podaban capturas en las
+modalidades PPT con los valores PLANOS de la modalidad (todo a 100) en vez del valor
+dinámico real (`rpsValor`); `quiesce()` podaba por diferencia con ese mismo plano, así
+que descartaba capturas que en realidad valen más de 100. Arreglado con
+`rpsDynValues()` nueva. (2) `isAttackedFast` no aplicaba `canCapture()` a los ataques
+de piezas saltadoras: en las modalidades -rey, un rey rival adyacente se contaba como
+jaque aunque K no puede "capturar" a K (la única excepción de `capturesConRey`), así
+que `genMoves` rechazaba jugadas legales del rey. Bug preexistente, no de esa sesión.
+`test-modalidades.js` y `test-rps.js` en verde completo; `test-ia-rps.js` en verde
+salvo `dekle` en la regresión clásica, que es ajeno (el commit `56917bf` de la tarea 10
+cambió los valores de dekle y dejó desactualizado el dorado de esa prueba).
 
-**El síntoma central que reportó Juan Luis sigue sin resolver**: en autojuego real
-(nivel 8, `rps`, 220 jugadas) el nivel más alto sigue dejando pasar capturas gratis en
-posiciones muy pobladas (~40 piezas) con la misma frecuencia que antes de los dos
-arreglos (129/220 turnos sin capturar nada, antes; 135/220, después — sin mejora
-medible). Diagnosticado a fondo pero no arreglado: la puntuación de la búsqueda oscila
-con la profundidad (una captura gratis pasa de puntuar 500.9 a 181.7 entre profundidad 1
-y 4, justo donde cae el presupuesto de nodos real), aumentar el presupuesto 20× reduce
-el hueco pero no lo cierra, y la sospecha con más fundamento (sin confirmar) es que
-`quiesce()` solo persigue capturas y nunca las jugadas tranquilas que cambian mucho el
-término de "amenaza" — así que esas jugadas nunca se verifican tácticamente como sí se
-verifican las capturas. Detalle completo, con los números y las pistas para la siguiente
-sesión, en `hechos/fallos/13--s-20260825T090706-b85c3e30.md`.
+**La 13 quedó LISTA el 2026-08-26T04:30Z** (main = `bb3c534`, sesión
+`s-20260826T022659-6a71f33e`, relevando el reclamo abandonado de arriba): el síntoma
+central —capturas gratis ignoradas en posiciones muy pobladas— **mitigado, no
+eliminado de raíz**. Diagnóstico confirmado con un barrido de profundidad en una
+posición real (ply 16, 40 piezas): con los pesos originales de amenaza
+(`RPS_AMENAZA=0.2`, `RPS_AMENAZA_COLGADA=0.6`) capturar gana en profundidad 1, 2, 3 y
+5, pero se invierte justo en profundidad 4 (donde cae el presupuesto de nodos real de
+los niveles altos) por solo 2 puntos. Bajando esos pesos a la mitad (0.1/0.3) la
+inversión desaparece en las seis profundidades probadas. Verificado en juego real
+(autojuego nivel 8, semilla 100, 220 jugadas): **147/220 capturas gratis ignoradas con
+los pesos originales → 57/220 con la mitad (61% menos)**. Aplicado a `ai.js`.
+**La causa de fondo sigue sin arreglar**: `quiesce()` solo persigue capturas, nunca
+las jugadas tranquilas que cambian mucho el término de "amenaza", así que su
+variación entre profundidades nunca se verifica tácticamente — de ahí la oscilación.
+Arreglarlo de raíz (extender `quiesce()` a jugadas que cambien mucho la
+amenaza/caza) es un cambio en el núcleo de búsqueda compartido por TODAS las
+modalidades: riesgo real de romper algo, se mide con la arena, **pide visto bueno
+de Juan Luis antes de tocarlo** — no es tarea de esta sesión. Detalle completo en
+`hechos/terminadas/13--s-20260826T022659-6a71f33e.md` (y el diagnóstico previo en
+`hechos/fallos/13--s-20260825T090706-b85c3e30.md`).
 
 La 03 quedó LISTA el 2026-08-25T01:55Z (main = 74cbb1a): la segunda tanda de arena
 (96 partidas, con el visto bueno de Juan Luis) midió las 6 candidatas pendientes y
@@ -239,6 +249,7 @@ Derivado de `hechos/terminadas/`. Una línea por fichero, más reciente arriba.
 
 Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
+- LISTA · tarea 13 · 2026-08-26 04:30 · s-20260826T022659-6a71f33e · RPS_AMENAZA 0.2→0.1, RPS_AMENAZA_COLGADA 0.6→0.3; barrido de profundidad en posición real (ply16) sin inversión en 6 profundidades (antes se invertía en la 4); autojuego nivel 8/220 jugadas: 147→57 capturas gratis ignoradas (61% menos); test-modalidades.js y test-rps.js en verde, test-ia-rps.js en verde salvo el dekle ajeno (tarea 10); causa de fondo (cobertura de quiescencia) diagnosticada, sin arreglar, pendiente de visto bueno · main = bb3c534
 - LISTA · tarea 14 · 2026-08-25 18:20 · s-20260825T090854-1758bb65 · entrenamiento/cosecha-problemas.js nuevo (script + almacén); tanda real de 15 partidas modalidad salas (1380 jugadas): 89 problemas nuevos, 0 rechazados en la reverificación completa (85 fácil, 4 medio); node entrenamiento/prueba-problemas.js 63 OK/0 mal · entrenamiento/problemas-cosechados.json
 - LISTA · tarea 10 · 2026-08-25 12:29 · s-20260825T090655-e89d6030 · dekle entra (candidato "all" de la ronda 15, elo(A-B)=-28 [-56,-0] p=0.046: N298 B320 U378 R392 Q750, movilidad 7.63); trigonal revertido a valores a ojo (bug de signo del commit c388624c del 2026-08-04, que aplicó un candidato que en realidad perdió -76 elo); PDF regenerado, valores-origen.json y README de entrenamiento/ actualizados; node test-modalidades.js y node test-rps.js en verde · main = 56917bf
 - LISTA · tarea 09 · 2026-08-25 08:59 · s-20260825T085457-e6fe09b4 · 11 ficheros retirados (8 depuración del editor, 3 duplicados « 2» idénticos), 1 duplicado « 2» con cambios reales → incidencia; papelera lista para vaciar · reparto/_papelera/movidos-s-20260825T085457-e6fe09b4.ok-s-20260825T085457-e6fe09b4.md + incidencia s-20260825T085457-e6fe09b4-duplicado.md
@@ -321,3 +332,28 @@ Derivado de `hechos/incidencias/`.
   hay varias sesiones dentro de `reparto/` a la vez — sí evita colar ficheros de
   fuera. Con la disciplina de un solo escritor por nombre de fichero el daño es nulo,
   pero conviene saberlo.
+
+## El reparto está completo — qué queda para que decida Juan Luis
+
+Las 15 tareas están LISTA. Ninguna sesión nueva encontrará nada que reclamar en este
+tablón. Lo que sigue no son tareas del reparto, son los cabos sueltos que cada tarea
+fue dejando explícitamente para una decisión suya — candidatos a un reparto nuevo o a
+un encargo directo, no algo que ninguna sesión deba iniciar por su cuenta:
+
+- **Arreglo de fondo de la 13** (cobertura de quiescencia en `ai.js`): extender
+  `quiesce()` para que persiga también jugadas tranquilas que cambien mucho la
+  amenaza/caza, no solo capturas. Tocaría el núcleo de búsqueda de TODAS las
+  modalidades; se mide con la arena. Ver `hechos/terminadas/13--s-20260826T022659-6a71f33e.md`.
+- **Enganchar el almacén cosechado de la 14** (`entrenamiento/problemas-cosechados.json`,
+  89 problemas) al almacén en vivo de `problemas-ui.js`, y/o repetir la cosecha en las
+  otras modalidades PPT. Ver `hechos/terminadas/14--s-20260825T090854-1758bb65.md`.
+- **Condiciones de victoria en las modalidades sin rey**: ninguna partida termina de
+  forma natural (siempre al tope de jugadas); arreglarlo tocaría las reglas de fin de
+  partida. Anotado al cerrar la 03.
+- **Ronda 14 del entrenamiento** (curva de temperatura, 6 pares): completa en disco,
+  sin aplicar todavía a propósito — la 10 no la tocó por no ser su encargo.
+- `stash@{0}` de respaldo de la reconciliación (tarea 04): ya no hace falta, libre
+  para que Juan Luis lo tire cuando quiera.
+- `scripts/nueva-sesion 2.sh`: duplicado obsoleto sin trackear que reapareció después
+  del cierre de la 09 (ver `hechos/incidencias/s-20260825T093251-fde516e1.md`),
+  candidato a papelera con nueva firma suya.
