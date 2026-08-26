@@ -20,6 +20,8 @@
 //   · que los valores dinámicos responden a presas y depredadores (rpsValor)
 //   · el término de amenazas de evaluateRps (pieza atacada, colgada o no)
 //   · que la quietud no genera capturas prohibidas por la matriz
+//   · que en las modalidades -rey los dos reyes nunca quedan adyacentes
+//     (ni por legalMoves ni por genMoves)
 //   · que la búsqueda puntúa la eliminación ('wiped') como un mate y no
 //     aplica la regla de los 50 movimientos en las modalidades sin rey
 //   · partidas completas IA contra IA en las cuatro modalidades nuevas
@@ -123,6 +125,14 @@ if (process.argv[2] === 'goldens') {
 // `node test-ia-rps.js goldens` ANTES de tocar ai.js. Formato de cada media
 // jugada: 'origen>destino|mejor puntuación de la búsqueda|evaluación
 // estática de la posición'.
+//
+// EXCEPCIÓN: el dorado de `dekle` se remidió el 2026-08-26 (tarea 16 del
+// reparto). No era una regresión: el commit 56917bf (tarea 10) cambió los
+// valores de las piezas de dekle y su movilidad tras la ronda 15 del
+// entrenamiento, de modo que el dorado de la rama base quedó midiendo una
+// evaluación que ya no existe. El resto de las clásicas siguen con el dorado
+// original, y al remedir salieron idénticas (comprobado). Las puntuaciones de
+// dekle ya no son enteras porque su movilidad medida es 7.63.
 
 const GOLDENS = {
  "salas": [
@@ -150,12 +160,12 @@ const GOLDENS = {
   "-1,2,1>-1,0,3|4|-24"
  ],
  "dekle": [
-  "1,-3,3>-1,-1,4|0|0",
-  "-2,3,1>-2,2,1|-4|0",
-  "2,-3,2>2,-1,1|-4|0",
-  "-1,4,-1>-1,2,0|16|-12",
-  "0,-2,3>0,-1,3|-4|0",
-  "-2,3,0>-1,1,1|-16|0"
+  "0,-2,3>-1,0,2|9.237055564881302e-14|-2.3092638912203256e-14",
+  "-3,3,1>-2,1,2|-15.26000000000035|-7.6299999999999715",
+  "2,-2,1>1,0,0|-7.629999999999789|-2.3092638912203256e-14",
+  "0,3,-1>1,1,0|-45.78000000000019|-7.6299999999999715",
+  "3,-3,2>2,-2,1|15.260000000000062|-2.842170943040401e-14",
+  "-1,4,-2>0,2,-1|-45.77999999999976|-68.67"
  ],
  "trigonal": [
   "-2,1,2>-2,4,0|48|0",
@@ -308,6 +318,56 @@ if (process.argv[2] !== 'match') {
       ]);
       return genCaptures(board, 'w', null, { w: null, b: null }, {}).length === 0;
     `), 'piedra junto a papel: ninguna captura (la matriz lo prohíbe)');
+  }
+
+  // --- los dos reyes nunca adyacentes (modalidades -rey) ---------------------
+  //
+  // La regla (decisión de Juan Luis, 2026-08-26) está codificada como un DATO:
+  // 'K' figura entre las víctimas de 'K' en capturesConRey (variants.js). De
+  // ahí sale sola la ilegalidad, porque tanto attacks()/isAttacked (rules.js,
+  // el camino de la interfaz) como isAttackedFast (ai.js, el de la búsqueda)
+  // filtran los ataques de las saltadoras por canCapture().
+  //
+  // Posición mínima: los dos reyes a distancia 2, de forma que las casillas
+  // vecinas del rey blanco se parten en dos grupos — las que también tocan al
+  // rey negro (prohibidas) y las que no (siguen siendo legales). Se comprueban
+  // los dos generadores, porque son código distinto y podrían discrepar.
+
+  console.log('Reyes nunca adyacentes:');
+  for (const id of ['rps-rey', 'rpsls-rey']) {
+    const r = run(`
+      setVariant('${id}');
+      newGame();
+      const a = CELLS.find(c => c.kingNbrs.length >= 6);
+      const b = CELLS.find(c => c !== a && !a.kingNbrs.includes(c) &&
+        c.kingNbrs.some(n => a.kingNbrs.includes(n)));
+      const comunes = a.kingNbrs.filter(n => b.kingNbrs.includes(n)).map(c => c.key);
+      const otras = a.kingNbrs.filter(n => !b.kingNbrs.includes(n)).map(c => c.key);
+      const wk = { type: 'K', color: 'w', moved: true };
+      game.board = new Map([[a.key, wk], [b.key, { type: 'K', color: 'b', moved: true }]]);
+      game.turn = 'w';
+      const legales = legalMoves(game.board, a.key, wk, null).map(c => c.key);
+      const busqueda = genMoves(game.board, 'w', null, { w: a.key, b: b.key }, {}).map(m => m.to);
+      return {
+        kxk: canCapture('K', 'K'),
+        nComunes: comunes.length,
+        nOtras: otras.length,
+        prohibidasEnReglas: comunes.filter(k => legales.includes(k)).length,
+        prohibidasEnBusqueda: comunes.filter(k => busqueda.includes(k)).length,
+        perdidasEnReglas: otras.filter(k => !legales.includes(k)).length,
+        perdidasEnBusqueda: otras.filter(k => !busqueda.includes(k)).length,
+      };
+    `);
+    ok(r.kxk, `${id}: la matriz declara que el rey captura al rey (regla de adyacencia)`);
+    ok(r.nComunes > 0 && r.nOtras > 0,
+      `${id}: la posición de prueba separa casillas prohibidas y permitidas ` +
+      `(${r.nComunes} y ${r.nOtras})`);
+    ok(r.prohibidasEnReglas === 0,
+      `${id}: legalMoves no ofrece ninguna casilla junto al rey rival`);
+    ok(r.prohibidasEnBusqueda === 0,
+      `${id}: genMoves tampoco la ofrece`);
+    ok(r.perdidasEnReglas === 0 && r.perdidasEnBusqueda === 0,
+      `${id}: las demás jugadas del rey siguen ahí (${r.nOtras} casillas)`);
   }
 
   // --- búsqueda sin rey ------------------------------------------------------

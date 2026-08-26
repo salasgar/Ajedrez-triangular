@@ -613,10 +613,20 @@ const RPSLS_CAPTURES = {
   L: ['S', 'A'],   // el lagarto envenena a Spock y devora el papel
   S: ['T', 'O'],   // Spock rompe la tijera y vaporiza la piedra
 };
-// Con rey: cada mapa gana la fila del rey (captura todo) y la columna del rey
-// (todos lo capturan, por eso cualquier pieza da jaque).
+// Con rey: cada mapa gana la fila del rey (captura todo, EL REY RIVAL
+// INCLUIDO) y la columna del rey (todos lo capturan, por eso cualquier pieza
+// da jaque).
+//
+// Que 'K' figure entre las víctimas de 'K' es lo que garantiza que los dos
+// reyes nunca queden adyacentes, como en el ajedrez clásico: la casilla junto
+// al rey rival cuenta como atacada (isAttackedFast y attacks() consultan
+// canCapture() también para las saltadoras), así que moverse ahí es ilegal.
+// La captura K×K nunca llega a ejecutarse —igual que en el clásico, donde el
+// rey «ataca» sus casillas vecinas sin que los reyes puedan comerse—; el dato
+// está aquí para que la matriz no tenga excepciones. (Decisión de Juan Luis,
+// 2026-08-26; tarea 16 del reparto.)
 function capturesConRey(base) {
-  const out = { K: Object.keys(base) };
+  const out = { K: Object.keys(base).concat('K') };
   for (const [t, victimas] of Object.entries(base)) out[t] = victimas.concat('K');
   return out;
 }
