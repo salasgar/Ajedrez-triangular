@@ -22,7 +22,7 @@ const AI_WORKER_FNS = [
   ttInit, packMove, orderSearchMoves, centrality, pawnAdvance, evaluate,
   // evaluación de las modalidades Piedra, papel y tijera (la caché de
   // rpsInfo vive en V._rpsInfo, así que no necesita declaración propia)
-  rpsInfo, rpsValor, rpsDeadPosition, rpsContraataque, rpsDist, evaluateRps,
+  rpsInfo, rpsValor, rpsDynValues, rpsDeadPosition, rpsContraataque, rpsDist, evaluateRps,
   capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
   pickSoftmax, chooseAiMove,

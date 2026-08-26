@@ -230,6 +230,30 @@ function rpsValor(t, cntRival) {
     RPS_VALOR_BASE + RPS_PESO_PRESA * presas - RPS_PESO_DEPREDADOR * depred);
 }
 
+// Valores dinámicos por tipo y color, para ORDENAR jugadas y podar quiesce()
+// en las modalidades Piedra, papel y tijera. orderMoves/orderSearchMoves
+// hacían MVV-LVA con los valores PLANOS de la modalidad (todo a 100:
+// "Valores planos provisionales", ver variants.js), así que no distinguían
+// una captura que hoy vale 200 (muchas presas vivas) de una que vale 25 (el
+// suelo) — toda captura ordenaba igual. Peor aún: quiesce() podaba por
+// diferencia (DELTA_MARGIN) con esos mismos planos, así que una captura que
+// en realidad vale bastante más de 100 podía descartarse por creerla peor
+// de lo que es ("el motor puede estar podando justo las capturas", la
+// hipótesis de quiescencia de esta tarea). Una pasada de recuento por
+// tablero, reutilizando rpsValor(); solo se llama cuando V.captures existe.
+function rpsDynValues(board) {
+  const info = rpsInfo();
+  const cnt = { w: {}, b: {} };
+  for (const t of info.tipos) { cnt.w[t] = 0; cnt.b[t] = 0; }
+  for (const [, p] of board) cnt[p.color][p.type]++;
+  const val = { w: {}, b: {} };
+  for (const t of info.figuras) {
+    val.w[t] = rpsValor(t, cnt.b);
+    val.b[t] = rpsValor(t, cnt.w);
+  }
+  return val;
+}
+
 // Posición muerta sin rey (la versión barata de deadPositionKingless, en
 // rules.js, con la que tiene que coincidir): la partida está muerta cuando
 // ningún bando puede ya eliminar al otro, es decir, cuando a AMBOS les queda
@@ -850,12 +874,18 @@ function capturedBy(board, m) {
 // piezas al final y lo va barajando; sin desempate fijo, el árbol explorado
 // cambiaría de una ejecución a otra)
 function orderMoves(board, moves, values = PV()) {
+  const dyn = V.captures ? rpsDynValues(board) : null;
   const gain = m => {
     const v = capturedBy(board, m);
-    return v ? values[v.type] * 1024 - values[board.get(m.from).type] : -1;
+    if (!v) return -1;
+    // el rey (modalidades -rey) no tiene valor dinámico: rpsInfo() lo deja
+    // fuera de `figuras` (ver rpsDynValues), así que cae al valor plano
+    const vv = (dyn && v.type !== 'K') ? dyn[v.color][v.type] : values[v.type];
+    return vv * 1024 - values[board.get(m.from).type];
   };
   moves.sort((m1, m2) => (gain(m2) - gain(m1)) ||
     (m1.from + m1.to < m2.from + m2.to ? -1 : 1));
+  return dyn;
 }
 
 // Ordenación de la búsqueda interior: hash-move de la TT primero (la mejor
@@ -866,12 +896,17 @@ function orderMoves(board, moves, values = PV()) {
 // provocado cada par origen-destino en esta búsqueda, con más peso cuanto
 // más profundos). Deja m.pk calculado para el bucle.
 function orderSearchMoves(board, moves, values, hashMv, killers, history) {
+  const dyn = V.captures ? rpsDynValues(board) : null;
   for (const m of moves) {
     const pk = packMove(m);
     m.pk = pk;
     if (pk === hashMv) { m.ord = 2e9; continue; }
     const v = capturedBy(board, m);
-    if (v) { m.ord = 1e9 + values[v.type] * 1024 - values[board.get(m.from).type]; continue; }
+    if (v) {
+      const vv = (dyn && v.type !== 'K') ? dyn[v.color][v.type] : values[v.type];
+      m.ord = 1e9 + vv * 1024 - values[board.get(m.from).type];
+      continue;
+    }
     if (pk === killers[0]) { m.ord = 9e8; continue; }
     if (pk === killers[1]) { m.ord = 8.9e8; continue; }
     m.ord = history[pk];
@@ -940,6 +975,20 @@ function isAttackedFast(board, cell, byColor) {
   // detectar. CAMBIO MÍNIMO para que la búsqueda no casque; la evaluación
   // específica de estas modalidades queda pendiente.
   if (!cell) return false;
+  // `cell` es siempre la casilla del propio rey (todas las llamadas pasan
+  // kings[color]), así que la víctima es SIEMPRE el rey de este color.
+  // cell.leapAttackers se construye por alcance geométrico puro (ver
+  // buildAttackTables, variants.js) SIN mirar la matriz de capturas: en las
+  // modalidades -rey, K no puede "capturar" a K (capturesConRey deja fuera
+  // 'K' de sus propias víctimas — la única excepción de esa matriz, donde
+  // por lo demás todo captura al rey y el rey captura todo), así que un rey
+  // rival adyacente NO da jaque, y sin este filtro isAttackedFast lo daba
+  // por jaque igualmente. Bug real, no de esta tarea: genMoves rechazaba
+  // jugadas legales del rey (incluida una captura gratis) por creerlas
+  // ilegales. cell.atk queda fuera porque las modalidades con matriz de
+  // capturas no declaran piezas deslizantes (slideGroups vacío).
+  const victima = board.get(cell.key);
+  const victimaType = victima ? victima.type : null;
   for (const g of cell.atk) {
     const ray = g.ray;
     for (let i = 0; i < ray.length; i++) {
@@ -950,6 +999,7 @@ function isAttackedFast(board, cell, byColor) {
     }
   }
   for (const type in cell.leapAttackers) {
+    if (victimaType && !canCapture(type, victimaType)) continue;
     for (const t of cell.leapAttackers[type]) {
       const o = board.get(t.key);
       if (o && o.color === byColor && o.type === type) return true;
@@ -1050,10 +1100,11 @@ function quiesce(board, color, ep, clock, keys, alpha, beta, cfg, qdepth, sx, pl
 
   const captures = genCaptures(board, color, ep, sx.kings, sx.probe);
   if (captures.length === 0) return alpha;
-  if (cfg.order) orderMoves(board, captures, values);
+  const dyn = cfg.order ? orderMoves(board, captures, values) : null;
   const u = sx.undo[ply];
   for (const m of captures) {
-    const gain = values[capturedBy(board, m).type];
+    const v = capturedBy(board, m);
+    const gain = (dyn && v.type !== 'K') ? dyn[v.color][v.type] : values[v.type];
     if (standPat + gain + DELTA_MARGIN < alpha) continue;   // poda por diferencia
     const nextEp = makeSim(board, m.from, m.to, ep, u, sx.kings);
     const score = -quiesce(board, rival(color), nextEp, 0, keys, -beta, -alpha, cfg,
