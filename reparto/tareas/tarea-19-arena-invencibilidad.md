@@ -37,7 +37,8 @@ de 1 a 0 vale lo mismo que de 2 a 1, cuando cero es un salto cualitativo.
    prima debe tener sentido con ese residuo.
 2. Elegir 2-3 magnitudes de prima razonadas (referencia: el hueco del ejemplo de la
    nota es de ~50-100 puntos por pieza) y medirlas contra el vigente con
-   `arena-motor.js` en ambas modalidades, dimensionando como la 18.
+   `arena-motor.js` SOLO en `rps-rey` (decisión de Juan Luis del 26-8-2026:
+   `rpsls-rey` aplazada hasta optimizar `rps-rey`), dimensionando como la 18.
 3. Vigilancia del incentivo perverso: comprueba en los logs que la prima no produce
    maniobras absurdas para forzar extinciones propias o conservar «rehenes» (la
    advertencia del comentario de `RPS_SIN_VICTORIA`). Si aparece, anótalo con

@@ -1,6 +1,6 @@
 # Traspaso — reparto-ajedrez
 
-Actualizado: 2026-08-26 09:45Z · Sesiones previas: 4
+Actualizado: 2026-08-26 12:25Z · Sesiones previas: 4
 
 ## Objetivo
 
@@ -11,14 +11,15 @@ Encargo de Juan Luis del 2026-08-24 (seis trabajos, decisiones delegadas), ampli
 
 ## Estado actual
 
-**Las 15 tareas originales están LISTAS; quedan las 16-20, la cadena de arena del
-2026-08-26.** Encargo de Juan Luis: centrarse en `rps-rey` (PPTR) y `rpsls-rey`
-(PPTLSR) — las modalidades sin rey quedan APARCADAS por poco jugables — y validar
-por elo las mejoras del motor. La 16 (regla de reyes) ya está LISTA; la cadena en
-serie va **17 (arnés) → 18 (pesos de amenaza) → 21 (evaluación PROPORCIONAL, idea de
-Juan Luis de la tarde del 26-8) → 19 (prima de invencibilidad, solo si la 21 no
-entra) → 20 (quiescencia, banda ALTA, solo si sigue haciendo falta)**. El estado por
-tarea vive en el tablón `reparto/_ESTADO.md` (fuente de verdad: `reparto/hechos/`).
+**Las 15 originales, la 16 (regla de reyes) y la 17 (arnés de arena) están LISTAS.**
+La cadena en serie sigue: **18 (pesos de amenaza, reclamada el 26-8 a las 12:00Z por
+la sesión encadenada s-20260826T095832-0470517d) → 21 (evaluación PROPORCIONAL, idea
+de Juan Luis) → 19 (prima de invencibilidad, solo si la 21 no entra) → 20
+(quiescencia, banda ALTA, solo si sigue haciendo falta)**. La arena mide **SOLO
+`rps-rey`** (decisión de Juan Luis, 26-8 por la tarde): `rpsls-rey` queda APLAZADA
+hasta optimizar `rps-rey` y luego tendrá su propia pasada de arena; las modalidades
+sin rey siguen APARCADAS. El estado por tarea vive en el tablón `reparto/_ESTADO.md`
+(fuente de verdad: `reparto/hechos/`).
 
 La 13 cerró en dos sesiones: la primera arregló dos bugs reales del motor
 (`6dcc509`) y dejó el diagnóstico completo; la segunda estabilizó el síntoma bajando
@@ -34,16 +35,20 @@ Ficha completa: `reparto/tareas/tarea-16-reyes-nunca-adyacentes.md`.
 
 ## Siguiente paso
 
-Abrir una sesión de trabajo **MEDIO** que reclame la tarea 16 con la frase de abajo.
+Nada que arrancar: la sesión encadenada MEDIO tiene la 18 en marcha y seguirá con la
+21 y la 19 (si procede) por su cuenta. Si esa sesión cae, abrir otra MEDIO con la
+frase encadenada de abajo. La 20, si llega a hacer falta, va en sesión aparte de
+banda ALTO.
 
-Banda de modelo para retomar: **MEDIO** — cambio de datos puntual más revisión de una
-regresión, todo especificado en la ficha; nada de criterio abierto.
+Banda de modelo para retomar: **MEDIO** — tandas de arena bien especificadas en
+fichas autocontenidas; solo la 20 pide criterio de diseño (ALTO).
 
 ## Decisiones tomadas
 
 | Decisión | Por qué |
 |---|---|
 | Las modalidades sin rey (`rps`, `rpsls`) quedan APARCADAS | Juan Luis (26-8-2026): poco jugables; ni condiciones de victoria ni tuneo. Todo el motor se centra en rps-rey y rpsls-rey |
+| La arena mide SOLO `rps-rey`; `rpsls-rey` APLAZADA hasta optimizar `rps-rey` | Juan Luis (26-8-2026, tarde): mitad de CPU por candidato, señal más limpia (3 tipos, partidas más cortas), código compartido. Luego `rpsls-rey` tendrá su propia pasada partiendo de los ganadores, sin trasplantar números a ciegas. Nota de la coordinadora, sección 6 |
 | Las mejoras del motor se deciden POR ELO EN LA ARENA, tras bandera, con p<0.05 | Encargo de Juan Luis (26-8-2026); incluye el visto bueno a implementar la quiescencia extendida (tarea 20) con la arena como juez. Cadena 17→20 en serie porque comparten ai.js |
 | Prima de invencibilidad como candidato de evaluación (tarea 19) | Idea de Juan Luis (26-8-2026): pasar de 1 depredador a 0 es un salto cualitativo que el término lineal no recoge. Criterio 3 de la nota de la coordinadora |
 | Dos reyes nunca adyacentes en las modalidades -rey, vía K→K en `capturesConRey` | Decisión de Juan Luis (26-8-2026): regla del juego, como en el ajedrez clásico; con el filtro `canCapture()` de `6dcc509`, cambiar el dato basta y desaparece la única excepción de la matriz. Es la tarea 16 |
@@ -73,11 +78,10 @@ regresión, todo especificado en la ficha; nada de criterio abierto.
 ## Archivos
 
 - `reparto/_ESTADO.md` — el tablón; empieza por aquí. Al día a 2026-08-26T09:00Z.
-- `reparto/tareas/tarea-16-reyes-nunca-adyacentes.md` — la tarea libre que abre la
-  cadena (ahora incluye actualizar el dorado de dekle, ya no opcional).
-- `reparto/tareas/tarea-17-arena-motor.md`, `tarea-18-arena-pesos-amenaza.md`,
-  `tarea-19-arena-invencibilidad.md`, `tarea-20-arena-quiescencia.md` — la cadena de
-  arena, en serie; cada ficha es autocontenida.
+- `reparto/tareas/tarea-18-arena-pesos-amenaza.md`,
+  `tarea-21-evaluacion-proporcional.md`, `tarea-19-arena-invencibilidad.md`,
+  `tarea-20-arena-quiescencia.md` — la cadena de arena pendiente, en serie; cada
+  ficha es autocontenida y ya acotada a `rps-rey`.
 - `reparto/hechos/notas/s-20260825T093251-fde516e1.md` — las dos decisiones de Juan
   Luis del 26-8 con su porqué.
 - `reparto/hechos/terminadas/13--s-20260826T022659-6a71f33e.md` y
@@ -107,10 +111,10 @@ regresión, todo especificado en la ficha; nada de criterio abierto.
 
 ---
 
-Lo primero que hará la sesión nueva: reclamar la tarea 16 y aplicar la regla de los
-reyes siguiendo su ficha.
+Lo primero que hará la sesión nueva (solo si la encadenada actual cae): reclamar la
+tarea libre de banda MEDIO con el número más bajo de la cadena de arena.
 
-Banda para abrirla: **MEDIO** — cambio de datos y regresión, sin criterio abierto.
+Banda para abrirla: **MEDIO** — tandas de arena especificadas en fichas; la 20, ALTO.
 
 Frase para la sesión de trabajo (encadenada: una sesión puede hacer varias tareas
 consecutivas de su banda, reclamando y cerrando cada una por el protocolo — ahorra
@@ -120,8 +124,8 @@ la parte fija de arranque de cada sesión; decidido con Juan Luis el 26-8-2026):
 > `/Users/salasgar/Documents/git/Ajedrez-triangular`, carpeta `reparto/`. He abierto
 > esta sesión con un modelo de banda MEDIO. Lee `reparto/proyecto.md` y
 > `reparto/_ESTADO.md`, lista `reparto/hechos/`, y reclama la tarea libre de banda
-> MEDIO con el número más bajo siguiendo el protocolo del tablón (ahora mismo, la
-> 16; cada ficha es autocontenida). Cuando cierres una tarea del todo —terminada,
+> MEDIO con el número más bajo siguiendo el protocolo del tablón (cada ficha es
+> autocontenida). Cuando cierres una tarea del todo —terminada,
 > CERRADA en tu reclamo, tablón regenerado, commit y push—, reclama la siguiente
 > libre de banda MEDIO y continúa. Encadena así mientras te quede contexto de
 > sobra; cuando notes que la conversación se alarga o va lenta, no empieces tarea

@@ -49,7 +49,8 @@ no forzar capturas.
    la posición del ply 16 (`reparto/salidas/13-rescate-scratchpad-*/posicion-ply16.json`)
    con la bandera encendida y los pesos VIGENTES — si la oscilación entre
    profundidades no se estabiliza, replantea antes de medir elo.
-4. Medir con `arena-motor.js` encendido-contra-apagado en ambas modalidades,
+4. Medir con `arena-motor.js` encendido-contra-apagado SOLO en `rps-rey` (decisión
+   de Juan Luis del 26-8-2026: `rpsls-rey` aplazada hasta optimizar `rps-rey`),
    dimensionando con las partidas/hora (ojo: la extensión encarece cada nodo — mide
    el coste real y anótalo; un candidato que gana elo por partida pero tarda el
    doble necesita esa discusión en la terminada).

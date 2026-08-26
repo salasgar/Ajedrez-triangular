@@ -59,9 +59,10 @@ Nada de sumar/restar valores por pieza. Se evalúa la PROPORCIÓN resultante:
    con la evaluación nueva — la captura gratis debe ganar en todas las profundidades
    y la oscilación no debe reaparecer. Si reaparece, anota los números y replantea
    antes de gastar CPU.
-3. Medir con `arena-motor.js` (17) nueva-contra-vigente en `rps-rey` y `rpsls-rey`,
-   dimensionando con las partidas/hora medidas. Si hace falta calibrar k o la prima,
-   máximo 2-3 variantes razonadas, como la 18.
+3. Medir con `arena-motor.js` (17) nueva-contra-vigente SOLO en `rps-rey` (decisión
+   de Juan Luis del 26-8-2026: `rpsls-rey` aplazada hasta optimizar `rps-rey`; luego
+   tendrá su propia pasada), dimensionando con las partidas/hora medidas. Si hace
+   falta calibrar k o la prima, máximo 2-3 variantes razonadas, como la 18.
 4. Decidir con p<0.05 (elo(A-B) POSITIVO = el candidato PIERDE): si gana, la bandera
    queda encendida por defecto y el comentario documenta la fórmula y la fecha; si
    no, apagada con los números en la terminada.
