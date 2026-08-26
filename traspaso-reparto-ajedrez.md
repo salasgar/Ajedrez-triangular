@@ -111,12 +111,22 @@ reyes siguiendo su ficha.
 
 Banda para abrirla: **MEDIO** — cambio de datos y regresión, sin criterio abierto.
 
-Frase para la sesión de trabajo:
+Frase para la sesión de trabajo (encadenada: una sesión puede hacer varias tareas
+consecutivas de su banda, reclamando y cerrando cada una por el protocolo — ahorra
+la parte fija de arranque de cada sesión; decidido con Juan Luis el 26-8-2026):
 
 > Trabaja en el reparto del repositorio
 > `/Users/salasgar/Documents/git/Ajedrez-triangular`, carpeta `reparto/`. He abierto
 > esta sesión con un modelo de banda MEDIO. Lee `reparto/proyecto.md` y
-> `reparto/_ESTADO.md`, lista `reparto/hechos/`, y reclama la tarea 16 siguiendo el
-> protocolo del tablón (es la única libre; su ficha
-> `reparto/tareas/tarea-16-reyes-nunca-adyacentes.md` es autocontenida). Dime cuál
-> has cogido y con qué identificador de sesión.
+> `reparto/_ESTADO.md`, lista `reparto/hechos/`, y reclama la tarea libre de banda
+> MEDIO con el número más bajo siguiendo el protocolo del tablón (ahora mismo, la
+> 16; cada ficha es autocontenida). Cuando cierres una tarea del todo —terminada,
+> CERRADA en tu reclamo, tablón regenerado, commit y push—, reclama la siguiente
+> libre de banda MEDIO y continúa. Encadena así mientras te quede contexto de
+> sobra; cuando notes que la conversación se alarga o va lenta, no empieces tarea
+> nueva: cierra limpio la que tengas (con su fallo de «sesión agotada» si queda a
+> medias) y dímelo. No toques la tarea 20, que es de banda ALTO. Dime en cada
+> momento qué tarea tienes y con qué identificador de sesión.
+
+Para la 20 (cuando la 19 esté LISTA), sesión aparte de banda ALTO con la frase
+estándar del tablón pidiendo la tarea 20.
