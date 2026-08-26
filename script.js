@@ -1147,7 +1147,21 @@ function renderScoresheet() {
   scoresheetBodyEl.appendChild(list);
   // mantener a la vista la jugada actual al crecer la lista
   const currentRow = list.querySelector('.sheet-row.current');
-  if (currentRow) currentRow.scrollIntoView({ block: 'nearest' });
+  if (currentRow) asomarEnCaja(list, currentRow);
+}
+
+// Deja `hijo` a la vista dentro de `caja` moviendo SOLO el desplazamiento de
+// esa caja. Antes se usaba scrollIntoView({block:'nearest'}), pero ése sube
+// por todos los ancestros que se puedan desplazar, el documento incluido: en
+// el móvil, con el panel debajo del tablero, bastaba tocar una casilla para
+// que la página saltara a la lista de jugadas y el tablero se saliera de la
+// pantalla. La página solo debe moverse cuando la mueve quien juega.
+function asomarEnCaja(caja, hijo) {
+  const c = caja.getBoundingClientRect();
+  const h = hijo.getBoundingClientRect();
+  if (!c.height) return;                       // caja oculta (details cerrado)
+  if (h.top < c.top) caja.scrollTop -= c.top - h.top;
+  else if (h.bottom > c.bottom) caja.scrollTop += h.bottom - c.bottom;
 }
 
 // --- gráfica de la evaluación a lo largo de la partida ---
