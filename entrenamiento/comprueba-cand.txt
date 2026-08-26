@@ -1,0 +1,17 @@
+# Comprobación de que --cand llega de verdad al motor a través de arena.js.
+# Con las MISMAS aperturas que humo-rps-rey.log, las 4 partidas salen distintas.
+# (Resumen rehecho tras arreglar el veredicto de varianza cero.)
+
+
+modalidad rps-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = extremo · rps = {"VALOR_SUELO":900,"PESO_PRESA":400}
+
+4 partidas · finales: mate 3, tope 1 · 0 cortadas dentro del margen 300 (tablas)
+A (vigente): 4 ganadas, 0 tablas, 0 perdidas · puntuación 100.0%
+elo(A−B) = +∞  [+∞, +∞]  p = 1.000
+
+VEREDICTO: el candidato PIERDE las 4 partidas, sin una sola excepción.
+  Pero la varianza de la muestra es CERO, y de ahí no sale ni intervalo ni p-valor: el resultado de arriba (elo ±∞, p = 1) no significa nada. Juega más partidas antes de concluir.
+
+coste registrado: 25.3 s por partida de media (142 partidas/hora por proceso)

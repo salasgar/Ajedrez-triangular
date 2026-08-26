@@ -1,0 +1,22 @@
+no hay libro-rpsls-rey.json: generándolo...
+libro[rpsls-rey]: 400 aperturas de 6 jugadas, semilla 20260721
+libro generado: /Users/salasgar/Documents/git/Ajedrez-triangular/entrenamiento/libro-rpsls-rey.json
+arena-motor · rpsls-rey · nivel 4 · 8 pares (16 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = A-igual          "RPS_DEFAULTS (misma rama: tanda de humo)"
+  1 proceso(s), semillas 1
+
+arena[rpsls-rey]: vigente vs A-igual · pares 1..8 · seed 1 · 0 partidas ya hechas en humo-rpsls-rey.log
+
+modalidad rpsls-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = A-igual · rps = "por defecto"
+
+16 partidas · finales: mate 6, fifty 7, tope 3 · 2 cortadas dentro del margen 300 (tablas)
+A (vigente): 5 ganadas, 9 tablas, 2 perdidas · puntuación 59.4%
+elo(A−B) = +66  [-43, +190]  p = 0.237
+
+TANDA DE HUMO (las dos ramas son idénticas): el arnés NO favorece a ningún asiento — el intervalo incluye el 0, como debe.
+
+coste: 13.5 min de reloj para 16 partidas = 71 partidas/hora con 1 proceso(s) · 50.5 s por partida de media
+EXIT=0

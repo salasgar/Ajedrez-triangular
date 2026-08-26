@@ -123,10 +123,12 @@ function pawnAdvance(cell, color) { return cell.pawnProg[color]; }
 // La fórmula, lineal y barata (los recuentos por tipo y color se hacen en la
 // misma pasada que ya da la movilidad):
 //
-//   valor(tipo) = RPS_VALOR_SUELO                     si presasVivas = 0
-//   valor(tipo) = max(RPS_VALOR_SUELO,
-//     RPS_VALOR_BASE + RPS_PESO_PRESA · presasVivas
-//                    − RPS_PESO_DEPREDADOR · depredadoresVivos)   si no
+//   valor(tipo) = VALOR_SUELO                         si presasVivas = 0
+//   valor(tipo) = max(VALOR_SUELO,
+//     VALOR_BASE + PESO_PRESA · presasVivas
+//                − PESO_DEPREDADOR · depredadoresVivos)   si no
+//
+// (los nombres son los de RPS_CFG, más abajo)
 //
 // donde presas/depredadores se cuentan entre las piezas RIVALES vivas. El rey
 // de las modalidades -rey queda fuera de los recuentos y conserva su
@@ -138,44 +140,99 @@ function pawnAdvance(cell, color) { return cell.pawnProg[color]; }
 // una pieza propia que pueda capturar al atacante si consuma la amenaza. Una
 // pieza atacada sin esa respuesta está colgada de verdad.
 //
-// PESOS PROVISIONALES a la espera de la arena (la sesión siguiente ajustará
-// posiciones iniciales y podrá tunearlos): todos con nombre y en un sitio.
-const RPS_VALOR_BASE = 60;        // valor de partida de una figura
-const RPS_PESO_PRESA = 12;        // + por cada pieza rival que puede capturar
-const RPS_PESO_DEPREDADOR = 4;    // − por cada pieza rival que puede capturarla
-const RPS_VALOR_SUELO = 25;       // mínimo: bloquear y ocupar espacio vale algo
-// Bajados a la mitad (tarea 13, sesión s-20260826T022659-6a71f33e): con los
-// valores originales (0.2/0.6) la evaluación oscila con la profundidad en
-// posiciones muy pobladas y se invierte justo en la profundidad 4 (donde
-// cae el presupuesto de nodos real de los niveles altos), haciendo que el
-// motor deje pasar capturas gratis obvias — confirmado con un barrido de
-// profundidad 1-6 en una posición real (ply 16, 40 piezas): con 0.2/0.6 la
-// jugada de capturar pierde solo en profundidad 4 (por 2 puntos) y gana en
-// las demás; con 0.1/0.3 gana en las seis. Verificado también en juego: un
-// autojuego de 220 jugadas (nivel 8, semilla 100) baja de ~130 a 57 capturas
-// gratis ignoradas. Causa de fondo, sin arreglar: quiesce() solo persigue
-// capturas, nunca las jugadas tranquilas que cambian mucho esta "amenaza",
-// así que su variación entre profundidades nunca se verifica tácticamente
-// (ver hechos/fallos/13--s-20260825T090706-b85c3e30.md). Arreglar eso de raíz
-// tocaría el núcleo de búsqueda compartido por TODAS las modalidades: pedir
-// visto bueno antes, no lo hagas aquí.
-const RPS_AMENAZA = 0.1;          // fracción del valor perdida si un depredador
-                                  // la ataca pero el atacante tiene respuesta
-const RPS_AMENAZA_COLGADA = 0.3;  // fracción si nadie puede capturar al atacante
-// Término de caza (solo kingless): bonificación por tener depredadores cerca
-// de cada presa rival, decreciente con la distancia (0 en la otra punta del
-// tablero, el peso entero al lado). Sin él, dos motores prudentes maniobran
-// sin acercarse NUNCA: no hay regla de 50 jugadas que fuerce nada y las
-// partidas no terminan; con él, el bando que va ganando tiene un gradiente
-// que le lleva a acorralar (todas las piezas corren lo mismo, así que cazar
-// exige arrinconar, y eso a la profundidad de un nivel medio no sale sin
-// ayuda de la evaluación).
-const RPS_PESO_CAZA = 30;
-// Factor de «ya no puedo ganar» (solo kingless): la ventaja del bando que ya
-// no puede eliminar al rival (ver el techo en evaluateRps) se multiplica por
-// esto. No se recorta a tablas en seco porque eso aplana la evaluación y el
-// bando que SÍ puede ganar se queda sin gradiente que seguir.
-const RPS_SIN_VICTORIA = 0.1;
+// PESOS PROVISIONALES a la espera de la arena. Van en un OBJETO DE
+// CONFIGURACIÓN, no en constantes sueltas, para que la arena de motor
+// (entrenamiento/arena-motor.js) pueda medir variantes por elo sin editar este
+// fichero: `RPS_DEFAULTS` son los valores vigentes —lo que juega el motor si
+// nadie dice otra cosa— y `RPS_CFG` es el juego de valores ACTIVO ahora mismo.
+//
+// Por qué un objeto activo y no un parámetro más: rpsValor(), orderMoves() y
+// orderSearchMoves() NO reciben `cfg`, y pasárselo obligaría a tocar el núcleo
+// de búsqueda entero. En su lugar, rpsAplicaCfg() fija los valores activos al
+// entrar en chooseAiMove() y en evaluateRps(), que son las dos puertas por las
+// que se llega a todo lo demás. No hay carrera posible aunque la arena alterne
+// dos configuraciones en el mismo proceso: es un solo hilo y la búsqueda de un
+// jugador termina antes de que empiece la del otro.
+//
+// UNA CONFIGURACIÓN DISTINTA ES UN JUGADOR DISTINTO: `cfg.rps` entra en la
+// firma de la tabla de transposición (ver cfgSig en chooseAiMove). Sin eso, las
+// dos ramas de una tanda compartirían tabla y la medida sería ruido —ya pasó:
+// la escalera de niveles 5 vs 6 dio 20 elo por ese motivo.
+const RPS_DEFAULTS = Object.freeze({
+  VALOR_BASE: 60,          // valor de partida de una figura
+  PESO_PRESA: 12,          // + por cada pieza rival que puede capturar
+  PESO_DEPREDADOR: 4,      // − por cada pieza rival que puede capturarla
+  VALOR_SUELO: 25,         // mínimo: bloquear y ocupar espacio vale algo
+  // AMENAZA y AMENAZA_COLGADA: fracción del valor que se pierde por estar en
+  // el radio de un depredador rival, según haya respuesta (una pieza propia
+  // que pueda capturar al atacante) o no la haya —«colgada de verdad»—.
+  //
+  // Bajados a la mitad (tarea 13, sesión s-20260826T022659-6a71f33e): con los
+  // valores originales (0.2/0.6) la evaluación oscila con la profundidad en
+  // posiciones muy pobladas y se invierte justo en la profundidad 4 (donde
+  // cae el presupuesto de nodos real de los niveles altos), haciendo que el
+  // motor deje pasar capturas gratis obvias — confirmado con un barrido de
+  // profundidad 1-6 en una posición real (ply 16, 40 piezas): con 0.2/0.6 la
+  // jugada de capturar pierde solo en profundidad 4 (por 2 puntos) y gana en
+  // las demás; con 0.1/0.3 gana en las seis. Verificado también en juego: un
+  // autojuego de 220 jugadas (nivel 8, semilla 100) baja de ~130 a 57 capturas
+  // gratis ignoradas. Causa de fondo, sin arreglar: quiesce() solo persigue
+  // capturas, nunca las jugadas tranquilas que cambian mucho esta "amenaza",
+  // así que su variación entre profundidades nunca se verifica tácticamente
+  // (ver hechos/fallos/13--s-20260825T090706-b85c3e30.md). Arreglar eso de raíz
+  // tocaría el núcleo de búsqueda compartido por TODAS las modalidades: pedir
+  // visto bueno antes, no lo hagas aquí.
+  //
+  // Y OJO: ese cierre se validó contra un contador de «capturas gratis
+  // ignoradas» que después se vio sesgado (nota
+  // hechos/notas/s-20260826T093311-622dce37.md), nunca en la arena. Medir
+  // 0.1/0.3 contra 0.2/0.6 por elo es justamente la tarea 18.
+  AMENAZA: 0.1,
+  AMENAZA_COLGADA: 0.3,
+  // Término de caza (solo kingless): bonificación por tener depredadores cerca
+  // de cada presa rival, decreciente con la distancia (0 en la otra punta del
+  // tablero, el peso entero al lado). Sin él, dos motores prudentes maniobran
+  // sin acercarse NUNCA: no hay regla de 50 jugadas que fuerce nada y las
+  // partidas no terminan; con él, el bando que va ganando tiene un gradiente
+  // que le lleva a acorralar (todas las piezas corren lo mismo, así que cazar
+  // exige arrinconar, y eso a la profundidad de un nivel medio no sale sin
+  // ayuda de la evaluación).
+  PESO_CAZA: 30,
+  // Factor de «ya no puedo ganar» (solo kingless): la ventaja del bando que ya
+  // no puede eliminar al rival (ver el techo en evaluateRps) se multiplica por
+  // esto. No se recorta a tablas en seco porque eso aplana la evaluación y el
+  // bando que SÍ puede ganar se queda sin gradiente que seguir.
+  SIN_VICTORIA: 0.1,
+});
+
+// Valores activos. Se muta en sitio (nunca se reasigna la referencia) porque
+// esta misma variable viaja al worker declarada como `const` (ver
+// AI_WORKER_CONSTS en ai-async.js).
+const RPS_CFG = { ...RPS_DEFAULTS };
+
+// Fija los valores activos a partir de `cfg.rps` (sobrescrituras parciales;
+// lo que no venga, vuelve al valor por defecto). Se llama al entrar en cada
+// búsqueda y en cada evaluación, así que dos configuraciones pueden alternarse
+// en el mismo proceso sin contaminarse.
+//
+// Una clave desconocida ABORTA en vez de ignorarse: en una tanda de arena, un
+// `{"AMENZA":0.2}` mal escrito no daría error, daría SILENCIO —las dos ramas
+// jugarían idénticas y el resultado sería un elo 0 perfectamente creíble.
+function rpsAplicaCfg(cfg) {
+  const o = cfg && cfg.rps;
+  Object.assign(RPS_CFG, RPS_DEFAULTS);
+  if (!o) return;
+  for (const k of Object.keys(o)) {
+    if (!(k in RPS_DEFAULTS)) {
+      throw new Error('cfg.rps: clave desconocida ' + JSON.stringify(k) +
+        '. Hay: ' + Object.keys(RPS_DEFAULTS).join(', '));
+    }
+    if (typeof o[k] !== 'number' || !isFinite(o[k])) {
+      throw new Error('cfg.rps.' + k + ' debe ser un número: ' + o[k]);
+    }
+    RPS_CFG[k] = o[k];
+  }
+}
 
 // Tablas derivadas de V.captures, cacheadas en la propia modalidad (V viaja
 // clonada al worker con la caché o sin ella; se reconstruye sola):
@@ -240,9 +297,9 @@ function rpsValor(t, cntRival) {
   let presas = 0, depred = 0;
   for (const v of info.presas[t]) presas += cntRival[v] || 0;
   for (const a of info.depredadores[t]) depred += cntRival[a] || 0;
-  if (presas === 0) return RPS_VALOR_SUELO;
-  return Math.max(RPS_VALOR_SUELO,
-    RPS_VALOR_BASE + RPS_PESO_PRESA * presas - RPS_PESO_DEPREDADOR * depred);
+  if (presas === 0) return RPS_CFG.VALOR_SUELO;
+  return Math.max(RPS_CFG.VALOR_SUELO,
+    RPS_CFG.VALOR_BASE + RPS_CFG.PESO_PRESA * presas - RPS_CFG.PESO_DEPREDADOR * depred);
 }
 
 // Valores dinámicos por tipo y color, para ORDENAR jugadas y podar quiesce()
@@ -317,6 +374,7 @@ function rpsContraataque(board, cell, tipo, color) {
 // incomible NO es jugada) y amenazas. Una única pasada por el tablero; los
 // valores se calculan al final a partir de los recuentos (a lo sumo 6 tipos).
 function evaluateRps(board, color, cfg) {
+  rpsAplicaCfg(cfg);                     // pesos activos de ESTE jugador
   const info = rpsInfo();
   const values = cfg.pieceValues || PV();
   const mobilityWeight = cfg.mobilityWeight ?? 4;
@@ -388,13 +446,13 @@ function evaluateRps(board, color, cfg) {
     const vw = rpsValor(t, cnt.b);       // el valor blanco depende de lo negro
     const vb = rpsValor(t, cnt.w);
     score += cnt.w[t] * vw - cnt.b[t] * vb;
-    score -= RPS_AMENAZA * (ame.w[t] * vw - ame.b[t] * vb) +
-             RPS_AMENAZA_COLGADA * (col.w[t] * vw - col.b[t] * vb);
+    score -= RPS_CFG.AMENAZA * (ame.w[t] * vw - ame.b[t] * vb) +
+             RPS_CFG.AMENAZA_COLGADA * (col.w[t] * vw - col.b[t] * vb);
   }
   // el rey de las -rey, con su valor de tabla de siempre (0 por defecto)
   if (cnt.w.K !== undefined) score += values.K * (cnt.w.K - cnt.b.K);
   // caza: por cada presa, bonificación al bando rival según lo cerca que
-  // tenga su depredador más próximo (ver RPS_PESO_CAZA)
+  // tenga su depredador más próximo (ver RPS_CFG.PESO_CAZA)
   if (conCaza) {
     let caza = 0;                        // blancas − negras
     for (let i = 0; i < cW.length; i++) {
@@ -405,7 +463,7 @@ function evaluateRps(board, color, cfg) {
         const d = rpsDist(info, cW[i], cB[j]);
         if (d < dmin) dmin = d;
       }
-      if (dmin < Infinity) caza -= RPS_PESO_CAZA * (1 - dmin / info.diam);
+      if (dmin < Infinity) caza -= RPS_CFG.PESO_CAZA * (1 - dmin / info.diam);
     }
     for (let i = 0; i < cB.length; i++) {
       const cazadores = info.depredadores[tB[i]];
@@ -415,14 +473,14 @@ function evaluateRps(board, color, cfg) {
         const d = rpsDist(info, cB[i], cW[j]);
         if (d < dmin) dmin = d;
       }
-      if (dmin < Infinity) caza += RPS_PESO_CAZA * (1 - dmin / info.diam);
+      if (dmin < Infinity) caza += RPS_CFG.PESO_CAZA * (1 - dmin / info.diam);
     }
     score += caza;
   }
   // Rebaja de «ya no puedo ganar»: como los tipos no vuelven, un bando que no
   // tenga verdugos vivos para TODOS los tipos rivales vivos jamás podrá
   // eliminar al rival, y su mejor resultado posible son tablas — su ventaja
-  // se multiplica por RPS_SIN_VICTORIA en vez de contarse entera. Esto quita
+  // se multiplica por RPS_CFG.SIN_VICTORIA en vez de contarse entera. Esto quita
   // el incentivo perverso de conservar «rehenes» incapturables para inflar
   // el material dinámico, y hace que quien va ganando evite los cambios que
   // extinguen a sus propios verdugos. Se ESCALA en vez de recortar a tablas
@@ -442,8 +500,8 @@ function evaluateRps(board, color, cfg) {
       if ((mb & b) && !(info.capturadoPorMask[t] & mw)) ganaW = false;
       if ((mw & b) && !(info.capturadoPorMask[t] & mb)) ganaB = false;
     }
-    if (!ganaW && score > 0) score *= RPS_SIN_VICTORIA;
-    if (!ganaB && score < 0) score *= RPS_SIN_VICTORIA;
+    if (!ganaW && score > 0) score *= RPS_CFG.SIN_VICTORIA;
+    if (!ganaB && score < 0) score *= RPS_CFG.SIN_VICTORIA;
   }
   return color === 'w' ? score : -score;
 }
@@ -1360,6 +1418,10 @@ function pickSoftmax(scored, best, T) {
 
 function chooseAiMove(level, st = searchState(), opts = {}) {
   const cfg = AI_LEVELS[level] || AI_LEVELS[1];
+  // Pesos activos de ESTE jugador, antes de nada: orderMoves() y rpsValor() no
+  // reciben cfg y ya se usan más abajo, así que la evaluación no es la primera
+  // en necesitarlos.
+  rpsAplicaCfg(cfg);
   // Copia profunda ÚNICA de la posición: en la vía síncrona st.board es el
   // Map vivo de la partida (searchState no copia) y los snapshots del
   // historial comparten los objetos-pieza. La búsqueda muta tablero y piezas
@@ -1414,8 +1476,10 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
     cfg.mobilityWeight ?? 4, !!cfg.mobility, !!cfg.quiesce,
     cfg.nodes || 0, cfg.temperature || 0, cfg.depth || 0,
     // la evaluación dinámica de las modalidades RPS entra en la firma: dos
-    // configuraciones que solo difieren en esto no pueden compartir tabla
-    cfg.dynamicValues !== false]);
+    // configuraciones que solo difieren en esto no pueden compartir tabla.
+    // Los pesos de RPS_CFG, igual: es lo que mide la arena de motor, y sin
+    // esto las dos ramas de una tanda compartirían tabla y medirían ruido.
+    cfg.dynamicValues !== false, cfg.rps || null]);
   if (cfgSig !== ttCfgSig) { ttCfgSig = cfgSig; ttGen++; }
   ttAge++;
 

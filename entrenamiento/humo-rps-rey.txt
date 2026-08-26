@@ -1,0 +1,19 @@
+arena-motor · rps-rey · nivel 4 · 8 pares (16 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = A-igual          "RPS_DEFAULTS (misma rama: tanda de humo)"
+  1 proceso(s), semillas 1
+
+arena[rps-rey]: vigente vs A-igual · pares 1..8 · seed 1 · 0 partidas ya hechas en humo-rps-rey.log
+
+modalidad rps-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = A-igual · rps = "por defecto"
+
+16 partidas · finales: fifty 8, mate 8 · 0 cortadas dentro del margen 300 (tablas)
+A (vigente): 3 ganadas, 8 tablas, 5 perdidas · puntuación 43.8%
+elo(A−B) = -44  [-175, +76]  p = 0.472
+
+TANDA DE HUMO (las dos ramas son idénticas): el arnés NO favorece a ningún asiento — el intervalo incluye el 0, como debe.
+
+coste: 15.6 min de reloj para 16 partidas = 61 partidas/hora con 1 proceso(s) · 58.5 s por partida de media
+EXIT=0

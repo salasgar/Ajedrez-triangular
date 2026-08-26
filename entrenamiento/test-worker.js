@@ -33,11 +33,26 @@ const gameSrc = ['geometry.js', 'variants.js', 'rules.js', 'ai.js', 'ai-async.js
 // onerror del worker.
 const driverSrc = `
 RESULTADO.workerSrc = aiWorkerSource();
-RESULTADO.casos = [];
-for (const id of Object.keys(VARIANTS)) {
+RESULTADO.ids = Object.keys(VARIANTS);
+
+// UN CASO CADA VEZ, Y SE USA ANTES DE PEDIR EL SIGUIENTE. Antes se montaban
+// los cinco casos en un bucle y se guardaban para después; no funcionaba, y
+// además callaba: setVariant() no crea casillas nuevas, REESCRIBE las tablas
+// (cell.leaps, cell.rays, cell.atk) sobre los MISMOS objetos del grafo, que
+// las modalidades del mismo tablero comparten. Guardar CELL_MAP es guardar una
+// referencia viva, así que al terminar el bucle los cinco casos apuntaban a
+// las tablas de la última modalidad y el test comprobaba 'salas' cinco veces
+// con cinco nombres distintos.
+//
+// Lo grave era cómo fallaba: en las modalidades de Piedra, papel y tijera los
+// tipos son O/A/T (y L/S), que no están en las tablas de salas, así que
+// cell.leaps[tipo] salía undefined y pseudoMoves() caía al ÚLTIMO caso, el del
+// peón — el worker "jugaba" un avance doble de peón con una tijera. De ahí las
+// jugadas ilegales con delta (-1,+2,-1) desde la segunda fila.
+RESULTADO.casoDe = (id) => {
   setVariant(id);
   newGame();
-  RESULTADO.casos.push({
+  return {
     id,
     // El worker ya no lleva la modalidad cableada: le llega en el mensaje
     // inicial, junto a las casillas (ver variantForWorker en ai-async.js).
@@ -47,9 +62,8 @@ for (const id of Object.keys(VARIANTS)) {
     state: { board: game.board, turn: game.turn, enPassant: null,
       clock: 0, posKeys: [] },
     legales: new Set(movesForSide(game.board, 'w', null).map(m => m.from + '>' + m.to)),
-  });
-}
-setVariant('salas');
+  };
+};
 `;
 
 const RESULTADO = {};
@@ -70,7 +84,10 @@ if (typeof ctx.onmessage !== 'function') {
   process.exit(1);
 }
 
-for (const caso of RESULTADO.casos) {
+for (const id of RESULTADO.ids) {
+  // el caso se construye AQUÍ, y se consume antes de construir el siguiente:
+  // ver la nota del driver sobre las tablas compartidas del grafo de casillas
+  const caso = RESULTADO.casoDe(id);
   mensajes.length = 0;
   try {
     ctx.onmessage({ data: { cells: caso.cells, variant: caso.variant,
@@ -90,4 +107,4 @@ for (const caso of RESULTADO.casos) {
   console.log('  ok  ' + caso.id.padEnd(12) + ' nivel 4 jugó ' + mv.from + '>' + mv.to +
     ' (' + caso.legales.size + ' legales)');
 }
-console.log('OK: worker íntegro en las ' + RESULTADO.casos.length + ' modalidades');
+console.log('OK: worker íntegro en las ' + RESULTADO.ids.length + ' modalidades');

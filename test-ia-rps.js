@@ -193,7 +193,7 @@ if (process.argv[2] !== 'match') {
 
   console.log('Valores dinámicos (rpsValor):');
   run(`setVariant('rps')`);
-  const suelo = run(`return RPS_VALOR_SUELO`);
+  const suelo = run(`return RPS_CFG.VALOR_SUELO`);
   {
     const con3 = run(`return rpsValor('O', { O: 0, A: 0, T: 3 })`);
     const con1 = run(`return rpsValor('O', { O: 0, A: 0, T: 1 })`);
@@ -201,7 +201,7 @@ if (process.argv[2] !== 'match') {
     ok(con3 > con1 && con1 > sin,
       `más presas vivas = más valor (${con3} > ${con1} > ${sin})`);
     ok(sin === suelo,
-      `sin presas ni depredadores, el valor cae al suelo (${sin} = RPS_VALOR_SUELO)`);
+      `sin presas ni depredadores, el valor cae al suelo (${sin} = RPS_CFG.VALOR_SUELO)`);
     ok(suelo > 0, 'el suelo no es cero: bloquear y ocupar espacio vale algo');
   }
   {
@@ -368,6 +368,57 @@ if (process.argv[2] !== 'match') {
       `${id}: genMoves tampoco la ofrece`);
     ok(r.perdidasEnReglas === 0 && r.perdidasEnBusqueda === 0,
       `${id}: las demás jugadas del rey siguen ahí (${r.nOtras} casillas)`);
+  }
+
+  // --- pesos configurables (RPS_CFG) -----------------------------------------
+
+  // La cadena de tareas 17-20 mide por elo variantes de estos pesos, así que la
+  // arena necesita poder cambiarlos SIN editar ai.js y sin que una rama
+  // contamine a la otra: las dos juegan en el MISMO proceso, alternándose jugada
+  // a jugada. Lo que se comprueba aquí es justo eso, porque si falla no falla
+  // ruidosamente: la tanda mediría dos motores iguales y daría un elo 0 creíble.
+
+  console.log('Pesos configurables (cfg.rps → RPS_CFG):');
+  {
+    const r = run(`
+      setVariant('rps-rey');
+      newGame();
+      // Posición asimétrica: en la inicial la evaluación es 0 por simetría y no
+      // distinguiría un peso de otro.
+      let quitadas = 0;
+      for (const [k, p] of [...game.board]) {
+        if (p.color === 'b' && p.type !== 'K' && quitadas < 2) { game.board.delete(k); quitadas++; }
+      }
+      const base = { depth: 2, mobility: true, order: true, quiesce: true };
+      const porDefecto = evaluate(game.board, 'w', base);
+      const cambiado = evaluate(game.board, 'w', { ...base, rps: { VALOR_SUELO: 900 } });
+      const vuelta = evaluate(game.board, 'w', base);
+      let claveMala = null, valorMalo = null;
+      try { evaluate(game.board, 'w', { ...base, rps: { NOEXISTE: 1 } }); }
+      catch (e) { claveMala = e.message; }
+      try { evaluate(game.board, 'w', { ...base, rps: { AMENAZA: 'mucho' } }); }
+      catch (e) { valorMalo = e.message; }
+      // el camino de la BÚSQUEDA, que es otro: rpsValor() y orderMoves() no
+      // reciben cfg y leen RPS_CFG directamente
+      AI_LEVELS.PRUEBA_A = { ...base, nodes: 4500 };
+      AI_LEVELS.PRUEBA_B = { ...base, nodes: 4500, rps: { PESO_PRESA: 400 } };
+      const mvA = chooseAiMove('PRUEBA_A');
+      const cfgTrasBuscar = { ...RPS_CFG };
+      const mvB = chooseAiMove('PRUEBA_B');
+      return { porDefecto, cambiado, vuelta, claveMala, valorMalo,
+        buscaOk: !!(mvA && mvB), cfgTrasBuscar, defectos: { ...RPS_DEFAULTS } };
+    `);
+    ok(r.cambiado !== r.porDefecto,
+      `cfg.rps cambia de verdad la evaluación (${r.porDefecto} → ${r.cambiado})`);
+    ok(r.vuelta === r.porDefecto,
+      `y no se queda pegado: sin cfg.rps se vuelve al valor de siempre (${r.vuelta})`);
+    ok(/clave desconocida/.test(r.claveMala || ''),
+      'una clave mal escrita ABORTA en vez de medir dos motores iguales en silencio');
+    ok(/debe ser un número/.test(r.valorMalo || ''),
+      'un valor que no es número también aborta');
+    ok(r.buscaOk, 'la búsqueda entera funciona con pesos sobrescritos');
+    ok(JSON.stringify(r.cfgTrasBuscar) === JSON.stringify(r.defectos),
+      'una búsqueda sin cfg.rps deja los pesos activos en los de por defecto');
   }
 
   // --- búsqueda sin rey ------------------------------------------------------
