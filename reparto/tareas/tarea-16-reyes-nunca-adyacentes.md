@@ -37,17 +37,18 @@ los reyes de verdad.
 3. Comprobar en una posición manual de cada modalidad -rey (rps-rey, rpsls-rey) que
    `genMoves` ya no ofrece al rey casillas adyacentes al rey rival, y que el resto de
    sus jugadas legales siguen ahí.
-4. `node test-modalidades.js`, `node test-rps.js` y `node test-ia-rps.js` en verde —
-   con la excepción CONOCIDA y ajena del dorado de `dekle` en test-ia-rps.js
-   (desactualizado por el commit `56917bf` de la tarea 10; documentado en el fallo de
-   la 13). Si de paso es barato actualizar ese dorado, es bienvenido pero opcional:
-   anótalo en la terminada si lo haces.
-5. Commit a `main` y push.
+4. **Actualizar el dorado de `dekle` en test-ia-rps.js** (desactualizado por el
+   commit `56917bf` de la tarea 10; documentado en el fallo de la 13). Era opcional;
+   desde el 2026-08-26 es parte de la tarea: esta ficha abre la cadena de arena
+   (tareas 17-20) y un test rojo permanente ensucia la señal de toda la cadena.
+5. `node test-modalidades.js`, `node test-rps.js` y `node test-ia-rps.js` en verde
+   COMPLETO (sin excepciones tras el punto 4).
+6. Commit a `main` y push.
 
 ## Cómo saber que ha terminado
-Las posiciones de prueba del punto 3 rechazan la adyacencia de reyes; los tests del
-punto 4 en verde (salvo la excepción conocida, si no se actualiza); commit y push
-hechos.
+Las posiciones de prueba del punto 3 rechazan la adyacencia de reyes; los tres tests
+en verde completo; commit y push hechos. Esta tarea es la precondición de la 17 (la
+cadena de arena juega con la regla de reyes definitiva).
 
 ## Al terminar
 Cierre estándar: terminada `16--<sid>.md`, `CERRADA` en el reclamo, incidencias si

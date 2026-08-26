@@ -1,6 +1,6 @@
 # Traspaso — reparto-ajedrez
 
-Actualizado: 2026-08-26 09:05Z · Sesiones previas: 4
+Actualizado: 2026-08-26 09:45Z · Sesiones previas: 4
 
 ## Objetivo
 
@@ -11,10 +11,13 @@ Encargo de Juan Luis del 2026-08-24 (seis trabajos, decisiones delegadas), ampli
 
 ## Estado actual
 
-**Las 15 tareas originales están LISTAS; queda libre la 16, nueva y pequeña.** El
-estado por tarea vive en el tablón `reparto/_ESTADO.md` (fuente de verdad:
-`reparto/hechos/`), regenerado el 2026-08-26T09:00Z. `main` = `origin/main`
-(≥ `6b322af`).
+**Las 15 tareas originales están LISTAS; quedan las 16-20, la cadena de arena del
+2026-08-26.** Encargo de Juan Luis: centrarse en `rps-rey` (PPTR) y `rpsls-rey`
+(PPTLSR) — las modalidades sin rey quedan APARCADAS por poco jugables — y validar
+por elo las mejoras del motor: regla de reyes (16), arnés de arena A/B (17) y tres
+candidatos EN SERIE (18 pesos de amenaza, 19 prima de invencibilidad, 20 quiescencia
+extendida — banda ALTA). El estado por tarea vive en el tablón `reparto/_ESTADO.md`
+(fuente de verdad: `reparto/hechos/`), regenerado el 2026-08-26T09:40Z.
 
 La 13 cerró en dos sesiones: la primera arregló dos bugs reales del motor
 (`6dcc509`) y dejó el diagnóstico completo; la segunda estabilizó el síntoma bajando
@@ -39,6 +42,9 @@ regresión, todo especificado en la ficha; nada de criterio abierto.
 
 | Decisión | Por qué |
 |---|---|
+| Las modalidades sin rey (`rps`, `rpsls`) quedan APARCADAS | Juan Luis (26-8-2026): poco jugables; ni condiciones de victoria ni tuneo. Todo el motor se centra en rps-rey y rpsls-rey |
+| Las mejoras del motor se deciden POR ELO EN LA ARENA, tras bandera, con p<0.05 | Encargo de Juan Luis (26-8-2026); incluye el visto bueno a implementar la quiescencia extendida (tarea 20) con la arena como juez. Cadena 17→20 en serie porque comparten ai.js |
+| Prima de invencibilidad como candidato de evaluación (tarea 19) | Idea de Juan Luis (26-8-2026): pasar de 1 depredador a 0 es un salto cualitativo que el término lineal no recoge. Criterio 3 de la nota de la coordinadora |
 | Dos reyes nunca adyacentes en las modalidades -rey, vía K→K en `capturesConRey` | Decisión de Juan Luis (26-8-2026): regla del juego, como en el ajedrez clásico; con el filtro `canCapture()` de `6dcc509`, cambiar el dato basta y desaparece la única excepción de la matriz. Es la tarea 16 |
 | El arreglo de fondo de la 13 no debe imponer «captura siempre lo gratis» | Criterio de Juan Luis (26-8-2026): renunciar a una captura por estrategia puede ser legítimo en PPT; el objetivo es una comparación honesta, no una regla. En `hechos/notas/s-20260825T093251-fde516e1.md` |
 | Mitigar la 13 bajando los pesos de amenaza a la mitad (0.1/0.3), sin tocar `quiesce()` | Vía barata que dejó escrita la primera sesión de la 13; medida en posición fija (la inversión desaparece en las 6 profundidades) y en autojuego (−61%). Los pesos siguen siendo provisionales a la espera de arena |
@@ -66,8 +72,11 @@ regresión, todo especificado en la ficha; nada de criterio abierto.
 ## Archivos
 
 - `reparto/_ESTADO.md` — el tablón; empieza por aquí. Al día a 2026-08-26T09:00Z.
-- `reparto/tareas/tarea-16-reyes-nunca-adyacentes.md` — la única tarea libre; ficha
-  autocontenida con la decisión, los pasos y lo prohibido.
+- `reparto/tareas/tarea-16-reyes-nunca-adyacentes.md` — la tarea libre que abre la
+  cadena (ahora incluye actualizar el dorado de dekle, ya no opcional).
+- `reparto/tareas/tarea-17-arena-motor.md`, `tarea-18-arena-pesos-amenaza.md`,
+  `tarea-19-arena-invencibilidad.md`, `tarea-20-arena-quiescencia.md` — la cadena de
+  arena, en serie; cada ficha es autocontenida.
 - `reparto/hechos/notas/s-20260825T093251-fde516e1.md` — las dos decisiones de Juan
   Luis del 26-8 con su porqué.
 - `reparto/hechos/terminadas/13--s-20260826T022659-6a71f33e.md` y
@@ -83,15 +92,11 @@ regresión, todo especificado en la ficha; nada de criterio abierto.
 
 ## Contexto que no está en los archivos
 
-- **Decisiones acumuladas para Juan Luis** (lista también al final del tablón):
-  (1) visto bueno —o no— al arreglo de fondo de la 13 (extender `quiesce()`; núcleo
-  compartido, se mediría con arena); (2) enganchar los 89 problemas cosechados al
-  almacén vivo y/o cosechar más modalidades; (3) condiciones de victoria en las
-  modalidades sin rey; (4) aplicar o no la ronda 14 de temperatura (completa en
-  disco); (5) actualizar el dorado de `dekle` en `test-ia-rps.js` (la 16 puede
-  llevárselo de paso, opcional); (6) tirar el `stash@{0}`; (7) tras cerrar el
-  reparto, la cuestión PPT/PPTLS sin rey (hay memoria de proyecto pidiendo sesión de
-  banda ALTA).
+- **Decisiones que le quedan a Juan Luis** (el 26-8 resolvió tres: quiescencia → 
+  tarea 20, sin-rey → aparcadas, dorado de dekle → dentro de la 16): (1) enganchar
+  los 89 problemas cosechados al almacén vivo y/o cosechar más modalidades; (2)
+  aplicar o no la ronda 14 de temperatura (completa en disco); (3) tirar el
+  `stash@{0}`; (4) si algún día quiere ocultar `rps`/`rpsls` del selector de la app.
 - Dos sesiones sellaron cierres con la hora local etiquetada como Z (~2 h de adelanto
   ficticio); anotado en la incidencia de la coordinadora. Sellar siempre con `date -u`.
 - Una sesión de trabajo puede pasar horas computando sin escribir nada: antes de darla

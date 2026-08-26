@@ -9,9 +9,10 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T09:00Z · por la sesión coordinadora s-20260825T093251-fde516e1
-(las 15 tareas originales LISTA; **entra la tarea 16, libre**, por decisión de Juan
-Luis del 2026-08-26: dos reyes nunca adyacentes en las modalidades -rey)
+Regenerado: 2026-08-26T09:40Z · por la sesión coordinadora s-20260825T093251-fde516e1
+(entra la cadena de arena 17-20 encargada por Juan Luis: validar por elo las mejoras
+del motor en `rps-rey` y `rpsls-rey`; las modalidades sin rey quedan APARCADAS por
+decisión suya del mismo día)
 
 El árbol compartido está sobre `main` = `origin/main` (`bb3c534`: pesos de amenaza de
 la 13 bajados a la mitad, sobre el `6dcc509` de los dos bugs de la misma tarea). Las
@@ -20,9 +21,11 @@ tareas de interfaz editan los ficheros directamente, con los reclamos del harnes
 reconciliación; ya no hace falta —la 08 está LISTA—, queda libre para que Juan Luis lo
 tire cuando quiera.
 
-**Las 15 tareas originales están completas; queda libre la 16** (nueva, 2026-08-26,
-pequeña: implementar la regla «dos reyes nunca adyacentes» decidida por Juan Luis).
-El resto del trabajo futuro son cabos sueltos a decisión suya — ver la sección final.
+**Las 15 tareas originales están completas; quedan las 16-20**, la cadena nueva del
+2026-08-26: la 16 (regla de reyes) está libre y es la puerta; la 17 (arena de motor)
+la sigue; las 18-20 miden por elo tres candidatos de mejora, EN SERIE (comparten
+ai.js y cada una parte del vigente que dejó la anterior). Las modalidades sin rey
+(`rps`, `rpsls`) quedan aparcadas: ninguna tarea las toca.
 
 ## Antes de hacer nada
 
@@ -111,17 +114,25 @@ equivalencia de hoy está en `proyecto.md`.
 | 13 | La IA no captura gratis en las modalidades PPT | tareas/tarea-13-ia-modalidades-ppt.md | 03 sin reclamo vivo | 6 h (subida) | MEDIO | `main` (ai.js, ai-async.js, test-ia-rps.js) | manual | **LISTA** | |
 | 14 | Cosechar problemas de partidas ordenador contra ordenador | tareas/tarea-14-cosecha-de-partidas.md | 12 LISTA | 4 h | MEDIO | `entrenamiento/` (y problemas.js si exporta) | manual | **LISTA** | |
 | 15 | `editor.html` no funciona sin conexión (desajuste `?v=N` con `sw.js`) | tareas/tarea-15-editor-offline.md | ninguna | 1 h | MEDIO | `main` (editor.html, sw.js) | manual | **LISTA** | |
-| 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | PENDIENTE | |
+| 16 | Dos reyes nunca adyacentes en las modalidades -rey (K→K en `capturesConRey`) + dorado de dekle | tareas/tarea-16-reyes-nunca-adyacentes.md | 13 LISTA | 1,5 h | MEDIO | `main` (variants.js — solo la entrada K de la matriz; test-ia-rps.js) | manual | PENDIENTE | |
+| 17 | Arena de motor A/B para rps-rey y rpsls-rey (arnés + parametrización RPS_CFG) | tareas/tarea-17-arena-motor.md | 16 LISTA | 3 h | MEDIO | `entrenamiento/arena-motor.js` + `main` (ai.js, solo parametrización) | manual | BLOQUEADA | |
+| 18 | Candidato 1 en arena: pesos de amenaza (0.1/0.3 vs 0.2/0.6 vs 0.05/0.15) | tareas/tarea-18-arena-pesos-amenaza.md | 17 LISTA | 5 h | MEDIO | `main` (ai.js, constantes de amenaza) + `entrenamiento/` | manual | BLOQUEADA | |
+| 19 | Candidato 2 en arena: prima de invencibilidad (idea de Juan Luis) | tareas/tarea-19-arena-invencibilidad.md | 18 LISTA | 5 h | MEDIO | `main` (ai.js, término nuevo) + `entrenamiento/` | manual | BLOQUEADA | |
+| 20 | Candidato 3 en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | BLOQUEADA | |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
 
-**Libre ahora mismo: la 16 (MEDIO), PENDIENTE, sin reclamo.** Entró el 2026-08-26 por
-decisión expresa de Juan Luis (nota `hechos/notas/s-20260825T093251-fde516e1.md`, ya
-volcada a su ficha): en las modalidades -rey un rey nunca debe poder colocarse junto
-al otro; se implementa haciendo que `capturesConRey` diga que K puede capturar a K
-(el filtro `canCapture()` de `6dcc509` hace el resto). Las 15 originales están LISTA.
+**Libre ahora mismo: la 16 (MEDIO), sin reclamo; las 17-20 esperan en cadena.** Las
+cinco entraron el 2026-08-26 por encargo de Juan Luis (sus criterios, en
+`hechos/notas/s-20260825T093251-fde516e1.md`): primero la regla de reyes (16), luego
+el arnés de arena (17) y tres candidatos medidos por elo, en serie porque comparten
+ai.js y cada uno parte del vigente anterior: pesos de amenaza (18), prima de
+invencibilidad (19) y quiescencia extendida (20, banda ALTA — el arreglo de fondo de
+la 13, ya con vía de decisión: bandera + arena, p<0.05). Recordatorio del signo:
+elo(A-B) POSITIVO = el candidato PIERDE. Las tandas de arena de esta cadena están
+expresamente autorizadas (máx. 2 procesos node, segundo plano).
 
 **La 13 quedó A MEDIAS el 2026-08-26T01:43Z** (main = 6dcc509, sesión
 `s-20260825T090706-b85c3e30`): dos bugs reales arreglados y commiteados. (1)
@@ -344,16 +355,15 @@ tablón. Lo que sigue no son tareas del reparto, son los cabos sueltos que cada 
 fue dejando explícitamente para una decisión suya — candidatos a un reparto nuevo o a
 un encargo directo, no algo que ninguna sesión deba iniciar por su cuenta:
 
-- **Arreglo de fondo de la 13** (cobertura de quiescencia en `ai.js`): extender
-  `quiesce()` para que persiga también jugadas tranquilas que cambien mucho la
-  amenaza/caza, no solo capturas. Tocaría el núcleo de búsqueda de TODAS las
-  modalidades; se mide con la arena. Ver `hechos/terminadas/13--s-20260826T022659-6a71f33e.md`.
+- ~~Arreglo de fondo de la 13~~ → **ya es la tarea 20** (2026-08-26): Juan Luis fijó
+  la vía de decisión (bandera + arena, p<0.05); deja de ser un cabo suelto.
 - **Enganchar el almacén cosechado de la 14** (`entrenamiento/problemas-cosechados.json`,
   89 problemas) al almacén en vivo de `problemas-ui.js`, y/o repetir la cosecha en las
   otras modalidades PPT. Ver `hechos/terminadas/14--s-20260825T090854-1758bb65.md`.
-- **Condiciones de victoria en las modalidades sin rey**: ninguna partida termina de
-  forma natural (siempre al tope de jugadas); arreglarlo tocaría las reglas de fin de
-  partida. Anotado al cerrar la 03.
+- ~~Condiciones de victoria en las modalidades sin rey~~ → **APARCADO** (2026-08-26):
+  Juan Luis decidió dejar aparte `rps` y `rpsls` por poco jugables; ni se arreglan ni
+  se tocan. Si algún día quiere ocultarlas del selector de la app, sería un encargo
+  nuevo.
 - **Ronda 14 del entrenamiento** (curva de temperatura, 6 pares): completa en disco,
   sin aplicar todavía a propósito — la 10 no la tocó por no ser su encargo.
 - `stash@{0}` de respaldo de la reconciliación (tarea 04): ya no hace falta, libre
