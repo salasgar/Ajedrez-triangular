@@ -9,7 +9,7 @@ limpiador de `/tmp` de macOS purga por antigüedad.
 | Fichero | Qué hace |
 |---|---|
 | `arena.js` | Match emparejado entre dos configuraciones arbitrarias del motor (`CFG_A`/`CFG_B` por entorno). Misma apertura con colores invertidos; registra el balance material de las partidas cortadas para adjudicarlas en el análisis. |
-| `arena-motor.js` | Arena A/B de los **pesos de evaluación** de las modalidades PPT (`RPS_CFG` en `ai.js`): lanza `arena.js` con `cfg.rps` sobrescrito en una sola rama y resume con `elo.js`. Dice «el candidato GANA/PIERDE/EMPATA» con todas las letras —el signo de `elo(A−B)` ya costó un bug— y mide partidas/hora de verdad. `--analiza=<log>` rehace el marcador con otro margen. |
+| `arena-motor.js` | Arena A/B de los **pesos de evaluación** de las modalidades PPT (`RPS_CFG` en `ai.js`): lanza `arena.js` con `cfg.rps` sobrescrito en una sola rama y resume con `elo.js`. Dice «el candidato GANA/PIERDE/EMPATA» con todas las letras —el signo de `elo(A−B)` ya costó un bug— y mide partidas/hora de verdad. `--analiza=<log>` rehace el marcador con otro margen, y `--primero=<par>` amplía una comparación ya jugada por donde se quedó, sin repetir aperturas (los dos logs se juntan con `cat` y se resumen con `--analiza`). |
 | `analiza.js` | Marcador de una tanda: elo con IC 95%, z, p-valor; el margen de adjudicación se pasa como argumento para poder comprobar la robustez. |
 | `aperturas.js` | Genera el libro de **una** modalidad (`MODALIDAD=dekle node aperturas.js > libro-dekle.json`): 400 aperturas fijas de 6 jugadas al azar sin capturas, para que todas las ramas comparen sobre las mismas posiciones. |
 | `elo.js` | La aritmética que comparten `analiza.js` y `escalera.js`: puntos, elo, intervalo, esperado. |

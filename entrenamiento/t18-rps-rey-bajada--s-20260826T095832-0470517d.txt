@@ -1,0 +1,21 @@
+arena-motor · rps-rey · nivel 4 · 100 pares (200 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = bajada-005-015   {"AMENAZA":0.05,"AMENAZA_COLGADA":0.15}
+  2 proceso(s), semillas 301/302
+
+arena[rps-rey]: vigente vs bajada-005-015 · pares 1..50 · seed 301 · 0 partidas ya hechas en entrenamiento/t18-rps-rey-bajada--s-20260826T095832-0470517d.p1.log
+arena[rps-rey]: vigente vs bajada-005-015 · pares 51..100 · seed 302 · 0 partidas ya hechas en entrenamiento/t18-rps-rey-bajada--s-20260826T095832-0470517d.p2.log
+
+partes unidas en entrenamiento/t18-rps-rey-bajada--s-20260826T095832-0470517d.log
+
+modalidad rps-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = bajada-005-015 · rps = {"AMENAZA":0.05,"AMENAZA_COLGADA":0.15}
+
+200 partidas · finales: fifty 84, mate 75, tope 41 · 30 cortadas dentro del margen 300 (tablas)
+A (vigente): 46 ganadas, 114 tablas, 40 perdidas · puntuación 51.5%
+elo(A−B) = +10  [-21, +42]  p = 0.517
+
+VEREDICTO: el candidato EMPATA (diferencia no significativa, p ≥ 0.05).
+
+coste: 32.7 min de reloj para 200 partidas = 368 partidas/hora con 2 proceso(s) · 19.3 s por partida de media

@@ -1,0 +1,21 @@
+arena-motor · rps-rey · nivel 4 · 50 pares (100 partidas)
+  A = vigente        "RPS_DEFAULTS"
+  B = antiguo-02-06    {"AMENAZA":0.2,"AMENAZA_COLGADA":0.6}
+  2 proceso(s), semillas 201/202
+
+arena[rps-rey]: vigente vs antiguo-02-06 · pares 26..50 · seed 202 · 0 partidas ya hechas en entrenamiento/t18-rps-rey-antiguo--s-20260826T095832-0470517d.p2.log
+arena[rps-rey]: vigente vs antiguo-02-06 · pares 1..25 · seed 201 · 0 partidas ya hechas en entrenamiento/t18-rps-rey-antiguo--s-20260826T095832-0470517d.p1.log
+
+partes unidas en entrenamiento/t18-rps-rey-antiguo--s-20260826T095832-0470517d.log
+
+modalidad rps-rey · tope 400 jugadas · regla de 50 acortada a 80
+A = vigente · rps = "por defecto"
+B = antiguo-02-06 · rps = {"AMENAZA":0.2,"AMENAZA_COLGADA":0.6}
+
+100 partidas · finales: mate 40, fifty 35, tope 23, repetition 1, stalemate 1 · 17 cortadas dentro del margen 300 (tablas)
+A (vigente): 35 ganadas, 54 tablas, 11 perdidas · puntuación 62.0%
+elo(A−B) = +85  [+40, +133]  p = 0.000
+
+VEREDICTO: el candidato PIERDE por 85 elo (p < 0.05).
+
+coste: 22.0 min de reloj para 100 partidas = 273 partidas/hora con 2 proceso(s) · 25.3 s por partida de media

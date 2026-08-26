@@ -145,7 +145,28 @@ const base = opt('salida', path.join(__dirname,
 // mitad se pierde entera. Además cada parte se reanuda por su cuenta.
 const partes = [];
 const reparto = [];
-let siguiente = 1;
+// --primero: por qué par del libro empieza esta tanda. Sirve para AMPLIAR una
+// comparación ya jugada sin repetir aperturas: la segunda tanda arranca donde
+// acabó la primera, y los dos logs se pueden juntar (`cat a b > c` y
+// `--analiza=c`) sin que las mismas posiciones cuenten dos veces. Repetir
+// apertura con otra semilla también da partidas distintas, pero las medidas
+// dejan de ser independientes y el intervalo de confianza sale más estrecho de
+// lo que le corresponde.
+let siguiente = Number(opt('primero', 1));
+if (!Number.isInteger(siguiente) || siguiente < 1) fatal('--primero debe ser un entero >= 1');
+
+// El libro se recorre en círculo (`(par-1) % libro.length` en arena.js): pasarse
+// del final no falla, REPITE aperturas en silencio, que es justo lo que --primero
+// existe para evitar. Así que aquí se para.
+{
+  const n = JSON.parse(fs.readFileSync(libro, 'utf8')).length;
+  const ultimo = siguiente + PARES - 1;
+  if (ultimo > n) {
+    fatal(`el libro de ${MODALIDAD} tiene ${n} aperturas y esta tanda llega al par ` +
+      `${ultimo}: se repetirían aperturas. Baja --pares, o regenera el libro con ` +
+      `MODALIDAD=${MODALIDAD} node entrenamiento/aperturas.js > ${path.basename(libro)}`);
+  }
+}
 for (let i = 0; i < PROCESOS; i++) {
   const n = Math.floor(PARES / PROCESOS) + (i < PARES % PROCESOS ? 1 : 0);
   if (n === 0) continue;

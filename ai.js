@@ -140,8 +140,9 @@ function pawnAdvance(cell, color) { return cell.pawnProg[color]; }
 // una pieza propia que pueda capturar al atacante si consuma la amenaza. Una
 // pieza atacada sin esa respuesta está colgada de verdad.
 //
-// PESOS PROVISIONALES a la espera de la arena. Van en un OBJETO DE
-// CONFIGURACIÓN, no en constantes sueltas, para que la arena de motor
+// PESOS PROVISIONALES a la espera de la arena, MENOS los dos de amenaza, que
+// ya pasaron por ella (tarea 18; ver su comentario más abajo). Van en un OBJETO
+// DE CONFIGURACIÓN, no en constantes sueltas, para que la arena de motor
 // (entrenamiento/arena-motor.js) pueda medir variantes por elo sin editar este
 // fichero: `RPS_DEFAULTS` son los valores vigentes —lo que juega el motor si
 // nadie dice otra cosa— y `RPS_CFG` es el juego de valores ACTIVO ahora mismo.
@@ -167,26 +168,47 @@ const RPS_DEFAULTS = Object.freeze({
   // el radio de un depredador rival, según haya respuesta (una pieza propia
   // que pueda capturar al atacante) o no la haya —«colgada de verdad»—.
   //
-  // Bajados a la mitad (tarea 13, sesión s-20260826T022659-6a71f33e): con los
-  // valores originales (0.2/0.6) la evaluación oscila con la profundidad en
-  // posiciones muy pobladas y se invierte justo en la profundidad 4 (donde
-  // cae el presupuesto de nodos real de los niveles altos), haciendo que el
-  // motor deje pasar capturas gratis obvias — confirmado con un barrido de
-  // profundidad 1-6 en una posición real (ply 16, 40 piezas): con 0.2/0.6 la
-  // jugada de capturar pierde solo en profundidad 4 (por 2 puntos) y gana en
-  // las demás; con 0.1/0.3 gana en las seis. Verificado también en juego: un
-  // autojuego de 220 jugadas (nivel 8, semilla 100) baja de ~130 a 57 capturas
-  // gratis ignoradas. Causa de fondo, sin arreglar: quiesce() solo persigue
-  // capturas, nunca las jugadas tranquilas que cambian mucho esta "amenaza",
-  // así que su variación entre profundidades nunca se verifica tácticamente
-  // (ver hechos/fallos/13--s-20260825T090706-b85c3e30.md). Arreglar eso de raíz
-  // tocaría el núcleo de búsqueda compartido por TODAS las modalidades: pedir
-  // visto bueno antes, no lo hagas aquí.
+  // MEDIDOS EN ARENA el 2026-08-26 (tarea 18, sesión
+  // s-20260826T095832-0470517d), modalidad rps-rey, nivel 4, aperturas
+  // emparejadas con los colores invertidos. Ya no son provisionales:
   //
-  // Y OJO: ese cierre se validó contra un contador de «capturas gratis
-  // ignoradas» que después se vio sesgado (nota
-  // hechos/notas/s-20260826T093311-622dce37.md), nunca en la arena. Medir
-  // 0.1/0.3 contra 0.2/0.6 por elo es justamente la tarea 18.
+  //   0.1/0.3 contra 0.2/0.6 (los originales) · 100 partidas
+  //     62,0% (35-54-11) · elo(A−B) = +85 [+40, +133] · p = 0,000
+  //     → los originales PIERDEN. La bajada estaba bien.
+  //   0.1/0.3 contra 0.05/0.15 (bajar más) · 200 partidas
+  //     51,5% (46-114-40) · elo(A−B) = +10 [−21, +42] · p = 0,517
+  //     → EMPATE. Bajar más no aporta nada.
+  //
+  // Las dos conclusiones aguantan con el margen de adjudicación entre 150 y
+  // 900 (78-92 elo la primera, +3 a +12 la segunda). Logs y resúmenes en
+  // entrenamiento/t18-rps-rey-*--s-20260826T095832-0470517d.log|txt.
+  //
+  // Cómo se llegó aquí (tarea 13, sesión s-20260826T022659-6a71f33e): con
+  // 0.2/0.6 la evaluación oscila con la profundidad en posiciones muy pobladas
+  // y se invierte justo en la profundidad 4 (donde cae el presupuesto de nodos
+  // real de los niveles altos), haciendo que el motor deje pasar capturas
+  // gratis obvias — barrido de profundidad 1-6 en una posición real (ply 16,
+  // 40 piezas): con 0.2/0.6 la jugada de capturar pierde solo en profundidad 4
+  // (por 2 puntos) y gana en las demás; con 0.1/0.3 gana en las seis. Aquella
+  // decisión se tomó contando «capturas gratis ignoradas» con un contador que
+  // luego se vio sesgado (nota hechos/notas/s-20260826T093311-622dce37.md);
+  // por eso hacía falta la arena. El veredicto de la arena coincide con el del
+  // contador sesgado, pero ahora está medido en elo, que es lo que se juega.
+  //
+  // OJO CON EL ALCANCE: medido SOLO en rps-rey (decisión de Juan Luis del
+  // 2026-08-26: primero se optimiza rps-rey y luego se estudia trasladarlo).
+  // Pero RPS_DEFAULTS es único para TODAS las modalidades PPT, así que estos
+  // valores los juega también rpsls-rey, donde nadie los ha medido.
+  //
+  // Causa de fondo, sin arreglar: quiesce() solo persigue capturas, nunca las
+  // jugadas tranquilas que cambian mucho esta "amenaza", así que su variación
+  // entre profundidades nunca se verifica tácticamente (ver
+  // hechos/fallos/13--s-20260825T090706-b85c3e30.md). Que 0.05/0.15 empate con
+  // 0.1/0.3 encaja con eso: por debajo de cierto punto el término ya no
+  // desordena la búsqueda y da igual cuánto se baje; lo que arreglaría el
+  // problema de raíz es la quiescencia (tarea 20), no seguir tocando el peso.
+  // Eso toca el núcleo de búsqueda compartido por TODAS las modalidades: pedir
+  // visto bueno antes, no lo hagas aquí.
   AMENAZA: 0.1,
   AMENAZA_COLGADA: 0.3,
   // Término de caza (solo kingless): bonificación por tener depredadores cerca
