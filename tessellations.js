@@ -543,7 +543,7 @@ const PPT_TABLEROS = [
   { board: 'square12', etiqueta: 'Cuadrado 12×12',                 familia: 'cuadrado' },
   { board: 'brick8',   etiqueta: 'Ladrillos 8×8',                  familia: 'otras' },
   { board: 'hexhex4',  etiqueta: 'Hexágonos (37)',                 familia: 'otras' },
-  { board: 'rhomb3',   etiqueta: 'Rombos (47)',                    familia: 'otras' },
+  { board: 'rhomb3',   etiqueta: 'Rombos (97)',                    familia: 'otras' },
   { board: 'octo6',    etiqueta: 'Octógonos y cuadrados (61)',     familia: 'otras' },
   { board: 'kagome3',  etiqueta: 'Kagome: hexágonos y triángulos (91)', familia: 'otras' },
 ];
@@ -698,3 +698,43 @@ document.addEventListener('DOMContentLoaded', () => {
 //     siempre).
 //
 // Nada de esto lo necesita PPT, así que se deja analizado y sin implementar.
+//
+// --- PENDIENTE: UN MOTOR QUE SE ADAPTE A CUALQUIER TABLERO ----------------
+//
+// Las modalidades PPT ya se JUEGAN en todos estos tableros, pero el motor no
+// sabe en cuál está: evalúa con los mismos números que se midieron en la arena
+// sobre el hexágono triangular. Y esos números no son trasladables, porque lo
+// que cambia de una teselación a otra no es el decorado, es el grafo.
+//
+// El caso más claro, medido sobre los tableros de este fichero (media de
+// kingNbrs por casilla, que es la vecindad que usan TODAS las piezas PPT):
+//
+//   hex4 (triangular) 10,1  ·  rhomb3 8,4  ·  kagome3 7,1  ·  square8 6,6
+//   octo6 5,2  ·  brick8 5,0  ·  hexhex4 4,9
+//
+// El término de movilidad de ai.js suma `engine.mobility` (4) por jugada
+// disponible. Con 10 vecinas de media eso vale ~40 puntos por pieza, casi la
+// mitad de una figura (100); con 4,9 vale la mitad de eso. O sea: la MISMA
+// configuración pesa la movilidad el doble en un tablero que en otro, sin que
+// nadie lo haya decidido. Lo mismo vale para el peso de amenaza medido en la
+// tarea 18 y para cualquier término futuro que cuente vecinas o casillas.
+//
+// Tres cosas que habría que investigar, de menos a más ambiciosa:
+//
+//   1. NORMALIZAR por el grafo. Que `mobility` deje de ser un número absoluto
+//      y pase a ser relativo al grado medio del tablero (o al grado de la
+//      casilla), calculado al hacer setGeometry. Es barato y quita el sesgo
+//      más grosero, pero es una hipótesis sin medir.
+//   2. DISTANCIAS DE GRAFO. Todo lo que hoy razona con la retícula triangular
+//      (dist() en variants.js, la cercanía al rey, el acoso) tendría que
+//      pasar a distancias del grafo de kingNbrs, precalculadas por BFS al
+//      cambiar de tablero. Sin eso, cualquier término posicional nuevo nace
+//      atado al hexágono.
+//   3. MEDIR POR TABLERO. Lo honesto de verdad: pasar la arena por cada
+//      tablero. Es caro (hoy son 4 familias × 10 tableros) y hay que decidir
+//      qué se mide y qué se hereda; quizá baste con medir un representante de
+//      cada «grado medio» y interpolar.
+//
+// Mientras eso no se haga, las modalidades teseladas son jugables y honradas
+// —las reglas son exactas— pero su motor está calibrado para otro tablero, y
+// así lo dice la nota de cada una.

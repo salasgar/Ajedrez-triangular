@@ -103,23 +103,23 @@ BT 0.6 g /F1 10 Tf 1 0 0 1 473.70000000000005 431 Tm (-) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 523.4 431 Tm (4) Tj ET
 BT 0.45 g /F1 8 Tf 1 0 0 1 44 419 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
 0.8 G 0.3 w 40 415 m 555 415 l S
-BT 0 g /F2 10 Tf 1 0 0 1 44 401 Tm (PPTLSR) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 44 401 Tm (PPTR · Muralla de papel) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 302.9 401 Tm (100) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 344.29999999999995 401 Tm (100) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 385.7 401 Tm (100) Tj ET
-BT 0 g /F1 10 Tf 1 0 0 1 427.09999999999997 401 Tm (100) Tj ET
-BT 0 g /F1 10 Tf 1 0 0 1 468.5 401 Tm (100) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 432.3 401 Tm (-) Tj ET
+BT 0.6 g /F1 10 Tf 1 0 0 1 473.70000000000005 401 Tm (-) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 523.4 401 Tm (4) Tj ET
-BT 0.45 g /F1 8 Tf 1 0 0 1 44 389 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 389 Tm (hex4 \(96 casillas\) · sin anotar de dónde salen) Tj ET
 0.8 G 0.3 w 40 385 m 555 385 l S
-BT 0 g /F2 10 Tf 1 0 0 1 44 371 Tm (PPTR · Muralla de papel) Tj ET
+BT 0 g /F2 10 Tf 1 0 0 1 44 371 Tm (PPTLSR) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 302.9 371 Tm (100) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 344.29999999999995 371 Tm (100) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 385.7 371 Tm (100) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 432.3 371 Tm (-) Tj ET
-BT 0.6 g /F1 10 Tf 1 0 0 1 473.70000000000005 371 Tm (-) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 427.09999999999997 371 Tm (100) Tj ET
+BT 0 g /F1 10 Tf 1 0 0 1 468.5 371 Tm (100) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 523.4 371 Tm (4) Tj ET
-BT 0.45 g /F1 8 Tf 1 0 0 1 44 359 Tm (hex4 \(96 casillas\) · sin anotar de dónde salen) Tj ET
+BT 0.45 g /F1 8 Tf 1 0 0 1 44 359 Tm (hex4 \(96 casillas\) · planos de partida; el valor real lo pone la evaluación dinámica de ai.js) Tj ET
 0.8 G 0.3 w 40 355 m 555 355 l S
 BT 0 g /F2 10 Tf 1 0 0 1 44 341 Tm (PPTLSR · Muralla de papel) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 302.9 341 Tm (100) Tj ET

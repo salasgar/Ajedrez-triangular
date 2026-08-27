@@ -701,6 +701,34 @@ Object.assign(VARIANTS, {
     help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T, RPS_HELP.K],
   }),
 
+  // Cada modalidad va seguida de su «Muralla de papel»: mismas reglas, otra
+  // posición inicial. La fila delantera, entera de papeles, no puede capturar
+  // papeles, así que las dos murallas se encuentran y quedan trabadas: la
+  // partida la abren las tijeras, que son las únicas que perforan papel,
+  // mientras las piedras hacen de escudo. Apertura de bloqueo y ruptura, muy
+  // distinta de la del ciclo.
+  'rps-rey-muralla': rpsVariant({
+    id: 'rps-rey-muralla',
+    grupo: 'Piedra, papel y tijera',
+    name: 'PPTR · Muralla de papel',
+    full: 'Piedra, papel, tijera y rey · Muralla de papel',
+    captures: capturesConRey(RPS_CAPTURES),
+    backLayout: conRey(MURALLA_BACK),
+    frontLayout: MURALLA_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+      K: { leaps: c => c.kingNbrs },
+    },
+    note: 'Las mismas reglas que PPTR, con la formación del ajedrez ' +
+      'triangular: una fila entera de papeles delante y, detrás, piedras y ' +
+      'tijeras alternadas con el rey en el centro. Como el papel no captura ' +
+      'papeles, los dos frentes quedan trabados y son las tijeras las que ' +
+      'tienen que abrir la brecha.',
+    help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T, RPS_HELP.K],
+  }),
+
   'rpsls-rey': rpsVariant({
     id: 'rpsls-rey',
     grupo: 'Piedra, papel y tijera',
@@ -723,33 +751,6 @@ Object.assign(VARIANTS, {
     help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5, RPS_HELP.K],
   }),
 
-  // Las dos «Muralla de papel»: mismas reglas que las de arriba, otra posición
-  // inicial. La fila delantera, entera de papeles, no puede capturar papeles,
-  // así que las dos murallas se encuentran y quedan trabadas: la partida la
-  // abren las tijeras, que son las únicas que perforan papel, mientras las
-  // piedras hacen de escudo. Apertura de bloqueo y ruptura, muy distinta de la
-  // del ciclo.
-  'rps-rey-muralla': rpsVariant({
-    id: 'rps-rey-muralla',
-    grupo: 'Piedra, papel y tijera',
-    name: 'PPTR · Muralla de papel',
-    full: 'Piedra, papel, tijera y rey · Muralla de papel',
-    captures: capturesConRey(RPS_CAPTURES),
-    backLayout: conRey(MURALLA_BACK),
-    frontLayout: MURALLA_FRONT,
-    pieces: {
-      O: { leaps: c => c.kingNbrs },
-      A: { leaps: c => c.kingNbrs },
-      T: { leaps: c => c.kingNbrs },
-      K: { leaps: c => c.kingNbrs },
-    },
-    note: 'Las mismas reglas que PPTR, con la formación del ajedrez ' +
-      'triangular: una fila entera de papeles delante y, detrás, piedras y ' +
-      'tijeras alternadas con el rey en el centro. Como el papel no captura ' +
-      'papeles, los dos frentes quedan trabados y son las tijeras las que ' +
-      'tienen que abrir la brecha.',
-    help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T, RPS_HELP.K],
-  }),
 
   'rpsls-rey-muralla': rpsVariant({
     id: 'rpsls-rey-muralla',

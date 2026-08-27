@@ -27,6 +27,7 @@ triangular de Salas.
 | **Dekle (1986)** | hexágono, 96 triángulos | 9 de fondo (con unicornio) + 11 peones |
 | **Trigonal (Koval, 2023)** | triángulo, 81 casillas | juego de ajedrez normal, 16 piezas |
 | **PPTR / PPTLSR** (×4) | hexágono, 96 triángulos | 19 figuras y un rey, todas se mueven como el rey |
+| **PPTR / PPTLSR** en otras teselaciones | damero, rombos, octógonos, kagome… | las mismas cuatro, sobre nueve tableros más |
 
 Cada modalidad vive en [variants.js](variants.js): su dotación, cómo se mueve
 cada pieza, las reglas del peón y los valores con los que evalúa el motor. El
@@ -177,24 +178,45 @@ Por dentro, la matriz de capturas vive en el mapa `captures` de cada modalidad
 
 ### Otras teselaciones del plano
 
-Las modalidades tipo Piedra, papel y tijera no dependen del triángulo: sus
-figuras se mueven a las casillas vecinas, y «vecina» lo define la teselación.
-[tessellations.js](tessellations.js) saca esa noción del código del tablero
-triangular y trae tres teselaciones más, cada una con una modalidad de
-demostración que **no sale en el selector** y se abre por URL:
+Las cuatro modalidades PPT son las únicas del programa que **no dependen de la
+retícula triangular**: sus piezas solo preguntan «¿qué casillas tocan la mía?»
+(la vecindad `kingNbrs`), y eso lo tiene cualquier teselación. Así que las
+mismas reglas se juegan sobre nueve tableros más, que se eligen en el
+desplegable **Tablero** que aparece al elegir una modalidad PPT:
 
-| Teselación | Casillas | Cómo abrirla |
-|---|---|---|
-| cuadrada (`square8`) | 8×8 | `index.html?modalidad=demo-cuadrado` |
-| hexagonal (`hexhex4`) | hexágono de 37 hexágonos | `index.html?modalidad=demo-hexagonal` |
-| ladrillos (`brick8`) | 8×8 a matajunta | `index.html?modalidad=demo-ladrillos` |
+| Tablero | Casillas | Vecinas por casilla (media) | De qué va |
+|---|---|---|---|
+| Triangular · hexágono de 96 | 96 | 10,1 | el de casa, el único con los valores del motor medidos |
+| Cuadrado 6×6 … 12×12 | 36 a 144 | 6,6 | el damero de siempre; cuatro tamaños |
+| Ladrillos 8×8 | 64 | 5,0 | pared a soga: las juntas en T quitan las diagonales |
+| Hexágonos (37) | 37 | 4,9 | sin vecinas de solo un vértice: `kingNbrs` = `edgeNbrs` |
+| Rombos (97) | 97 | 8,4 | cada hexágono partido en tres; **tres orientaciones** de casilla |
+| Octógonos y cuadrados (61) | 61 | 5,2 | la 4.8.8 del suelo de baldosas: casillas grandes y chicas |
+| Kagome (91) | 91 | 7,1 | la 3.6.3.6: hexágonos y triángulos alternando |
 
-Van ocultas a propósito —con `hidden: true` en su modalidad, que
-`variantList()` filtra— porque son un banco de pruebas de la geometría, no
-juegos terminados: cada bando lleva una fila con un rey y varios «guardias»,
-que se mueven todos igual, un paso a cualquier casilla vecina. El ladrillo es
-el caso interesante: al desplazar media casilla cada hilada, un cuadrado toca
-a seis vecinos en vez de a ocho, y el juego cambia sin tocar ninguna regla.
+Los cuatro últimos no son dameros: tienen **casillas de formas y tamaños
+distintos en el mismo tablero**, y por tanto casillas que valen más que otras
+solo por tener más vecinas. En los octógonos, un cuadradito tiene 4 vecinas y
+un octógono 8; en el kagome, un triángulo tiene 5 y un hexágono 12.
+
+La posición inicial no puede ser una lista fija, porque cada tablero tiene
+filas de un ancho distinto (y dentro del mismo tablero unas filas más largas
+que otras): se calcula al activar la modalidad, repartiendo el ciclo de figuras
+—o la muralla de papeles— a lo largo de la fila real, con el rey en el centro
+de la de fondo. Si esa fila tiene un número par de casillas, el rey cae en la
+de la izquierda de las dos centrales y la simetría se rompe ahí, como el rey
+del ajedrez en d1.
+
+> **El motor no sabe en qué tablero está.** Evalúa con los números que se
+> midieron en la arena sobre el hexágono triangular, y no son trasladables: el
+> término de movilidad suma 4 puntos por jugada disponible, así que con 10,1
+> vecinas de media pesa el doble que con 4,9. Las reglas son exactas en todos
+> los tableros; la fuerza de la máquina, no. Está analizado, con tres vías de
+> arreglo, al final de [tessellations.js](tessellations.js).
+
+Las tres modalidades de **demostración** (`demo-cuadrado`, `demo-hexagonal`,
+`demo-ladrillos`) siguen existiendo como prueba mínima de la abstracción: no
+salen en el selector y se abren con `?modalidad=<id>`.
 
 ### Coronación de flanco
 
@@ -482,10 +504,9 @@ node entrenamiento/modalidades.js     # las cinco clásicas, por diferencia
 node entrenamiento/prueba-humo.js     # circuito completo sin navegador
 node entrenamiento/perft.js           # perft con dorados, ajedrez de Salas
 node test-rps.js                      # reglas de Piedra, papel y tijera
+node test-teselaciones.js             # geometría de los tableros teselados y PPT sobre ellos
 node test-ia-rps.js                   # IA de esas modalidades (juega partidas: tarda)
-                                      # OJO: roto desde que se retiraron las modalidades
-                                      # sin rey (usa setVariant('rps')); pendiente de migrar
-node test-modalidades.js              # que las doce modalidades arrancan
+node test-modalidades.js              # que todas las modalidades arrancan
 ```
 
 La última es la que protege las mezclas: las modalidades se registran desde

@@ -1,4 +1,4 @@
-// test-modalidades.js — Que las doce modalidades sigan arrancando.
+// test-modalidades.js — Que todas las modalidades sigan arrancando.
 //
 //   node test-modalidades.js
 //
@@ -38,8 +38,11 @@ function ok(cond, msg) {
   else { console.error('  ✗ ' + msg); fallos++; }
 }
 
-// Las que tienen que estar, y cuáles de ellas salen en el selector. Las demos
-// de teselación van con `hidden`: se abren solo con ?modalidad=<id>.
+// Las que tienen que estar, y cuáles de ellas salen en el selector. Van con
+// `hidden`, y por tanto fuera del desplegable de modalidad, las demos de
+// teselación (se abren con ?modalidad=<id>) y las combinaciones PPT × tablero,
+// que se eligen con el selector de tablero (ver tessellations.js y
+// test-teselaciones.js, que las mira una por una).
 const EN_SELECTOR = ['salas', 'salas-v4', 'salas-1998', 'dekle', 'trigonal',
   'rps-rey', 'rpsls-rey', 'rps-rey-muralla', 'rpsls-rey-muralla'];
 const OCULTAS = ['demo-cuadrado', 'demo-hexagonal', 'demo-ladrillos'];
@@ -53,6 +56,13 @@ for (const id of OCULTAS) ok(!selector.includes(id), `fuera del selector: ${id}`
 for (const id of EN_SELECTOR) ok(selector.includes(id), `en el selector: ${id}`);
 ok(selector.length === EN_SELECTOR.length,
   `el selector trae ${EN_SELECTOR.length} modalidades (trae ${selector.length})`);
+
+// El desplegable va por epígrafes: cada modalidad visible declara su `grupo`.
+const grupos = run('return variantList().map(v => v.grupo);');
+ok(grupos.every(g => g && g !== 'Otras'),
+  'todas las del selector declaran su grupo (ninguna cae en «Otras»)');
+ok(new Set(grupos).size === 2,
+  `los epígrafes del desplegable son dos (son ${new Set(grupos).size}: ${[...new Set(grupos)].join(', ')})`);
 
 console.log('Cada modalidad arranca y tiene jugadas desde la inicial:');
 for (const id of todas) {
