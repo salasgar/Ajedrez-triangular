@@ -116,6 +116,13 @@
             <div id="mode-box">
                 <label for="variant">Modalidad de ajedrez triangular</label>
                 <select id="variant"></select>
+                <!-- Solo para las modalidades de Piedra, papel y tijera: las
+                     mismas reglas se juegan en cualquier teselación (damero de
+                     varios tamaños, rombos, octógonos, kagome…). script.js
+                     enseña u oculta esta fila según la modalidad activa. -->
+                <label class="hidden" id="row-board" for="board">Tablero
+                    <select id="board"></select>
+                </label>
                 <p id="variant-note" class="variant-note"></p>
                 <label for="mode">Jugadores</label>
                 <select id="mode">
@@ -198,8 +205,8 @@
                 <ul>
                     <!-- Estas reglas generales no aplican a todas las
                          modalidades (las de Piedra, papel y tijera no tienen
-                         peones, y las sin rey no tienen jaque): script.js
-                         oculta o ajusta cada punto según la modalidad. -->
+                         peones): script.js oculta o ajusta cada punto según la
+                         modalidad. -->
                     <li id="help-enpassant"><b>Captura al paso</b>: si un peón avanza dos casillas en su primer movimiento, un peón rival que ataque la casilla intermedia puede capturarlo justo en la jugada siguiente, ocupando esa casilla.</li>
                     <!-- El trecho que recorre el rey depende de la modalidad;
                          lo rellena script.js a partir de V.castling. -->

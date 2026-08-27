@@ -41,7 +41,7 @@ function ok(cond, msg) {
 // Las que tienen que estar, y cuáles de ellas salen en el selector. Las demos
 // de teselación van con `hidden`: se abren solo con ?modalidad=<id>.
 const EN_SELECTOR = ['salas', 'salas-v4', 'salas-1998', 'dekle', 'trigonal',
-  'rps', 'rpsls', 'rps-rey', 'rpsls-rey'];
+  'rps-rey', 'rpsls-rey', 'rps-rey-muralla', 'rpsls-rey-muralla'];
 const OCULTAS = ['demo-cuadrado', 'demo-hexagonal', 'demo-ladrillos'];
 
 const todas = run('return Object.keys(VARIANTS);');

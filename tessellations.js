@@ -112,6 +112,78 @@ function construirTeselacion(raw) {
   };
 }
 
+// FILAS EN UNA TESELACIÓN CUALQUIERA. En el damero o en los ladrillos la fila
+// se sabe de antemano; en una teselación irregular (rombos, octógonos con
+// cuadrados, espiga) no, porque las casillas ni tienen la misma altura ni
+// están alineadas. Este ayudante las reparte por la altura de su centro:
+// agrupa los centros cuya `cy` cae dentro de `tol` px, numera las bandas de
+// abajo (b = 1) arriba, y dentro de cada banda ordena por `cx` (a = 1 a la
+// izquierda). Con eso, `rowCells(b)` sigue devolviendo «una fila» y las
+// modalidades PPT se colocan igual en cualquier teselación.
+//
+// El nombre sale de la banda y la posición: a1, b3, f2… como siempre.
+// `up` (el damero CSS) se deja alternando por (a + b), que en teselaciones
+// irregulares no significa nada geométrico pero pinta un patrón legible.
+function repartirFilas(poligonos, tol = 4) {
+  const conCentro = poligonos.map(q => {
+    const pts = q.pts;
+    return { ...q, cy: pts.reduce((s, p) => s + p[1], 0) / pts.length,
+             cx: pts.reduce((s, p) => s + p[0], 0) / pts.length };
+  });
+  // Bandas: recorrido de arriba abajo abriendo banda nueva cuando el salto
+  // en cy pasa de `tol`. (En pantalla y crece hacia abajo, así que la última
+  // banda es la fila 1.)
+  const orden = [...conCentro].sort((p, q) => p.cy - q.cy);
+  const bandas = [];
+  for (const c of orden) {
+    const ultima = bandas[bandas.length - 1];
+    if (ultima && Math.abs(c.cy - ultima.cy0) <= tol) ultima.casillas.push(c);
+    else bandas.push({ cy0: c.cy, casillas: [c] });
+  }
+  const raw = [];
+  bandas.forEach((banda, i) => {
+    const b = bandas.length - i;                  // 1 = la de abajo
+    banda.casillas.sort((p, q) => p.cx - q.cx).forEach((c, j) => {
+      const a = j + 1;
+      raw.push({ a, b, up: (a + b) % 2 === 1, pts: c.pts,
+                 nombre: LETRAS[b - 1] + a });
+    });
+  });
+  return raw;
+}
+
+const LETRAS = 'abcdefghijklmnopqrstuvwxyz';
+
+// RECORTE SIMÉTRICO. Un tablero de dos bandos necesita que la mitad de abajo
+// sea el espejo de la de arriba: si no, un bando empieza con más piezas que
+// el otro y la modalidad no vale nada. En el damero eso sale solo; en una
+// teselación irregular no tiene por qué (los rombos, por ejemplo: cada
+// hexágono aporta un rombo por arriba y dos por abajo, así que un recorte
+// ingenuo deja 3 casillas en la fila de abajo y 6 en la de arriba).
+//
+// Esto busca el eje horizontal que deja MÁS casillas emparejadas con su
+// espejo y descarta las que se queden sin pareja. Los candidatos a eje son
+// las alturas de las casillas y sus puntos medios: el eje de simetría de una
+// teselación siempre cae en uno de los dos sitios.
+function recorteSimetrico(poligonos, tol = 1.5) {
+  const con = poligonos.map(q => ({
+    ...q,
+    cx: q.pts.reduce((t, p) => t + p[0], 0) / q.pts.length,
+    cy: q.pts.reduce((t, p) => t + p[1], 0) / q.pts.length,
+  }));
+  const alturas = [...new Set(con.map(c => Math.round(c.cy * 100) / 100))].sort((a, b) => a - b);
+  const ejes = [...alturas];
+  for (let i = 1; i < alturas.length; i++) ejes.push((alturas[i - 1] + alturas[i]) / 2);
+
+  let mejor = [];
+  for (const y0 of ejes) {
+    const quedan = con.filter(c => con.some(o =>
+      Math.abs(o.cx - c.cx) <= tol && Math.abs(o.cy - (2 * y0 - c.cy)) <= tol));
+    if (quedan.length > mejor.length) mejor = quedan;
+  }
+  return mejor;
+}
+
 // Registra en BOARDS un tablero teselado. `size` es el parámetro de forma
 // (variants.js hace cuentas con N = size para la coronación por filas, que
 // aquí no significan nada mientras la modalidad no tenga peones) y
@@ -138,29 +210,35 @@ function registrarTeselacion(id, size, hacerCasillas) {
   };
 }
 
-// --- teselación cuadrada: square8 ------------------------------------------
+// --- teselación cuadrada: square6, square8, square10, square12 -------------
 //
-// El tablero del ajedrez de siempre, 8×8 casillas cuadradas con nombres
-// a1…h8. kingNbrs son los 8 vecinos del rey clásico: 4 por arista y 4 solo
-// por vértice (las diagonales).
+// El tablero del ajedrez de siempre y sus hermanos de otro tamaño: N×N
+// casillas cuadradas con nombres a1…h8 (o hasta l12). kingNbrs son los 8
+// vecinos del rey clásico: 4 por arista y 4 solo por vértice (las diagonales).
+//
+// Hay una familia entera y no un solo tablero porque las modalidades PPT
+// cuadradas dejan elegir el tamaño (ver `familia` en la fábrica de abajo):
+// cambiar de tamaño es cambiar a la modalidad hermana, que trae otro tablero.
 (() => {
-  const L = 34;   // lado de cada cuadrado (px del viewBox)
-  const FILAS = 8, COLS = 8;
-  registrarTeselacion('square8', FILAS, () => {
-    const raw = [];
-    for (let b = 1; b <= FILAS; b++) {
-      for (let a = 1; a <= COLS; a++) {
-        const x = (a - 1) * L, y = (FILAS - b) * L;   // fila 1 abajo
-        raw.push({
-          a, b,
-          up: (a + b) % 2 === 1,   // damero: a1 oscura, como en ajedrez
-          nombre: 'abcdefgh'[a - 1] + b,
-          pts: [[x, y], [x + L, y], [x + L, y + L], [x, y + L]],
-        });
+  const LADO_TOTAL = 272;             // ancho del tablero en px del viewBox
+  for (const N of [6, 8, 10, 12]) {
+    const L = LADO_TOTAL / N;         // los tableros grandes llevan casilla menor
+    registrarTeselacion('square' + N, N, () => {
+      const raw = [];
+      for (let b = 1; b <= N; b++) {
+        for (let a = 1; a <= N; a++) {
+          const x = (a - 1) * L, y = (N - b) * L;   // fila 1 abajo
+          raw.push({
+            a, b,
+            up: (a + b) % 2 === 1,   // damero: a1 oscura, como en ajedrez
+            nombre: LETRAS[a - 1] + b,
+            pts: [[x, y], [x + L, y], [x + L, y + L], [x, y + L]],
+          });
+        }
       }
-    }
-    return raw;
-  });
+      return raw;
+    });
+  }
 })();
 
 // --- teselación hexagonal: hexhex4 -----------------------------------------
@@ -241,6 +319,116 @@ function registrarTeselacion(id, size, hacerCasillas) {
   });
 })();
 
+// --- teselación de rombos: rhomb3 ------------------------------------------
+//
+// La retícula «de cubos» de toda la vida: cada hexágono partido en tres
+// rombos desde su centro. Es monoedral (una sola forma de casilla) pero NO
+// regular, y a diferencia del damero sus casillas vienen en tres
+// orientaciones distintas, así que la vecindad cambia según cómo esté puesta
+// la casilla: unas tienen más vecinas por arista y otras más solo por
+// vértice. Para una modalidad PPT eso significa que no todas las casillas
+// valen lo mismo, cosa que en el damero no pasa.
+(() => {
+  const R = 20;                        // circunradio del hexágono de partida
+  const RADIO = 3;                     // radio de la malla, en hexágonos
+  registrarTeselacion('rhomb3', 5, () => {
+    const poligonos = [];
+    for (let r = -RADIO; r <= RADIO; r++) {
+      for (let q = Math.max(-RADIO, -RADIO - r); q <= Math.min(RADIO, RADIO - r); q++) {
+        const cx = R * Math.sqrt(3) * (q + r / 2), cy = -1.5 * R * r;
+        const V = [];
+        for (let k = 0; k < 6; k++) {
+          const ang = Math.PI / 180 * (60 * k + 30);
+          V.push([cx + R * Math.cos(ang), cy + R * Math.sin(ang)]);
+        }
+        // Tres rombos: centro, y cada tres vértices consecutivos.
+        for (let k = 0; k < 6; k += 2) {
+          poligonos.push({ pts: [[cx, cy], V[k], V[(k + 1) % 6], V[(k + 2) % 6]] });
+        }
+      }
+    }
+    return repartirFilas(recorteSimetrico(poligonos), 6);
+  });
+})();
+
+// --- teselación de octógonos y cuadrados: octo6 ----------------------------
+//
+// La teselación 4.8.8, la del suelo de baldosas: octógonos regulares con un
+// cuadradito girado en cada cruce. Dos formas de casilla y dos tamaños muy
+// distintos: el octógono tiene 8 vecinas y el cuadradito solo 4, todas por
+// arista. Es el primer tablero de esta lista donde una casilla puede valer
+// bastante menos que su vecina solo por ser más pequeña.
+(() => {
+  const N = 6;                         // octógonos por lado
+  const L = 44;                        // paso de la retícula
+  const t = L / (2 + Math.sqrt(2));     // lado del octógono = corte de esquina
+  const c = (L - t) / 2;               // cuánto se recorta de cada esquina
+  registrarTeselacion('octo6', N, () => {
+    const poligonos = [];
+    for (let fila = 0; fila < N; fila++) {
+      for (let col = 0; col < N; col++) {
+        const x = col * L, y = fila * L;
+        poligonos.push({ pts: [
+          [x + c, y], [x + L - c, y],
+          [x + L, y + c], [x + L, y + L - c],
+          [x + L - c, y + L], [x + c, y + L],
+          [x, y + L - c], [x, y + c],
+        ] });
+        // Cuadradito en el cruce inferior derecho (no en el borde).
+        if (fila < N - 1 && col < N - 1) {
+          poligonos.push({ pts: [
+            [x + L - c, y + L], [x + L, y + L - c],
+            [x + L + c, y + L], [x + L, y + L + c],
+          ] });
+        }
+      }
+    }
+    return repartirFilas(poligonos, 6);
+  });
+})();
+
+// --- teselación trihexagonal (kagome): kagome3 -----------------------------
+//
+// La 3.6.3.6: hexágonos y triángulos alternando, la retícula kagome de los
+// físicos. Se construye sobre los PUNTOS MEDIOS de las aristas de una malla
+// triangular: hexágono alrededor de cada vértice de la malla y triángulo
+// medial dentro de cada triángulo. Como todos los polígonos apoyan en esos
+// mismos puntos medios, las aristas casan exactas y no hace falta añadir
+// vértices de más (cf. los ladrillos).
+//
+// Aquí NO hay vecinas solo por vértice entre hexágonos y triángulos —cada par
+// que se toca comparte arista entera—, pero dos hexágonos sí se tocan en un
+// vértice suelto, así que kingNbrs y edgeNbrs vuelven a ser distintos.
+(() => {
+  const L = 36;                                    // lado de la malla triangular
+  const H = L * Math.sqrt(3) / 2;
+  const RADIO = 3;
+  const P = (i, j) => [i * L + j * L / 2, -j * H];  // vértice (i, j) de la malla
+  const medio = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+  const dentro = (i, j) => Math.abs(i) <= RADIO && Math.abs(j) <= RADIO &&
+    Math.abs(i + j) <= RADIO;
+  registrarTeselacion('kagome3', 5, () => {
+    const poligonos = [];
+    const DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];  // en orden angular
+    for (let j = -RADIO; j <= RADIO; j++) {
+      for (let i = -RADIO; i <= RADIO; i++) {
+        if (!dentro(i, j)) continue;
+        const centro = P(i, j);
+        // Hexágono: los 6 puntos medios hacia los vecinos de la malla.
+        poligonos.push({ pts: DIRS.map(([di, dj]) => medio(centro, P(i + di, j + dj))) });
+        // Los dos triángulos mediales que «cuelgan» de este vértice, si sus
+        // tres esquinas están dentro de la malla (así no salen medias piezas).
+        for (const [[d1i, d1j], [d2i, d2j]] of [[[1, 0], [0, 1]], [[0, 1], [-1, 1]]]) {
+          if (!dentro(i + d1i, j + d1j) || !dentro(i + d2i, j + d2j)) continue;
+          const A = P(i + d1i, j + d1j), B = P(i + d2i, j + d2j);
+          poligonos.push({ pts: [medio(centro, A), medio(A, B), medio(B, centro)] });
+        }
+      }
+    }
+    return repartirFilas(poligonos, 6);
+  });
+})();
+
 // --- modalidades de demostración -------------------------------------------
 //
 // Prueba mínima de que una modalidad «solo kingNbrs» funciona sobre estas
@@ -318,6 +506,158 @@ VARIANTS['demo-ladrillos'] = demoTeselacion(
   'demo-ladrillos', 'Demo: teselación de ladrillos', 'brick8',
   ['N', 'N', 'N', 'K', 'N', 'N', 'N', 'N'],
   'Pared de 8×8 ladrillos a soga; kingNbrs son los 6 vecinos de las juntas en T (tampoco hay vecinas solo por vértice).');
+
+// --- las modalidades PPT sobre cualquier teselación ------------------------
+//
+// Las cuatro modalidades PPT «de casa» (PPTR, PPTLSR y sus Murallas de papel)
+// viven en variants.js sobre el hexágono triangular, con la posición inicial
+// que midió la arena. Aquí se generan LAS MISMAS sobre los demás tableros.
+//
+// La diferencia de fondo: en variants.js las filas iniciales son listas fijas
+// (nueve casillas de fondo, once de frente, siempre), y aquí no pueden serlo,
+// porque cada teselación tiene filas de un ancho distinto —y dentro de una
+// misma teselación, unas filas más largas que otras (los octógonos alternan
+// 6 y 5; el kagome va de 4 a 7)—. Así que la posición se calcula en build(),
+// que corre después de setGeometry(), cuando ya se sabe cuántas casillas tiene
+// cada fila:
+//
+//   · formación «ciclo»: el ciclo de figuras (O-A-T, o el de cinco) repetido a
+//     lo largo de las dos filas, desfasado entre ellas para que no queden
+//     iguales enfrentadas;
+//   · formación «muralla»: la fila de delante entera de papeles y la de atrás
+//     alternando las demás figuras.
+//
+// En las dos, el rey va al centro de la fila de fondo. Si esa fila tiene un
+// número PAR de casillas no hay centro exacto: cae en la de la izquierda de
+// las dos centrales y la simetría se rompe ahí, como el rey del ajedrez en d1.
+//
+// Lo que NO se toca es la vecindad: las piezas siguen dando un paso a
+// cualquier casilla vecina (kingNbrs). Es todo lo que necesitan, y por eso
+// estas modalidades funcionan en teselaciones donde las clásicas no podrían
+// (ver los límites, al final).
+
+const PPT_TABLEROS = [
+  { board: 'square6',  etiqueta: 'Cuadrado 6×6',                   familia: 'cuadrado' },
+  { board: 'square8',  etiqueta: 'Cuadrado 8×8',                   familia: 'cuadrado' },
+  { board: 'square10', etiqueta: 'Cuadrado 10×10',                 familia: 'cuadrado' },
+  { board: 'square12', etiqueta: 'Cuadrado 12×12',                 familia: 'cuadrado' },
+  { board: 'brick8',   etiqueta: 'Ladrillos 8×8',                  familia: 'otras' },
+  { board: 'hexhex4',  etiqueta: 'Hexágonos (37)',                 familia: 'otras' },
+  { board: 'rhomb3',   etiqueta: 'Rombos (47)',                    familia: 'otras' },
+  { board: 'octo6',    etiqueta: 'Octógonos y cuadrados (61)',     familia: 'otras' },
+  { board: 'kagome3',  etiqueta: 'Kagome: hexágonos y triángulos (91)', familia: 'otras' },
+];
+
+// Las cuatro familias de modalidad, con lo que las distingue.
+const PPT_FAMILIAS = {
+  'pptr':            { sigla: 'PPTR',   largo: 'Piedra, papel, tijera y rey', cinco: false, muralla: false },
+  'pptr-muralla':    { sigla: 'PPTR · Muralla de papel',   largo: 'Piedra, papel, tijera y rey · Muralla de papel', cinco: false, muralla: true },
+  'pptlsr':          { sigla: 'PPTLSR', largo: 'Piedra, papel, tijera, lagarto, Spock y rey', cinco: true, muralla: false },
+  'pptlsr-muralla':  { sigla: 'PPTLSR · Muralla de papel', largo: 'Piedra, papel, tijera, lagarto, Spock y rey · Muralla de papel', cinco: true, muralla: true },
+};
+
+// Reparte un ciclo de figuras a lo largo de `n` casillas, empezando por
+// `desde`. Se usa para las dos filas, con distinto arranque.
+function repartirCiclo(ciclo, n, desde) {
+  return Array.from({ length: n }, (_, i) => ciclo[(i + desde) % ciclo.length]);
+}
+
+function pptTeselada(idFamilia, spec) {
+  const fam = PPT_FAMILIAS[idFamilia];
+  const ciclo = fam.cinco ? ['O', 'A', 'T', 'L', 'S'] : ['O', 'A', 'T'];
+  const sinPapel = ciclo.filter(t => t !== 'A');
+  const capturas = capturesConRey(fam.cinco ? RPSLS_CAPTURES : RPS_CAPTURES);
+  const ayuda = fam.cinco
+    ? [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5, RPS_HELP.K]
+    : [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T, RPS_HELP.K];
+
+  return {
+    id: idFamilia + '-' + spec.board,
+    name: fam.sigla + ' · ' + spec.etiqueta,
+    full: fam.largo + ' · ' + spec.etiqueta,
+    board: spec.board,
+    hidden: true,              // se llega por el selector de tablero, no por el de modalidad
+    familia: idFamilia,        // hermanas: mismo juego, distinto tablero
+    tablero: spec.etiqueta,
+    grupoTablero: spec.familia,
+    promotionChoices: [],
+    edgePromotion: false,
+    captures: capturas,
+    pieces: Object.fromEntries(
+      ciclo.concat('K').map(t => [t, { leaps: c => c.kingNbrs }])),
+    slideGroups: () => [],
+    setup() {
+      const abajo = Math.min(...CELLS.map(c => c.b));
+      const arriba = Math.max(...CELLS.map(c => c.b));
+      return {
+        wBack: rowCells(abajo), wPawns: rowCells(abajo + 1),
+        bBack: rowCells(arriba), bPawns: rowCells(arriba - 1),
+      };
+    },
+    // Aquí se calcula la posición inicial: es lo único que depende del tablero.
+    build() {
+      setSinPeones();
+      const abajo = Math.min(...CELLS.map(c => c.b));
+      const nFondo = rowCells(abajo).length;
+      const nFrente = rowCells(abajo + 1).length;
+      const fondo = fam.muralla
+        ? repartirCiclo(sinPapel, nFondo, 0)
+        : repartirCiclo(ciclo, nFondo, 2 % ciclo.length);
+      fondo[Math.floor((nFondo - 1) / 2)] = 'K';       // rey al centro
+      this.backLayout = fondo;
+      this.frontLayout = fam.muralla
+        ? Array(nFrente).fill('A')
+        : repartirCiclo(ciclo, nFrente, 0);
+    },
+    engine: {
+      pieceValues: { O: 100, A: 100, T: 100, L: 100, S: 100, K: 0 },
+      mobility: 4,
+    },
+    note: (fam.muralla
+      ? 'La Muralla de papel sobre ' + spec.etiqueta.toLowerCase() + ': la fila ' +
+        'de delante entera de papeles y, detrás, las demás figuras alternando ' +
+        'con el rey en el centro. '
+      : 'El ciclo de figuras repetido en las dos filas, con el rey en el centro ' +
+        'del fondo, sobre ' + spec.etiqueta.toLowerCase() + '. ') +
+      'Las piezas se mueven y capturan igual que en la modalidad de siempre; lo ' +
+      'que cambia es la forma de las casillas, y con ella cuántas vecinas tiene ' +
+      'cada una. Los valores del motor NO están medidos en este tablero.',
+    help: ayuda,
+  };
+}
+
+for (const idFamilia of Object.keys(PPT_FAMILIAS)) {
+  for (const spec of PPT_TABLEROS) {
+    const v = pptTeselada(idFamilia, spec);
+    VARIANTS[v.id] = v;
+  }
+}
+
+// Las cuatro de variants.js son la combinación «familia × hexágono
+// triangular»: se les cuelga aquí la misma etiqueta para que el selector de
+// tablero las encuentre junto a sus hermanas, en vez de duplicarlas.
+const PPT_HEX = {
+  'rps-rey': 'pptr', 'rps-rey-muralla': 'pptr-muralla',
+  'rpsls-rey': 'pptlsr', 'rpsls-rey-muralla': 'pptlsr-muralla',
+};
+for (const [id, familia] of Object.entries(PPT_HEX)) {
+  if (!VARIANTS[id]) continue;
+  VARIANTS[id].familia = familia;
+  VARIANTS[id].tablero = 'Triangular · hexágono de 96';
+  VARIANTS[id].grupoTablero = 'triangular';
+}
+
+// Los tableros de una familia, en el orden del selector: el triangular
+// primero (es el de casa) y detrás los demás.
+function tablerosDeFamilia(familia) {
+  return Object.keys(VARIANTS)
+    .filter(id => VARIANTS[id].familia === familia)
+    .map(id => ({ id, tablero: VARIANTS[id].tablero, grupo: VARIANTS[id].grupoTablero }))
+    .sort((p, q) => {
+      const orden = { triangular: 0, cuadrado: 1, otras: 2 };
+      return orden[p.grupo] - orden[q.grupo];
+    });
+}
 
 // --- arranque por URL ------------------------------------------------------
 //

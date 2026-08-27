@@ -1489,15 +1489,59 @@ btnPause.addEventListener('click', () => {
 // una modalidad no significa nada en otra.
 const variantSelect = document.getElementById('variant');
 const variantNote = document.getElementById('variant-note');
+const boardSelect = document.getElementById('board');
+const boardRow = document.getElementById('row-board');
 
+// El desplegable va por epígrafes (`grupo` de cada modalidad, ver
+// variantList): con las clásicas y las de Piedra, papel y tijera juntas, la
+// lista plana se había vuelto ilegible.
 function fillVariantSelect() {
-  for (const { id, name } of variantList()) {
+  const grupos = new Map();
+  for (const v of variantList()) {
+    if (!grupos.has(v.grupo)) grupos.set(v.grupo, []);
+    grupos.get(v.grupo).push(v);
+  }
+  for (const [grupo, lista] of grupos) {
+    const g = document.createElement('optgroup');
+    g.label = grupo;
+    for (const { id, name } of lista) {
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = name;
+      if (id === V.id) o.selected = true;
+      g.appendChild(o);
+    }
+    variantSelect.appendChild(g);
+  }
+}
+
+// SELECTOR DE TABLERO. Las modalidades de Piedra, papel y tijera son las
+// únicas que no dependen de la retícula triangular —sus piezas solo piden la
+// vecindad kingNbrs—, así que las mismas reglas se pueden jugar en cualquier
+// teselación. Cada combinación juego × tablero está registrada como una
+// modalidad propia (`familia` las hermana, ver tessellations.js), oculta del
+// desplegable de modalidad: aquí se elige entre las hermanas.
+function fillBoardSelect() {
+  boardSelect.textContent = '';
+  const familia = V.familia;
+  boardRow.classList.toggle('hidden', !familia);
+  if (!familia) return;
+  for (const { id, tablero } of tablerosDeFamilia(familia)) {
     const o = document.createElement('option');
     o.value = id;
-    o.textContent = name;
+    o.textContent = tablero;
     if (id === V.id) o.selected = true;
-    variantSelect.appendChild(o);
+    boardSelect.appendChild(o);
   }
+}
+
+// Al cambiar de modalidad se intenta conservar el tablero que hubiera puesto:
+// si estabas en PPTR sobre rombos y pasas a PPTLSR, sigues en rombos.
+function hermanaEnMismoTablero(id) {
+  const destino = VARIANTS[id];
+  if (!destino || !destino.familia || !V.familia || V.tablero === destino.tablero) return id;
+  const hermana = tablerosDeFamilia(destino.familia).find(h => h.tablero === V.tablero);
+  return hermana ? hermana.id : id;
 }
 
 // Aplica la modalidad y reconstruye todo lo que depende del tablero. Se usa
@@ -1513,7 +1557,12 @@ function applyVariant(id, empezarPartida = true) {
     aplicarFocoTablero(casillaInicialFoco().key, false);
   }
   variantNote.textContent = V.note || '';
-  variantSelect.value = V.id;
+  // En las combinaciones PPT × tablero, el desplegable de modalidad enseña la
+  // familia (que es una de las visibles) y el de tablero, la hermana activa.
+  variantSelect.value = V.familia
+    ? (tablerosDeFamilia(V.familia).find(h => !VARIANTS[h.id].hidden) || { id: V.id }).id
+    : V.id;
+  fillBoardSelect();
   if (!empezarPartida) return;
   exitReview();
   newGame();
@@ -1524,7 +1573,9 @@ function applyVariant(id, empezarPartida = true) {
   render();
 }
 
-variantSelect.addEventListener('change', () => applyVariant(variantSelect.value));
+variantSelect.addEventListener('change',
+  () => applyVariant(hermanaEnMismoTablero(variantSelect.value)));
+boardSelect.addEventListener('change', () => applyVariant(boardSelect.value));
 
 // Carga una posición diseñada en el editor, si se pasa ?posicion=1 en la URL.
 function tryLoadDesignedPosition() {
@@ -1923,6 +1974,7 @@ function buildRuleMinis() {
 }
 
 fillVariantSelect();
+fillBoardSelect();     // la modalidad de arranque puede traer familia de tableros
 variantNote.textContent = V.note || '';
 buildSvg();
 // la parada de tabulador del tablero arranca en su esquina de abajo a la

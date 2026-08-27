@@ -54,7 +54,7 @@ function _jugadas(color) {
 // --- las cuatro modalidades arrancan y generan su posición -----------------
 
 console.log('Posiciones iniciales de las modalidades nuevas:');
-for (const id of ['rps', 'rpsls', 'rps-rey', 'rpsls-rey']) {
+for (const id of ['rps-rey', 'rpsls-rey', 'rps-rey-muralla', 'rpsls-rey-muralla']) {
   const info = run(`
     setVariant('${id}');
     newGame();
@@ -65,14 +65,13 @@ for (const id of ['rps', 'rpsls', 'rps-rey', 'rpsls-rey']) {
     return { size: game.board.size, status: game.status, tipos,
              jugadas: _jugadas('w').length };
   `);
-  const conRey = id.endsWith('-rey');
+  // Desde que se retiraron las modalidades sin rey, todas llevan rey.
   ok(info.size === 40, `${id}: 40 piezas en el tablero (hay ${info.size})`);
   ok(info.status === 'playing', `${id}: la partida arranca en 'playing'`);
   const tiposBlancas = Object.keys(info.tipos).filter(k => k[0] === 'w');
   const simetria = tiposBlancas.every(k => info.tipos[k] === info.tipos['b' + k.slice(1)]);
   ok(simetria, `${id}: mismo reparto de piezas por tipo en los dos bandos (negras en espejo)`);
-  ok(!!info.tipos.wK === conRey && !!info.tipos.bK === conRey,
-    `${id}: rey ${conRey ? 'presente' : 'ausente'}`);
+  ok(!!info.tipos.wK && !!info.tipos.bK, `${id}: rey presente en los dos bandos`);
   ok(info.jugadas > 0, `${id}: las blancas tienen jugadas (${info.jugadas})`);
 }
 
@@ -80,8 +79,8 @@ for (const id of ['rps', 'rpsls', 'rps-rey', 'rpsls-rey']) {
 
 console.log('Matriz de capturas:');
 const MATRICES = {
-  rps: { O: ['T'], A: ['O'], T: ['A'] },
-  rpsls: { O: ['T', 'L'], A: ['O', 'S'], T: ['A', 'L'], L: ['S', 'A'], S: ['T', 'O'] },
+  'rps-rey': { O: ['T'], A: ['O'], T: ['A'] },
+  'rpsls-rey': { O: ['T', 'L'], A: ['O', 'S'], T: ['A', 'L'], L: ['S', 'A'], S: ['T', 'O'] },
 };
 for (const [id, matriz] of Object.entries(MATRICES)) {
   run(`setVariant('${id}')`);
@@ -114,7 +113,7 @@ console.log('Generación de movimientos:');
   // Piedra blanca con un papel y una tijera negros al lado: solo la tijera
   // es capturable; a la casilla del papel no se puede ir.
   const r = run(`
-    setVariant('rps');
+    setVariant('rps-rey');
     newGame();
     const centro = CELLS.find(c => c.up && c.kingNbrs.length >= 3 &&
       c.kingNbrs.every(n => !game.board.get(n.key)) && !game.board.get(c.key));
@@ -129,68 +128,16 @@ console.log('Generación de movimientos:');
     return { papel: destinos.includes(n1.key), tijera: destinos.includes(n2.key),
              vacias: destinos.length };
   `);
-  ok(!r.papel, 'rps: la piedra NO puede capturar el papel');
-  ok(r.tijera, 'rps: la piedra SÍ puede capturar la tijera');
-  ok(r.vacias >= 2, 'rps: moverse a casilla vacía siempre se puede');
+  ok(!r.papel, 'rps-rey: la piedra NO puede capturar el papel');
+  ok(r.tijera, 'rps-rey: la piedra SÍ puede capturar la tijera');
+  ok(r.vacias >= 2, 'rps-rey: moverse a casilla vacía siempre se puede');
 }
 
-// --- fin por eliminación ('wiped') -----------------------------------------
-
-console.log('Finales sin rey:');
-{
-  const r = run(`
-    setVariant('rps');
-    newGame();
-    const centro = CELLS.find(c => c.kingNbrs.length >= 2 && c.up);
-    const tijera = centro.kingNbrs[0];
-    game.board = new Map([
-      [centro.key, { type: 'O', color: 'w', moved: false }],
-      [tijera.key, { type: 'T', color: 'b', moved: false }],
-    ]);
-    game.history = [snapshot()]; game.histIndex = 0;
-    makeMove(centro.key, tijera.key);   // la piedra se come la última tijera
-    return { status: game.status, winner: game.winner };
-  `);
-  ok(r.status === 'wiped', `rps: capturar la última pieza rival da 'wiped' (da '${r.status}')`);
-  ok(r.winner === 'w', 'rps: el ganador del wiped es quien capturó');
-}
-{
-  // Ahogado sin rey: una piedra negra encerrada por piedras blancas (que no
-  // puede capturar) no tiene jugadas, pero conserva piezas: tablas.
-  const r = run(`
-    setVariant('rps');
-    newGame();
-    const centro = CELLS.find(c => c.kingNbrs.length >= 5);
-    const corral = new Set([centro, ...centro.kingNbrs]);
-    const libre = CELLS.find(c => !corral.has(c) &&
-      c.kingNbrs.every(n => !corral.has(n)));
-    const board = new Map([[centro.key, { type: 'O', color: 'b', moved: false }]]);
-    for (const n of centro.kingNbrs) board.set(n.key, { type: 'O', color: 'w', moved: false });
-    // una piedra blanca suelta que pueda mover sin tocar el corral
-    board.set(libre.key, { type: 'O', color: 'w', moved: false });
-    game.board = board;
-    game.history = [snapshot()]; game.histIndex = 0;
-    makeMove(libre.key, libre.kingNbrs[0].key);
-    return { status: game.status, winner: game.winner };
-  `);
-  ok(r.status === 'stalemate', `rps: sin jugadas pero con piezas = tablas por ahogado (da '${r.status}')`);
-}
-{
-  // Incapacidad mutua: solo quedan piedras de ambos bandos → 'material'.
-  const r = run(`
-    setVariant('rps');
-    newGame();
-    const [a, b] = [CELLS[0], CELLS[CELLS.length - 1]];
-    game.board = new Map([
-      [a.key, { type: 'O', color: 'w', moved: false }],
-      [b.key, { type: 'O', color: 'b', moved: false }],
-    ]);
-    game.history = [snapshot()]; game.histIndex = 0;
-    makeMove(a.key, a.kingNbrs[0].key);
-    return game.status;
-  `);
-  ok(r === 'material', `rps: piedra contra piedra son tablas por material (da '${r}')`);
-}
+// Los finales sin rey ('wiped', y el ahogado y las tablas por material de las
+// modalidades kingless) se probaban aquí sobre 'rps' y 'rpsls'. Esas dos
+// modalidades se retiraron el 26-8-2026 (ver variants.js), así que no queda
+// ninguna donde correr esos casos y el bloque se fue con ellas. El código
+// kingless sigue en rules.js y ai.js, hoy sin usar.
 
 // --- jaque y captura universal del rey en las modalidades -rey --------------
 

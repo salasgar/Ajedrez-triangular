@@ -486,6 +486,10 @@ h1 {
 
 .level-row.hidden { display: none; }
 
+/* fila del selector de tablero: solo la ven las modalidades de Piedra, papel
+   y tijera, que son las que se pueden jugar en cualquier teselación */
+#row-board.hidden { display: none; }
+
 /* nota bajo el selector de modalidad: en qué consiste la que está elegida */
 .variant-note {
     margin: -2px 0 2px;

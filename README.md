@@ -26,7 +26,7 @@ triangular de Salas.
 | **Salas v1 (1998)** | rectángulo 8×8, 64 triángulos | juego de ajedrez normal, 16 piezas |
 | **Dekle (1986)** | hexágono, 96 triángulos | 9 de fondo (con unicornio) + 11 peones |
 | **Trigonal (Koval, 2023)** | triángulo, 81 casillas | juego de ajedrez normal, 16 piezas |
-| **Piedra, papel y tijera** (×4) | hexágono, 96 triángulos | 20 figuras que se mueven como el rey |
+| **PPTR / PPTLSR** (×4) | hexágono, 96 triángulos | 19 figuras y un rey, todas se mueven como el rey |
 
 Cada modalidad vive en [variants.js](variants.js): su dotación, cómo se mueve
 cada pieza, las reglas del peón y los valores con los que evalúa el motor. El
@@ -133,37 +133,47 @@ diagonales a 120°, cuya deriva neta va en línea recta.
 Cuatro modalidades experimentales sobre el mismo hexágono de 96 triángulos.
 Todas las figuras se mueven igual —un paso a cualquier casilla vecina, como el
 rey—, pero **cada una solo puede capturar a las que vence** en el juego de
-siempre. Moverse a una casilla vacía siempre se puede.
+siempre. Moverse a una casilla vacía siempre se puede. Las cuatro llevan rey:
+el rey captura cualquier pieza rival y cualquier pieza rival puede capturarlo a
+él —así que todas dan jaque—, y el objetivo es el **jaque mate**.
 
-- **Piedra, papel y tijera** (`rps`): piedra 🪨, papel 📄 y tijera ✂️. La
-  piedra captura la tijera, la tijera el papel y el papel la piedra. **No hay
-  rey ni jaque**: gana quien deja al rival sin piezas. Quedarse sin jugadas
-  conservando piezas es ahogado (tablas), y si ya ninguna pieza de un bando
-  puede capturar a ninguna del otro —y viceversa— son tablas por material.
-- **Piedra, papel, tijera, lagarto, Spock** (`rpsls`): las cinco figuras de la
-  regla de Big Bang Theory. La tijera corta el papel y decapita al lagarto; el
-  papel tapa la piedra y desautoriza a Spock; la piedra aplasta al lagarto y a
-  la tijera; el lagarto envenena a Spock y devora el papel; Spock rompe la
-  tijera y vaporiza la piedra. Cada figura captura exactamente a dos y es
-  capturada por otras dos.
-- **Con rey** (`rps-rey`, `rpsls-rey`): las mismas figuras más un rey por
-  bando. El rey puede capturar cualquier pieza rival y cualquier pieza rival
-  puede capturarlo a él —así que todas dan jaque— y el objetivo vuelve a ser
-  el **jaque mate**.
+- **PPTR** (`rps-rey`), *Piedra, papel, tijera y rey*: piedra 🪨, papel 📄 y
+  tijera ✂️. La piedra captura la tijera, la tijera el papel y el papel la
+  piedra.
+- **PPTLSR** (`rpsls-rey`), *Piedra, papel, tijera, lagarto, Spock y rey*: las
+  cinco figuras de la regla de Big Bang Theory. La tijera corta el papel y
+  decapita al lagarto; el papel tapa la piedra y desautoriza a Spock; la piedra
+  aplasta al lagarto y a la tijera; el lagarto envenena a Spock y devora el
+  papel; Spock rompe la tijera y vaporiza la piedra. Cada figura captura
+  exactamente a dos y es capturada por otras dos.
+- **PPTR · Muralla de papel** (`rps-rey-muralla`) y **PPTLSR · Muralla de
+  papel** (`rpsls-rey-muralla`): las mismas reglas, otra posición inicial (ver
+  abajo).
 
-La posición inicial (provisional, pendiente de ajuste) es una fila entera de
-papeles delante y, detrás, una fila que alterna las demás figuras —con el rey
-en el centro en las modalidades con rey—; los dos bandos quedan con figuras
-iguales enfrentadas. Sin peones no hay coronación, doble paso ni captura al
-paso, y tampoco enroque. En las modalidades sin rey no aplica la regla de las
-50 jugadas; la repetición triple sigue siendo tablas.
+Las dos primeras arrancan con el ciclo de figuras repetido en las dos filas y
+el rey en el centro del fondo: esa posición se midió en la arena y es la que
+juega el motor. Las dos **Muralla de papel** usan en cambio la formación del
+ajedrez triangular: la fila delantera de 11 casillas entera de papeles y,
+detrás, las 9 restantes con piedras y tijeras alternadas (o el ciclo de cinco)
+y el rey en el centro. Como el papel no captura papeles, las dos murallas se
+encuentran y quedan trabadas: la partida la abren las tijeras —las únicas que
+perforan papel en PPTR— mientras las piedras hacen de escudo, así que es una
+apertura de bloqueo y ruptura muy distinta de la del ciclo.
+
+En los dos casos los bandos quedan con figuras iguales enfrentadas. Sin peones
+no hay coronación, doble paso ni captura al paso, y tampoco enroque.
 
 Por dentro, la matriz de capturas vive en el mapa `captures` de cada modalidad
 (tipo → tipos capturables) y la consulta `canCapture()` en
-[rules.js](rules.js); las modalidades sin rey llevan el flag `kingless` y el
-fin por eliminación es el estado `wiped`. Las cinco figuras se dibujan como
-iconos SVG monocromos —igual que el elefante y el unicornio— para que tomen el
-color del bando.
+[rules.js](rules.js). Las cinco figuras se dibujan como iconos SVG monocromos
+—igual que el elefante y el unicornio— para que tomen el color del bando.
+
+> **Modalidades sin rey, retiradas**: hubo dos más sin rey (`rps` y `rpsls`),
+> en las que ganaba quien dejaba al rival sin piezas. Se quitaron el 26-8-2026:
+> sin jaque que cortara la partida, casi todas agotaban el tope de jugadas y no
+> resultaban jugables. El soporte en el motor (el flag `kingless`, el estado
+> `wiped` y las tablas por material) sigue en [rules.js](rules.js) y
+> [ai.js](ai.js) por si vuelven, pero hoy no lo usa ninguna modalidad.
 
 ### Otras teselaciones del plano
 
@@ -473,6 +483,8 @@ node entrenamiento/prueba-humo.js     # circuito completo sin navegador
 node entrenamiento/perft.js           # perft con dorados, ajedrez de Salas
 node test-rps.js                      # reglas de Piedra, papel y tijera
 node test-ia-rps.js                   # IA de esas modalidades (juega partidas: tarda)
+                                      # OJO: roto desde que se retiraron las modalidades
+                                      # sin rey (usa setVariant('rps')); pendiente de migrar
 node test-modalidades.js              # que las doce modalidades arrancan
 ```
 

@@ -167,6 +167,7 @@ const VARIANTS = {
   // =========================================================================
   salas: {
     id: 'salas',
+    grupo: 'Ajedrez triangular',
     name: 'Salas v2 (2026)',
     full: 'Ajedrez triangular de Salas v2 (2026)',
     board: 'hex4',
@@ -232,6 +233,7 @@ const VARIANTS = {
   // =========================================================================
   'salas-v4': {
     id: 'salas-v4',
+    grupo: 'Ajedrez triangular',
     name: 'Salas v3 (2026)',
     full: 'Ajedrez triangular de Salas v3 (2026)',
     board: 'hex4',
@@ -299,6 +301,7 @@ const VARIANTS = {
   // =========================================================================
   'salas-1998': {
     id: 'salas-1998',
+    grupo: 'Ajedrez triangular',
     name: 'Salas v1 (1998)',
     full: 'Ajedrez triangular de Salas v1 (1998)',
     board: 'rect8',
@@ -380,6 +383,7 @@ const VARIANTS = {
   // =========================================================================
   dekle: {
     id: 'dekle',
+    grupo: 'Ajedrez triangular',
     name: 'Dekle (1986)',
     full: 'Triangular Chess (George R. Dekle Sr., 1986)',
     board: 'hex4',
@@ -472,6 +476,7 @@ const VARIANTS = {
   // =========================================================================
   trigonal: {
     id: 'trigonal',
+    grupo: 'Ajedrez triangular',
     name: 'Trigonal (Koval, 2023)',
     full: 'Trigonal Chess (Max Koval, 2023)',
     board: 'tri9',
@@ -563,30 +568,35 @@ const VARIANTS = {
 // de Big Bang Theory). Las restricciones van en el mapa `captures` de cada
 // modalidad, que consulta canCapture() en rules.js.
 //
-// Dos parejas: sin rey (kingless: gana quien elimina TODAS las piezas del
-// rival, estado 'wiped') y con rey (el rey captura todo y todos capturan al
-// rey; el objetivo vuelve a ser el jaque mate; esa regla del rey no es un
-// caso especial: está escrita dentro del propio mapa `captures`).
+// Todas llevan rey: el rey captura todo y todos capturan al rey; el objetivo
+// vuelve a ser el jaque mate; esa regla del rey no es un caso especial: está
+// escrita dentro del propio mapa `captures`. Las dos modalidades SIN REY que
+// hubo aquí (ids 'rps' y 'rpsls', kingless: ganaba quien eliminaba TODAS las
+// piezas del rival) se retiraron el 26-8-2026 por decisión de Juan Luis: sin
+// jaque que cortara la partida, casi todas agotaban el tope de jugadas y no
+// resultaban jugables. El soporte `kingless` sigue en rules.js y ai.js por si
+// vuelven; hoy no lo usa ninguna modalidad.
+//
+// Cada juego viene en dos posiciones iniciales, que son modalidades distintas:
+// la del ciclo (medida en la arena) y la «Muralla de papel» (la formación del
+// ajedrez triangular: una fila entera de papeles delante y, detrás, piedras y
+// tijeras alternadas con el rey en el centro).
 //
 // Letras de tipo (fijas, viajan en las partidas guardadas): Piedra 'O',
 // Papel 'A', Tijera 'T', Lagarto 'L', Spock 'S', Rey 'K'.
 // ===========================================================================
 
-// POSICIONES INICIALES. Las dos SIN REY (rps, rpsls) siguen provisionales,
-// pendientes de que la arena termine de medir sus candidatas reducidas (ver
-// entrenamiento/rps-posiciones-resumen.md): las de 20 piezas quedaron
-// descartadas —casi el 100% de las partidas agota el tope de jugadas, al no
-// haber jaque que las corte— pero las candidatas reducidas que las
-// sustituyen (eq18-giro, fondo9-giro, frente11-giro y equivalentes en rpsls)
-// no llegaron a medirse: la criba se paró antes de alcanzarlas. Para
-// cambiarlas basta tocar estas listas: la fila delantera (11 casillas) y la
-// del fondo (9). Los dos bandos usan las mismas listas y las mismas
-// columnas, así que quedan figuras iguales enfrentadas, como en las
-// clásicas.
-const RPS_FRONT = Array(11).fill('A');            // una fila entera de papeles
-const RPS_BACK = ['O', 'T', 'O', 'T', 'O', 'T', 'O', 'T', 'O'];
-const RPSLS_FRONT = Array(11).fill('A');
-const RPSLS_BACK = ['O', 'T', 'L', 'S', 'O', 'S', 'L', 'T', 'O'];
+// POSICIONES INICIALES DE LA «MURALLA DE PAPEL»: la formación del ajedrez
+// triangular trasladada a estas figuras. Delante, la fila de 11 casillas que
+// en el ajedrez serían peones, entera de papeles; detrás, la fila de 9 con
+// piedras y tijeras alternadas (o el ciclo de cinco) y el rey en el centro.
+// Los dos bandos usan las mismas listas y las mismas columnas, así que quedan
+// figuras iguales enfrentadas, como en las clásicas. Estas listas venían de
+// las modalidades sin rey, ya retiradas; aquí estrenan rey.
+const MURALLA_FRONT = Array(11).fill('A');        // una fila entera de papeles
+const MURALLA_BACK = ['O', 'T', 'O', 'T', 'O', 'T', 'O', 'T', 'O'];
+const MURALLA5_FRONT = Array(11).fill('A');
+const MURALLA5_BACK = ['O', 'T', 'L', 'S', 'O', 'S', 'L', 'T', 'O'];
 // En las -rey, el rey ocupa el centro de la fila del fondo.
 const conRey = fila => fila.map((t, i) => (i === 4 ? 'K' : t));
 
@@ -671,50 +681,11 @@ function rpsVariant(extra) {
 }
 
 Object.assign(VARIANTS, {
-  rps: rpsVariant({
-    id: 'rps',
-    name: 'Piedra, papel y tijera',
-    full: 'Piedra, papel y tijera sobre el tablero triangular',
-    kingless: true,
-    captures: RPS_CAPTURES,
-    backLayout: RPS_BACK,
-    frontLayout: RPS_FRONT,
-    pieces: {
-      O: { leaps: c => c.kingNbrs },
-      A: { leaps: c => c.kingNbrs },
-      T: { leaps: c => c.kingNbrs },
-    },
-    note: 'Hexágono de 96 triángulos. Tres figuras que se mueven como el rey; ' +
-      'cada una solo captura a la que vence: piedra a tijera, tijera a papel ' +
-      'y papel a piedra. No hay jaque: gana quien deja al rival sin piezas.',
-    help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T],
-  }),
-
-  rpsls: rpsVariant({
-    id: 'rpsls',
-    name: 'Piedra, papel, tijera, lagarto, Spock',
-    full: 'Piedra, papel, tijera, lagarto, Spock sobre el tablero triangular',
-    kingless: true,
-    captures: RPSLS_CAPTURES,
-    backLayout: RPSLS_BACK,
-    frontLayout: RPSLS_FRONT,
-    pieces: {
-      O: { leaps: c => c.kingNbrs },
-      A: { leaps: c => c.kingNbrs },
-      T: { leaps: c => c.kingNbrs },
-      L: { leaps: c => c.kingNbrs },
-      S: { leaps: c => c.kingNbrs },
-    },
-    note: 'Como Piedra, papel y tijera pero con las cinco figuras de la regla ' +
-      'de Big Bang Theory: cada una captura exactamente a dos y es capturada ' +
-      'por otras dos. Gana quien deja al rival sin piezas.',
-    help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5],
-  }),
-
   'rps-rey': rpsVariant({
     id: 'rps-rey',
-    name: 'Piedra, papel y tijera con rey',
-    full: 'Piedra, papel y tijera con rey sobre el tablero triangular',
+    grupo: 'Piedra, papel y tijera',
+    name: 'PPTR',
+    full: 'Piedra, papel, tijera y rey',
     captures: capturesConRey(RPS_CAPTURES),
     backLayout: conRey(RPS_REY_BACK),
     frontLayout: RPS_REY_FRONT,
@@ -732,8 +703,9 @@ Object.assign(VARIANTS, {
 
   'rpsls-rey': rpsVariant({
     id: 'rpsls-rey',
-    name: 'Piedra, papel, tijera, lagarto, Spock con rey',
-    full: 'Piedra, papel, tijera, lagarto, Spock con rey sobre el tablero triangular',
+    grupo: 'Piedra, papel y tijera',
+    name: 'PPTLSR',
+    full: 'Piedra, papel, tijera, lagarto, Spock y rey',
     captures: capturesConRey(RPSLS_CAPTURES),
     backLayout: conRey(RPSLS_REY_BACK),
     frontLayout: RPSLS_REY_FRONT,
@@ -750,6 +722,57 @@ Object.assign(VARIANTS, {
       'él (todas dan jaque). El objetivo es el jaque mate.',
     help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5, RPS_HELP.K],
   }),
+
+  // Las dos «Muralla de papel»: mismas reglas que las de arriba, otra posición
+  // inicial. La fila delantera, entera de papeles, no puede capturar papeles,
+  // así que las dos murallas se encuentran y quedan trabadas: la partida la
+  // abren las tijeras, que son las únicas que perforan papel, mientras las
+  // piedras hacen de escudo. Apertura de bloqueo y ruptura, muy distinta de la
+  // del ciclo.
+  'rps-rey-muralla': rpsVariant({
+    id: 'rps-rey-muralla',
+    grupo: 'Piedra, papel y tijera',
+    name: 'PPTR · Muralla de papel',
+    full: 'Piedra, papel, tijera y rey · Muralla de papel',
+    captures: capturesConRey(RPS_CAPTURES),
+    backLayout: conRey(MURALLA_BACK),
+    frontLayout: MURALLA_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+      K: { leaps: c => c.kingNbrs },
+    },
+    note: 'Las mismas reglas que PPTR, con la formación del ajedrez ' +
+      'triangular: una fila entera de papeles delante y, detrás, piedras y ' +
+      'tijeras alternadas con el rey en el centro. Como el papel no captura ' +
+      'papeles, los dos frentes quedan trabados y son las tijeras las que ' +
+      'tienen que abrir la brecha.',
+    help: [RPS_HELP.O, RPS_HELP.A, RPS_HELP.T, RPS_HELP.K],
+  }),
+
+  'rpsls-rey-muralla': rpsVariant({
+    id: 'rpsls-rey-muralla',
+    grupo: 'Piedra, papel y tijera',
+    name: 'PPTLSR · Muralla de papel',
+    full: 'Piedra, papel, tijera, lagarto, Spock y rey · Muralla de papel',
+    captures: capturesConRey(RPSLS_CAPTURES),
+    backLayout: conRey(MURALLA5_BACK),
+    frontLayout: MURALLA5_FRONT,
+    pieces: {
+      O: { leaps: c => c.kingNbrs },
+      A: { leaps: c => c.kingNbrs },
+      T: { leaps: c => c.kingNbrs },
+      L: { leaps: c => c.kingNbrs },
+      S: { leaps: c => c.kingNbrs },
+      K: { leaps: c => c.kingNbrs },
+    },
+    note: 'Las mismas reglas que PPTLSR, con la formación del ajedrez ' +
+      'triangular: una fila entera de papeles delante y, detrás, el ciclo de ' +
+      'cinco figuras con el rey en el centro. Aquí el frente de papel no está ' +
+      'tan trabado: además de las tijeras, los lagartos devoran papel.',
+    help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5, RPS_HELP.K],
+  }),
 });
 
 // Distancia en la retícula (mitad de la suma de diferencias absolutas).
@@ -764,9 +787,14 @@ let V = null;
 
 function variantList() {
   // `hidden`: modalidades que no salen en los selectores (las demos de
-  // tessellations.js); se abren con ?modalidad=<id> en la URL.
+  // tessellations.js y las combinaciones PPT × tablero, que se eligen con el
+  // selector de tablero); se abren con ?modalidad=<id> en la URL.
+  //
+  // `grupo` es el epígrafe del desplegable: con dos familias de modalidades
+  // (las del ajedrez triangular y las de Piedra, papel y tijera) la lista
+  // plana ya no se leía. Las que no declaren grupo caen en «Otras».
   return Object.keys(VARIANTS).filter(id => !VARIANTS[id].hidden)
-    .map(id => ({ id, name: VARIANTS[id].name }));
+    .map(id => ({ id, name: VARIANTS[id].name, grupo: VARIANTS[id].grupo || 'Otras' }));
 }
 
 function setVariant(id) {
