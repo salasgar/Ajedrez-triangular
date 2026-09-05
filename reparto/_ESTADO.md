@@ -9,7 +9,14 @@ carpeta `reparto/hechos/`: un fichero por hecho, cada uno con el identificador d
 sesión que lo escribió en el nombre. Si la tabla de abajo contradice a `hechos/`, gana
 `hechos/` y este tablón hay que regenerarlo.
 
-Regenerado: 2026-08-26T22:25Z · por la sesión s-20260826T180921-40da01d4 al cerrar la
+Regenerado: 2026-09-05T11:40Z · por la sesión s-20260905T113829-6fd2b04e al añadir
+las tareas 23 y 24 (dos encargos directos de Juan Luis ese día; ninguna sesión del
+reparto había tocado el tablón entre el 2026-08-26 y hoy — los commits `7cf7f3c`,
+`d00403c` y `5334e32` de ese intervalo son trabajo hecho FUERA del reparto,
+directamente con Juan Luis, y no cambian nada de lo que sigue). **Reclamada la 24**
+por esa misma sesión; la 23 queda libre.
+
+Regenerado antes, 2026-08-26T22:25Z · por la sesión s-20260826T180921-40da01d4 al cerrar la
 22: el ACOSO AL REY RIVAL (idea de Juan Luis) le da al modelo proporcional la
 iniciativa que le faltaba y el candidato completo (PROPORCIONAL + ACOSO ×10 +
 PROP_PESOS) **GANA por 346 elo** [294, 414] al aditivo — queda ENCENDIDO POR
@@ -144,10 +151,22 @@ equivalencia de hoy está en `proyecto.md`.
 | 20 | Candidato en arena: quiescencia con jugadas tranquilas (arreglo de fondo de la 13) | tareas/tarea-20-arena-quiescencia.md | 19 LISTA, o 22 si la 19 quedó sin objeto | 8 h | ALTO | `main` (ai.js, quiesce) + `entrenamiento/` | manual | **PENDIENTE (premisa cambiada por la 22: releer su ficha y la terminada de la 22 antes de reclamar)** | |
 | 21 | Candidato en arena: evaluación PROPORCIONAL (media geométrica de cocientes; idea de Juan Luis) | tareas/tarea-21-evaluacion-proporcional.md | 18 LISTA | 8 h | MEDIO | `main` (ai.js, evaluación tras bandera) + `entrenamiento/` | manual | **LISTA** | |
 | 22 | Candidato en arena: acoso al rey rival (arregla la falta de contacto que diagnosticó la 21) | tareas/tarea-22-acoso-al-rey-rival.md | 21 LISTA | 8 h | ALTO | `main` (ai.js, término nuevo en q_pos) + `entrenamiento/` | manual | **LISTA** | |
+| 23 | Verificar si la IA sigue renunciando a capturas gratis en PPT tras el acoso al rey rival | tareas/tarea-23-verificar-capturas-gratis-ppt.md | 22 LISTA (ya lo está) | 2 h | MEDIO | `entrenamiento/` (informe, sin tocar ai.js) | manual | PENDIENTE | |
+| 24 | «Diseñar tablero» y «Problemas» a veces muestran piezas de otro modo, no de la PPT activa | tareas/tarea-24-editor-hereda-modalidad-equivocada.md | ninguna | 3 h | MEDIO | `main` (script.js, editor.js, y crear-problema.js/problemas-ui.js si aplica) | manual | **EN CURSO** | s-20260905T113829-6fd2b04e · 2026-09-05T17:40Z |
 
 Las tareas 11-14 entraron el 2026-08-25 a partir de los cuatro problemas y la
 sugerencia (cosecha) reportados por Juan Luis; el porqué del corte, en
 `hechos/incidencias/s-20260824T233011-d4d13c52.md` y en `proyecto.md`.
+
+Las tareas 23 y 24 entraron el 2026-09-05 (sesión s-20260905T113829-6fd2b04e), a
+partir de dos problemas reportados por Juan Luis ese día: si el arreglo de
+capturas gratis de la 13 sigue mitigando el síntoma ahora que el motor cambió dos
+veces más (21, rechazada; 22, vigente), y un bug de interfaz por el que abrir el
+editor de tablero (o crear un problema) desde una modalidad PPT puede mostrar
+piezas de una modalidad clásica — diagnóstico de causa probable ya en la ficha de
+la 24 (`editor.js:549` cae a `DEFAULT_VARIANT='salas'` cuando `btn-design` navega
+a `editor.html` sin pasarle la modalidad activa). Sin dependencia entre ellas ni
+con ninguna otra tarea libre; se cogió la 24.
 
 **La 21 está LISTA** (cerrada el 2026-08-26T18:05Z: la evaluación proporcional PIERDE
 por 81 elo [+50,+114], p=0,000, y su bandera queda apagada). **La cadena en serie se
@@ -431,6 +450,16 @@ Formato: `LISTA · tarea NN · AAAA-MM-DD HH:MM · sid · recuento · salida`
 
 Derivado de `hechos/incidencias/`.
 
+- s-20260905T113829-6fd2b04e (al montar las tareas 23 y 24): dos rastros de diez días
+  atrás sin integrar. (1) `hechos/notas/s-20260826T093311-622dce37.md` (sin reclamo,
+  sin terminada): el contador «capturas gratis ignoradas» que cerró la 13 está
+  sesgado (75-93% de esas capturas PIERDEN material en la moneda dinámica real del
+  juego), su bajada de pesos nunca se validó en arena — no cambia el estado de la 13
+  (sigue LISTA) pero sí el método obligatorio de la tarea 23 nueva, incorporado en su
+  ficha. (2) `entrenamiento/capturas-gratis/` (README + datos de esa medición) sigue
+  SIN COMMITEAR a propósito, a la espera de que Juan Luis decida si entra; queda como
+  dato de solo lectura de la 23. Detalle en
+  `hechos/incidencias/s-20260905T113829-6fd2b04e.md`.
 - s-20260826T180921-40da01d4 (tarea 22, banda ALTO): dos incidencias en el mismo
   fichero. (1) El commit de cierre de la 21 quedó HUÉRFANO: preparado entero en el
   índice, con la terminada escrita y «main = PENDIENTE», y la sesión que lo preparó
