@@ -252,14 +252,29 @@ function updateStatus() {
   el.textContent = `${count} pieza${count === 1 ? '' : 's'} en el tablero`;
 }
 
+// Si V es una combinación oculta de familia × teselación (una hermana PPT en
+// tablero no triangular — variantList() no las lista, ver variants.js), no hay
+// ninguna opción del desplegable con su propio id: se marca la hermana visible
+// de su familia, igual que hace script.js en applyVariant(). El editor no
+// tiene selector de tablero propio (a diferencia de index.html): esto solo
+// evita que el desplegable muestre una modalidad que no es la activa; las
+// piezas y el tablero, que no dependen de este desplegable, ya son correctos.
+function idVisibleParaSelector() {
+  if (!V) return null;
+  return V.familia
+    ? (tablerosDeFamilia(V.familia).find(h => !VARIANTS[h.id].hidden) || { id: V.id }).id
+    : V.id;
+}
+
 function fillVariantSelect() {
   const sel = document.getElementById('variant');
   sel.innerHTML = '';
+  const visibleId = idVisibleParaSelector();
   for (const { id, name } of variantList()) {
     const o = document.createElement('option');
     o.value = id;
     o.textContent = name;
-    if (V && id === V.id) o.selected = true;
+    if (id === visibleId) o.selected = true;
     sel.appendChild(o);
   }
 }
@@ -315,7 +330,7 @@ function aplicarPosicion(data) {
   board = new Map(data.board);
   turn = data.turn;
   document.querySelector(`input[name="turn"][value="${turn}"]`).checked = true;
-  document.getElementById('variant').value = V.id;
+  document.getElementById('variant').value = idVisibleParaSelector();
   buildEditorSvg();
   buildPalette();
   redraw();
@@ -456,7 +471,7 @@ function tryEnterEditSession() {
   board = new Map(snap.board.map(([k, p]) => [k, { ...p }]));   // conserva 'moved'
   turn = snap.turn;
   document.querySelector(`input[name="turn"][value="${turn}"]`).checked = true;
-  document.getElementById('variant').value = V.id;
+  document.getElementById('variant').value = idVisibleParaSelector();
   document.getElementById('variant').disabled = true;
 
   buildEditorSvg();
@@ -544,8 +559,24 @@ function rowCells(b) {
   return CELLS.filter(c => c.b === b).sort((a, c) => a.cx - c.cx);
 }
 
+// Al cargar, variants.js ya ha dejado V en DEFAULT_VARIANT ('salas', una
+// modalidad clásica) incondicionalmente. "Diseñar tablero" (btn-design en
+// script.js) no viaja con ningún sobre —a diferencia de "Editar tablero", que
+// entra por tryEnterEditSession()—, así que sin esto el editor se queda en
+// 'salas' aunque se viniera de una modalidad PPT: se ven piezas clásicas en
+// vez de las de la modalidad activa. EDITOR_LAST_VARIANT_KEY guarda esa
+// modalidad; tryEnterEditSession() la sobreescribe después si hay sesión de
+// edición de verdad, que manda.
+function tryApplyLastVariant() {
+  const id = localStorage.getItem(EDITOR_LAST_VARIANT_KEY);
+  if (id && VARIANTS[id]) setVariant(id);
+}
+
 // Inicialización
-// Asegurar que V está inicializado (debería estarlo por variants.js, pero por si acaso)
+tryApplyLastVariant();
+// Por si el paso de arriba no dejó nada (primera visita, localStorage vacío):
+// asegurar que V está inicializado (debería estarlo por variants.js, pero por
+// si acaso).
 if (!V) setVariant(DEFAULT_VARIANT || 'salas');
 
 fillVariantSelect();

@@ -1610,6 +1610,10 @@ function tryLoadDesignedPosition() {
 }
 
 document.getElementById('btn-design').addEventListener('click', () => {
+  // Sin esto, editor.html no tiene forma de saber qué modalidad estaba activa
+  // (a diferencia de "Editar tablero", que sí viaja con un sobre) y cae a
+  // DEFAULT_VARIANT ('salas'): piezas clásicas aunque se viniera de una PPT.
+  localStorage.setItem(EDITOR_LAST_VARIANT_KEY, V.id);
   window.location.href = 'editor.html';
 });
 

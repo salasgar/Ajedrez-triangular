@@ -13,6 +13,11 @@ const DESIGN_POSITION_KEY = 'ajedrez-triangular:posicion-disenada';
 // { app, kind:'edicion', version:1, savedAt, envelope, board?, turn? }
 //   envelope : lo que devuelve serializeGame(mode, levelW, levelB)
 const EDIT_SESSION_KEY = 'ajedrez-triangular:edicion';
+// "Diseñar tablero" desde cero (btn-design, sin partida ni posición de por medio):
+// script.js deja aquí la modalidad activa justo antes de saltar a editor.html, para
+// que el editor arranque en ELLA en vez de caer a DEFAULT_VARIANT. Solo el id; se
+// sobrescribe en cada clic, no hace falta borrarlo después.
+const EDITOR_LAST_VARIANT_KEY = 'ajedrez-triangular:editor-ultima-modalidad';
 // v2: el sobre guarda con qué MODALIDAD se jugó la partida. Las de v1 ya no se
 // cargan: no dicen su modalidad, y aunque todas fueran del ajedrez de Salas,
 // desde la versión 2 ese reglamento incluye la coronación de flanco, así que

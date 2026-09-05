@@ -103,6 +103,13 @@
 
     <script src="geometry.js"></script>
     <script src="variants.js"></script>
+    <!-- Registra en VARIANTS las combinaciones PPT × teselación (las nueve
+         hermanas de cada modalidad PPT en tableros no triangulares) y las
+         demos de tessellations.js. Sin este script, VARIANTS no las tiene:
+         setVariant() con uno de esos ids no encuentra nada y el editor caía
+         a DEFAULT_VARIANT ('salas'), con piezas clásicas en vez de las de la
+         modalidad PPT activa (tarea 24 del reparto). -->
+    <script src="tessellations.js"></script>
     <script src="rules.js"></script>
     <script src="saveload.js"></script>
     <script src="editor.js"></script>
