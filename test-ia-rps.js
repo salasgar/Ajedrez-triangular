@@ -140,6 +140,12 @@ if (process.argv[2] === 'goldens') {
 // evaluación que ya no existe. El resto de las clásicas siguen con el dorado
 // original, y al remedir salieron idénticas (comprobado). Las puntuaciones de
 // dekle ya no son enteras porque su movilidad medida es 7.63.
+//
+// EXCEPCIÓN 2: la media jugada 2 de `salas-1998` pasó de puntuación 0 a −20 el
+// 2026-09-06, al dejar de guardar en la tabla de transposición las entradas
+// escritas con el presupuesto de nodos ya agotado (negamax devuelve 0 en ese
+// estado, y la tabla persiste entre jugadas). Aquel 0 era exactamente esa
+// basura, leída de la búsqueda anterior; la jugada elegida no cambia.
 
 const GOLDENS = {
  "salas": [
@@ -160,7 +166,7 @@ const GOLDENS = {
  ],
  "salas-1998": [
   "1,-2,2>1,-1,2|80|0",
-  "-1,3,0>0,1,1|0|-36",
+  "-1,3,0>0,1,1|-20|-36",
   "2,-3,2>-2,1,2|20|-4",
   "-1,4,-1>-1,2,1|-24|-80",
   "-2,1,2>1,1,-1|12|20",

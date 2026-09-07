@@ -28,13 +28,13 @@ const AI_WORKER_FNS = [
   rpsPropInfo, rpsPropPeso, rpsPropCuentas, rpsPropScoreCuentas, rpsPropPosicional, evaluateRpsProporcional,
   capturedBy, orderMoves,
   countSlide, countPseudoMoves, rayCaptures, genCaptures, quiesce, negamax,
-  pickSoftmax, chooseAiMove,
+  pickSoftmax, playTolerance, chooseAiMove,
 ];
 // Constantes que no dependen de la modalidad. Las que sí (N, los valores de
 // las piezas, el enroque…) viajan dentro de V, en el mensaje inicial.
 const AI_WORKER_CONSTS = {
   MATE, DRAW_CONTEMPT, DRAW_CAP, QUIESCE_MAX_DEPTH, DELTA_MARGIN,
-  FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE,
+  FIFTY_MOVE_LIMIT, AI_LEVELS, PLAY_TOLERANCE, PLAY_TOLERANCE_PPT,
   MOVED_MATTERS, ZOBRIST_SEED, TT_BITS, TT_SIZE, TT_MASK, Z_CODE, Z_UNMOVED,
   Z_PER_CELL,
   // Pesos de las modalidades PPT: los por defecto y el objeto activo. RPS_CFG

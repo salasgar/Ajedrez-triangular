@@ -1788,7 +1788,17 @@ function negamax(board, color, ep, clock, keys, depth, alpha, beta, cfg, sx, ply
   // política de reemplazo: la entrada previa gana solo si es de esta misma
   // búsqueda Y más profunda; lo viejo se pisa (su valor de ordenación ya se
   // aprovechó en el sondeo de arriba)
-  if (!hit || TT.age[idx] !== ttAge || (TT.meta[idx] >> 2) <= depth) {
+  //
+  // NUNCA con el presupuesto agotado. A partir de ahí cada hijo devuelve el 0
+  // de arriba, así que `best` es basura, y aunque chooseAiMove descarta la
+  // iteración entera, la tabla PERSISTE entre jugadas: la siguiente búsqueda
+  // se encontraba esas entradas —profundas y con score 0— y las creía. En
+  // PPT era muy visible: con la tabla caliente, la mejor jugada raíz salía
+  // 0,0 en cada turno y el motor dejaba pasar capturas de una pieza entera
+  // (partida del 6-9-2026 contra el nivel 5). Las entradas escritas ANTES
+  // de agotarse sí valen: sus subárboles se terminaron.
+  if (!sx.agotado &&
+      (!hit || TT.age[idx] !== ttAge || (TT.meta[idx] >> 2) <= depth)) {
     TT.gen[idx] = ttGen;
     TT.age[idx] = ttAge;
     TT.h2[idx] = kh2;
@@ -1839,6 +1849,16 @@ function stateAtIndex(i) {
 // Margen (en centipeones) dentro del cual una jugada se considera tan buena
 // como la mejor a efectos del sorteo de chooseAiMove.
 const PLAY_TOLERANCE = 25;
+// En las modalidades PPT (las que tienen matriz de capturas) la banda es más
+// estrecha. La escala del modelo proporcional está comprimida: una captura
+// vale ~100 al principio, pero las jugadas tranquilas se separan por 1-10
+// puntos, y con 25 entraban casi todas en el sorteo —el nivel 5 jugaba poco
+// mejor que al azar entre las razonables, y una captura que ganaba por 17-22
+// puntos salía una de cada cinco veces (partida del 6-9-2026)—. Decisión de
+// Juan Luis del 6-9-2026, SIN medir en la arena, a propósito.
+const PLAY_TOLERANCE_PPT = 5;
+// La banda que toca según la modalidad activa (el worker tiene V clonada).
+function playTolerance() { return V.captures ? PLAY_TOLERANCE_PPT : PLAY_TOLERANCE; }
 
 // Elige la jugada del ordenador según el nivel, para la posición actual o
 // para el estado `st` dado. Devuelve {from, to} o null si no hay jugadas.
@@ -1992,6 +2012,7 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   let best = -Infinity;
   let scored = [];
   const u = sx.undo[0];
+  const tol = playTolerance();   // 25 en las clásicas, 5 en las PPT
   // La profundidad 1 se termina SIEMPRE, agote lo que agote: sin ella no hay
   // ninguna jugada que devolver. El presupuesto empieza a regir a partir de
   // la 2, que es donde de verdad se gasta el tiempo.
@@ -2014,7 +2035,7 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
       // análisis, 2-3 veces más que la ventana justa.
       const score = -negamax(board, rival(st.turn), nextEp, nextClock, keys,
         d - 1, -Infinity,
-        (opts.analyze || cfg.temperature) ? Infinity : -best + PLAY_TOLERANCE + 1,
+        (opts.analyze || cfg.temperature) ? Infinity : -best + tol + 1,
         cfg, sx, 1);
       unmakeSim(board, u, kings);
       sx.h1 = ph1; sx.h2 = ph2;
@@ -2041,7 +2062,7 @@ function chooseAiMove(level, st = searchState(), opts = {}) {
   // buscadas antes con un `best` más bajo tenían una ventana MÁS ancha, así
   // que su puntuación sigue siendo exacta (o una cota aún más baja) y el
   // filtro las trata igual de bien
-  const top = scored.filter(s => s.score >= best - PLAY_TOLERANCE);
+  const top = scored.filter(s => s.score >= best - tol);
   const chosen = cfg.temperature
     ? pickSoftmax(scored, best, cfg.temperature)
     : top[Math.floor(Math.random() * top.length)].move;

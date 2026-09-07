@@ -1005,7 +1005,7 @@ const sheetCache = [];
 // comparando la de la posición anterior con la de la resultante.
 //
 // No sirve comparar la jugada con la mejor de su propia lista: el ordenador
-// siempre elige dentro de PLAY_TOLERANCE (25 cp) de la mejor, así que por
+// siempre elige dentro de PLAY_TOLERANCE (25 cp; 5 en las PPT) de la mejor, así que por
 // construcción nunca se desviaría lo bastante. La comparación entre
 // posiciones consecutivas, en cambio, mide lo que de verdad pasó —y es lo
 // que hacen los analizadores de partidas—: la evaluación de después la hizo
