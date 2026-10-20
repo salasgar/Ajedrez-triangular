@@ -9,6 +9,8 @@
 // Se carga DESPUÉS de script.js porque usa sus funciones y sus nodos (render,
 // makeMove, cellPolys…). Al revés no valdría: script.js monta el tablero en su
 // última línea y aquí hace falta que ya exista.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // --- el almacén ------------------------------------------------------------
 //

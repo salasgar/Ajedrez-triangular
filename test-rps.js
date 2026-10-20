@@ -13,6 +13,8 @@
 //   · el jaque y la captura universal del rey en las modalidades -rey
 //   · que las modalidades clásicas quedan intactas (recuento de jugadas
 //     legales de la posición inicial, medido antes de este cambio)
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 const fs = require('fs');
 const vm = require('vm');

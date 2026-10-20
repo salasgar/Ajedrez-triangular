@@ -7,6 +7,8 @@
 // disco (file://), donde el navegador prohíbe los workers con URL de archivo.
 // Si aun así no se puede crear, se recurre al cálculo síncrono de siempre
 // (que congela la página mientras piensa, pero funciona).
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // Todo lo que necesita chooseAiMove dentro del worker (de rules.js y ai.js).
 // Si la búsqueda gana dependencias nuevas, hay que añadirlas aquí.

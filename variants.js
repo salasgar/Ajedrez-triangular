@@ -19,6 +19,10 @@
 //
 // Gracias a eso la generación de jugadas y la búsqueda son las mismas para
 // todas las modalidades; lo único que cambia son las tablas.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
+// Las reglas de Triangular Chess (George R. Dekle Sr., 1986) y de Trigonal
+// Chess (Max Koval, 2023) son de sus autores; aquí solo se programan.
 
 // El selector de variación U+FE0E fuerza la presentación de TEXTO (no emoji):
 // sin él, iOS/Safari pinta el peón ♟ como emoji coloreado de fábrica e ignora
@@ -565,7 +569,8 @@ const VARIANTS = {
 // por arista o por vértice), pero cada una solo puede capturar a las que
 // vence en el juego de siempre: piedra 🪨 a tijera, tijera ✂️ a papel y papel
 // 📄 a piedra (y en la versión de cinco, el lagarto 🦎 y Spock 🖖 con la regla
-// de Big Bang Theory). Las restricciones van en el mapa `captures` de cada
+// de «Piedra, papel, tijera, lagarto, Spock», de Sam Kass y Karen Bryla, que
+// popularizó Big Bang Theory). Las restricciones van en el mapa `captures` de cada
 // modalidad, que consulta canCapture() en rules.js.
 //
 // Todas llevan rey: el rey captura todo y todos capturan al rey; el objetivo
@@ -745,7 +750,8 @@ Object.assign(VARIANTS, {
       S: { leaps: c => c.kingNbrs },
       K: { leaps: c => c.kingNbrs },
     },
-    note: 'Las cinco figuras de la regla de Big Bang Theory más un rey por ' +
+    note: 'Las cinco figuras de «Piedra, papel, tijera, lagarto, Spock» (de Sam ' +
+      'Kass y Karen Bryla, popularizado por Big Bang Theory) más un rey por ' +
       'bando: el rey captura cualquier pieza y cualquier pieza lo captura a ' +
       'él (todas dan jaque). El objetivo es el jaque mate.',
     help: [RPS_HELP.O5, RPS_HELP.A5, RPS_HELP.T5, RPS_HELP.L5, RPS_HELP.S5, RPS_HELP.K],

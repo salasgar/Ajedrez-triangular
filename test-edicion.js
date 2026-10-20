@@ -7,6 +7,8 @@
 // Carga geometry.js + variants.js + rules.js en un único ámbito con eval(),
 // igual que tune-values.js y arena.js: son scripts clásicos pensados para
 // compartir el ámbito global vía <script>, sin module.exports.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 const fs = require('fs');
 const path = require('path');
 const src = ['geometry.js', 'variants.js', 'rules.js']

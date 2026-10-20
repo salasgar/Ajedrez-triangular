@@ -13,6 +13,8 @@
 //
 // SIN DEPENDENCIAS, como el resto: se cargan las mismas fuentes que carga
 // index.html, en el mismo orden, dentro de un contexto de vm.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 'use strict';
 const fs = require('fs');
 const vm = require('vm');

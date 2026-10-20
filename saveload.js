@@ -3,6 +3,8 @@
 // Formato de guardado: un "sobre" versionado con el historial completo de la
 // partida (los snapshots de rules.js ya son serializables a JSON) más la
 // configuración de modalidad y niveles del ordenador.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 const SAVE_PREFIX = 'ajedrez-triangular:save:';
 const DESIGN_POSITION_KEY = 'ajedrez-triangular:posicion-disenada';

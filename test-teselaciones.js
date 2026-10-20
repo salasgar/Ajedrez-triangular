@@ -22,6 +22,8 @@
 //
 // Y a las modalidades PPT sobre ellos: que arranquen, que los dos bandos
 // tengan lo mismo, que haya dos reyes y que la IA sepa jugar.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 'use strict';
 const fs = require('fs');
 const vm = require('vm');

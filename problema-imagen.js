@@ -17,6 +17,8 @@
 // problemas-ui.js: si esos textos están cargados los aprovecha, y si no los
 // genera por su cuenta, de modo que el mismo archivo sirve en el juego y en el
 // editor de posiciones.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // Ancho del PNG en píxeles. 1000 da un diagrama que se lee bien en pantalla y
 // aguanta imprimirse a media página sin que se vean los dientes de sierra.

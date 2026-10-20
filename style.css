@@ -1,3 +1,5 @@
+/* style.css — Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE). */
+
 * {
     margin: 0;
     padding: 0;
@@ -17,6 +19,19 @@ body {
 
 h1 {
     margin-bottom: 20px;
+}
+
+/* Autoría, al pie de la página: discreta, que no compita con el tablero. */
+.pie-autoria {
+    margin-top: 32px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #888;
+    text-align: center;
+}
+
+.pie-autoria a {
+    color: inherit;
 }
 
 .layout {

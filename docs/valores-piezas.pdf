@@ -9,10 +9,10 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>
 endobj
 4 0 obj
-<< /Length 8895 >>
+<< /Length 9078 >>
 stream
 BT 0 g /F2 18 Tf 1 0 0 1 40 782 Tm (Valores de las piezas por modalidad) Tj ET
-BT 0.45 g /F1 9 Tf 1 0 0 1 40 764 Tm (Ajedrez triangular · generado el 2026-08-27 a partir de variants.js) Tj ET
+BT 0.45 g /F1 9 Tf 1 0 0 1 40 764 Tm (Ajedrez triangular · generado el 2026-10-20 a partir de variants.js) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 40 738 Tm (En centipeones: el peón vale 100 por definición y todo lo demás se mide) Tj ET
 BT 0 g /F1 10 Tf 1 0 0 1 40 725 Tm (contra él. Son los números con los que la IA decide si una jugada le conviene.) Tj ET
 0.92 g 40 693 515 22 re f
@@ -146,6 +146,7 @@ BT 0 g /F1 9 Tf 1 0 0 1 40 135 Tm (Una pieza no vale lo mismo en dos tableros di
 BT 0 g /F1 9 Tf 1 0 0 1 40 123 Tm (zigzag; el de Dekle no está atado al color de la casilla; la torre de Salas v1 \(1998\) es la) Tj ET
 BT 0 g /F1 9 Tf 1 0 0 1 40 111 Tm (pieza que en 2026 se llama elefante, y se mueve sobre 64 casillas en vez de 96. Los) Tj ET
 BT 0 g /F1 9 Tf 1 0 0 1 40 99 Tm (valores se miden modalidad por modalidad, no se traspasan.) Tj ET
+BT 0.45 g /F1 7 Tf 1 0 0 1 40 28 Tm (© 1998-2026 Juan Luis Salas García. Las modalidades Dekle \(George R. Dekle Sr., 1986\) y Trigonal \(Max Koval, 2023\) son de sus autores.) Tj ET
 endstream
 endobj
 5 0 obj
@@ -161,10 +162,10 @@ xref
 0000000058 00000 n 
 0000000115 00000 n 
 0000000251 00000 n 
-0000009198 00000 n 
-0000009295 00000 n 
+0000009381 00000 n 
+0000009478 00000 n 
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-9397
+9580
 %%EOF

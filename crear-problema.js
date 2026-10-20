@@ -15,6 +15,8 @@
 //
 // Depende de geometry.js, variants.js, rules.js, ai.js, problemas.js y
 // problema-imagen.js, y de los globales `board` y `turn` de editor.js.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // Presupuesto de nodos para comprobar una posición hecha a mano. Es mucho más
 // alto que el del generador automático (PROB_TOPE, 60 000): allí una posición

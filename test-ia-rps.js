@@ -26,6 +26,8 @@
 //     aplica la regla de los 50 movimientos en las modalidades sin rey
 //   · partidas completas IA contra IA en las cuatro modalidades nuevas
 //   · un match 'rps' de la evaluación dinámica contra los valores planos
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 const fs = require('fs');
 const vm = require('vm');

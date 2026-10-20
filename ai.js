@@ -3,6 +3,8 @@
 // Trabaja siempre sobre copias del tablero (Map) y con un estado de captura
 // al paso explícito, sin tocar el objeto global `game` salvo para leerlo
 // en chooseAiMove.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // Valor de cada pieza en centipeones. Vive en la modalidad (variants.js),
 // porque cada una tiene su juego de piezas: el unicornio de Dekle o el alfil

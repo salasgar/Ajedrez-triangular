@@ -11,7 +11,9 @@
 // PARA PUBLICAR UN CAMBIO HAY QUE SUBIR VERSION. Si no, los navegadores que ya
 // tengan la versión anterior seguirán sirviendo los ficheros viejos de su
 // caché y no verán la actualización.
-const VERSION = 'ajedrez-triangular-v12';
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
+const VERSION = 'ajedrez-triangular-v13';
 
 const FICHEROS = [
   './',

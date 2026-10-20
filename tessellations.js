@@ -40,6 +40,8 @@
 // un punto interior de un lado (los ladrillos llevan el punto medio de sus
 // lados largos). Los vértices se comparan redondeados a centésimas de px,
 // que absorbe el error de coma flotante de los centros hexagonales.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // --- construcción genérica -------------------------------------------------
 

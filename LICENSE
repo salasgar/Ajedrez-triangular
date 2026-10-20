@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Note: the MIT License above covers the source code of this program and the
+rules of the Salas variants (v1, v2, v3) and of the Rock-paper-scissors (PPT)
+variants, all by Juan Luis Salas García. The rules of Triangular Chess
+(George R. Dekle Sr., 1986) and of Trigonal Chess (Max Koval, 2023) belong to
+their respective authors; this program only implements them. The five-way
+cycle of the PPTLSR variants comes from "Rock Paper Scissors Lizard Spock",
+by Sam Kass and Karen Bryla.

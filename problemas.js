@@ -14,6 +14,8 @@
 // problemas en segundo plano (ver problemas-ui.js). Depende de rules.js
 // (movimientos legales), de ai.js (movesForSide, applyMoveSim, PV) y de las
 // tablas por casilla que monta variants.js.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // --- objetivos -------------------------------------------------------------
 //

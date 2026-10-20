@@ -8,6 +8,8 @@
 //
 // Herramienta de desarrollo, se ejecuta a mano: `node tune-values.js`.
 // No toca ai.js; solo imprime los valores sugeridos.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 'use strict';
 const fs = require('fs');

@@ -142,7 +142,8 @@ el rey captura cualquier pieza rival y cualquier pieza rival puede capturarlo a
   tijera ✂️. La piedra captura la tijera, la tijera el papel y el papel la
   piedra.
 - **PPTLSR** (`rpsls-rey`), *Piedra, papel, tijera, lagarto, Spock y rey*: las
-  cinco figuras de la regla de Big Bang Theory. La tijera corta el papel y
+  cinco figuras de *Piedra, papel, tijera, lagarto, Spock*, juego de Sam Kass
+  y Karen Bryla que popularizó Big Bang Theory. La tijera corta el papel y
   decapita al lagarto; el papel tapa la piedra y desautoriza a Spock; la piedra
   aplasta al lagarto y a la tijera; el lagarto envenena a Spock y devora el
   papel; Spock rompe la tijera y vaporiza la piedra. Cada figura captura
@@ -547,3 +548,17 @@ cosas no siempre coinciden (el peso de movilidad, por ejemplo, lo aprendió en
 el sentido contrario al que gana partidas). Los valores de `PIECE_VALUE` y el
 peso de movilidad por defecto de hoy salieron así y ya pasaron esa
 confirmación a profundidad 2 y 3.
+
+## Autoría y licencia
+
+© 1998–2026 **Juan Luis Salas García**. Son suyos el programa y las reglas de
+las modalidades Salas v1 (1998), Salas v2 y v3 (2026) y las de Piedra, papel y
+tijera (PPTR, PPTLSR y sus Murallas de papel). El ciclo de cinco figuras de
+PPTLSR, en cambio, viene de *Piedra, papel, tijera, lagarto, Spock*, de Sam Kass
+y Karen Bryla.
+
+Dos modalidades son obra ajena y se incluyen como reconstrucciones:
+**Triangular Chess**, de George R. Dekle Sr. (1986), y **Trigonal Chess**, de
+Max Koval (2023). Sus reglas pertenecen a sus autores; aquí solo se programan.
+
+El código se distribuye con licencia MIT: ver [LICENSE](LICENSE).

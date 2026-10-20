@@ -9,6 +9,8 @@
 // Este fichero no conoce ninguna modalidad en concreto: la forma de mover de
 // cada pieza, la posición inicial, el enroque y las reglas del peón salen de
 // la modalidad activa V (variants.js).
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 // Medias jugadas sin captura ni peón antes de tablas por la regla de los 50
 // movimientos (100 = 50 jugadas completas). `let`, no `const`: tune-values.js

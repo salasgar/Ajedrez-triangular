@@ -1,4 +1,6 @@
 // editor.js — Editor de posiciones para ajedrez triangular.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PIECE_NAMES = { P: 'Peón', N: 'Caballo', B: 'Alfil', E: 'Elefante',

@@ -232,6 +232,10 @@ for (const l of [
   'valores se miden modalidad por modalidad, no se traspasan.',
 ]) { p.texto(MARGEN, y, l, { tam: 9 }); y -= 12; }
 
+// Pie de página con la autoría. El © existe en WinAnsi, así que sale tal cual.
+p.texto(MARGEN, MARGEN - 12, '© 1998–2026 Juan Luis Salas García. Las modalidades Dekle (George R. ' +
+  'Dekle Sr., 1986) y Trigonal (Max Koval, 2023) son de sus autores.', { tam: 7, gris: 0.45 });
+
 const pdf = p.buffer();
 
 if (CHECK) {

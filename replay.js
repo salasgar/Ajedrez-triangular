@@ -17,6 +17,8 @@
 // Con --variant=ID se rejuega con otra modalidad; por defecto, la de Salas.
 // Tiene que ser la MISMA con la que se generó el .jsonl, o las jugadas no
 // serán legales al rejugarlas.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 'use strict';
 const fs = require('fs');
 const path = require('path');

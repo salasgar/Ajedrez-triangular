@@ -27,6 +27,8 @@
 // El tablero activo se elige con setGeometry(); CELLS, CELL_MAP, cellName y
 // compañía son `let` y se reasignan ahí. Todo lo que dependa del tablero debe
 // leerlos en el momento de usarlos, no guardarse una copia al cargar el módulo.
+//
+// Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
 
 const EDGE = 44;                        // lado de cada triángulo (px del viewBox)
 const ROW_H = EDGE * Math.sqrt(3) / 2;  // altura de cada fila
