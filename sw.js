@@ -13,7 +13,7 @@
 // caché y no verán la actualización.
 //
 // Copyright (c) 2026 Juan Luis Salas García. Licencia MIT (ver LICENSE).
-const VERSION = 'ajedrez-triangular-v13';
+const VERSION = 'ajedrez-triangular-v14';
 
 const FICHEROS = [
   './',

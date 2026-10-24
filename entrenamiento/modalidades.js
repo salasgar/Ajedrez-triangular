@@ -110,7 +110,9 @@ for (const id of Object.keys(VARIANTS)) {
     }
     return true;
   });
-  comprueba('todo peón blanco puede coronar solo avanzando', atascados.length === 0);
+  // Las PPT (Piedra, papel y tijera) no tienen peones: no hay nada que coronar.
+  if (V.pieceTypes.includes('P'))
+    comprueba('todo peón blanco puede coronar solo avanzando', atascados.length === 0);
 
   // 4) el motor devuelve una jugada legal
   newGame();

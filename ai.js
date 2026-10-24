@@ -96,13 +96,14 @@ const AI_LEVELS = {
 
 // Centralidad de una casilla: 1 en el centro del tablero, 0 en el borde.
 // cx/cy ya vienen calculados por geometry.js. El máximo depende del tablero,
-// así que se cachea por modalidad en vez de calcularse al cargar el fichero.
-let boardMaxDist = { id: null, d: 1 };
+// así que se cachea en la propia modalidad (V._maxDist, como la caché de
+// rpsInfo) en vez de en una variable global: así viaja sola al Web Worker,
+// que recibe V clonado pero solo las FUNCIONES serializadas, no las `let`.
 function centrality(cell) {
-  if (boardMaxDist.id !== V.id) {
-    boardMaxDist = { id: V.id, d: Math.max(...CELLS.map(c => Math.hypot(c.cx, c.cy))) };
+  if (V._maxDist === undefined) {
+    V._maxDist = Math.max(...CELLS.map(c => Math.hypot(c.cx, c.cy)));
   }
-  return 1 - Math.hypot(cell.cx, cell.cy) / boardMaxDist.d;
+  return 1 - Math.hypot(cell.cx, cell.cy) / V._maxDist;
 }
 
 // Avance de un peón hacia la coronación: 0 en su casilla de salida, 1 al
